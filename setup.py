@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
      name='sklearn-json',
-     version='0.1.0',
+     version='0.1.1',
      author="Mathieu Rodrigue",
      author_email="support@mlrequest.com",
      description="A safe, transparent way to share and deploy scikit-learn models.",
