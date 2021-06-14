@@ -1,6 +1,7 @@
 from sklearn_json import classification as clf
 from sklearn_json import regression as reg
 from sklearn_json import feature_extraction as ext
+from sklearn_json import preprocessing as pre
 from sklearn import svm, discriminant_analysis, dummy
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import LogisticRegression, Perceptron
@@ -9,6 +10,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier,
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.svm import SVR
 import json
 
@@ -62,6 +64,9 @@ def serialize_model(model):
 
     elif isinstance(model, DictVectorizer):
         return ext.serialize_dict_vectorizer(model)
+
+    elif isinstance(model, MultiLabelBinarizer):
+        return pre.serialize_multilabel_binarizer(model)
     else:
         raise ModellNotSupported('This model type is not currently supported. Email support@mlrequest.com to request a feature or report a bug.')
 
@@ -113,6 +118,9 @@ def deserialize_model(model_dict):
 
     elif model_dict['meta'] == 'dict-vectorizer':
         return ext.deserialize_dict_vectorizer(model_dict)
+
+    elif model_dict['meta'] == 'multilabel-binarizer':
+        return pre.deserialize_multilabel_binarizer(model_dict)
     else:
         raise ModellNotSupported('Model type not supported or corrupt JSON file. Email support@mlrequest.com to request a feature or report a bug.')
 
