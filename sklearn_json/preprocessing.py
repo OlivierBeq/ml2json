@@ -4,7 +4,7 @@ from sklearn.preprocessing import MultiLabelBinarizer
 def serialize_multilabel_binarizer(model):
     serialized_model = {
         'meta': 'multilabel-binarizer',
-        'classes': model.classes_,
+        'classes': sorted(list(model.classes_)),
         'sparse_output': model.sparse_output,
     }
 
