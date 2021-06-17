@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
 
 
@@ -14,7 +15,7 @@ def serialize_multilabel_binarizer(model):
 def deserialize_multilabel_binarizer(model_dict):
     model = MultiLabelBinarizer()
 
-    model.classes_ = model_dict['classes']
+    model.classes_ = np.array(model_dict['classes'])
     model.sparse_output = model_dict['sparse_output']
 
     return model
