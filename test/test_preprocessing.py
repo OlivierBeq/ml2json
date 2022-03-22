@@ -19,17 +19,21 @@ class TestAPI(unittest.TestCase):
     def check_model(self, model):
         expected_results = model.fit_transform(self.data)
 
-        serialized_model = skljson.to_dict(model)
-        deserialized_model = skljson.from_dict(serialized_model)
+        serialized_dict_model = skljson.to_dict(model)
+        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
 
-        actual_results = deserialized_model.fit_transform(self.data)
+        skljson.to_json(model, 'model.json')
+        deserialized_json_model = skljson.from_json('model.json')
 
-        if model.sparse_output:
-            testing.assert_array_equal(expected_results.indptr, actual_results.indptr)
-            testing.assert_array_equal(expected_results.indices, actual_results.indices)
-            testing.assert_array_equal(expected_results.data, actual_results.data)
-        else:
-            testing.assert_array_equal(expected_results, actual_results)
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_results = deserialized_model.fit_transform(self.data)
+
+            if model.sparse_output:
+                testing.assert_array_equal(expected_results.indptr, actual_results.indptr)
+                testing.assert_array_equal(expected_results.indices, actual_results.indices)
+                testing.assert_array_equal(expected_results.data, actual_results.data)
+            else:
+                testing.assert_array_equal(expected_results, actual_results)
 
     def test_multilabel_binarizer(self):
         self.check_model(MultiLabelBinarizer())
