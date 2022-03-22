@@ -17,5 +17,6 @@ def deserialize_multilabel_binarizer(model_dict):
 
     model.classes_ = np.array(model_dict['classes'])
     model.sparse_output = model_dict['sparse_output'] == 'True'
+    model._cached_dict = dict(zip(model.classes_, range(len(model.classes_))))
 
     return model
