@@ -1,5 +1,5 @@
 from sklearn.preprocessing import MultiLabelBinarizer
-from numpy import testing
+import numpy as np
 import unittest
 import sklearn_json as skljson
 
@@ -15,21 +15,43 @@ class TestAPI(unittest.TestCase):
             {'mystery', 'thriller'},
             {'sci-fi', 'thriller'},
         ]
+        self.labels = np.array([
+            [1, 0, 1, 1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1, 1],
+        ])
 
     def check_model(self, model):
-        expected_results = model.fit_transform(self.data)
+        expected_ft = model.fit_transform(self.data)
+        expected_t = model.transform(self.data)
+        expected_it = model.inverse_transform(self.labels)
 
-        serialized_model = skljson.to_dict(model)
-        deserialized_model = skljson.from_dict(serialized_model)
+        serialized_dict_model = skljson.to_dict(model)
+        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
 
-        actual_results = deserialized_model.fit_transform(self.data)
+        skljson.to_json(model, 'model.json')
+        deserialized_json_model = skljson.from_json('model.json')
 
-        if model.sparse_output:
-            testing.assert_array_equal(expected_results.indptr, actual_results.indptr)
-            testing.assert_array_equal(expected_results.indices, actual_results.indices)
-            testing.assert_array_equal(expected_results.data, actual_results.data)
-        else:
-            testing.assert_array_equal(expected_results, actual_results)
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_t = deserialized_model.transform(self.data)
+            actual_ft = deserialized_model.fit_transform(self.data)
+            actual_it = deserialized_model.inverse_transform(self.labels)
+
+            if model.sparse_output:
+                np.testing.assert_array_equal(expected_t.indptr, actual_t.indptr)
+                np.testing.assert_array_equal(expected_t.indices, actual_t.indices)
+                np.testing.assert_array_equal(expected_t.data, actual_t.data)
+                np.testing.assert_array_equal(expected_ft.indptr, actual_ft.indptr)
+                np.testing.assert_array_equal(expected_ft.indices, actual_ft.indices)
+                np.testing.assert_array_equal(expected_ft.data, actual_ft.data)
+                np.testing.assert_array_equal(expected_it, actual_it)
+            else:
+                np.testing.assert_array_equal(expected_t, actual_t)
+                np.testing.assert_array_equal(expected_ft, actual_ft)
+                np.testing.assert_array_equal(expected_it, actual_it)
 
     def test_multilabel_binarizer(self):
         self.check_model(MultiLabelBinarizer())
