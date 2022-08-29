@@ -85,6 +85,6 @@ class TestAPI(unittest.TestCase):
         self.check_sparse_model(RandomForestRegressor(max_depth=2, random_state=0, n_estimators=100))
 
     def test_mlp_regression(self):
-        self.check_model(MLPRegressor())
-        self.check_sparse_model(MLPRegressor())
+        self.check_model(MLPRegressor(max_iter=10000))
+        self.check_sparse_model(MLPRegressor(max_iter=10000))
 

@@ -15,7 +15,8 @@ from sklearn.tree import DecisionTreeClassifier
 
 import numpy as np
 from numpy import testing
-import sklearn_json as skljson
+
+from src import sklearn_json as skljson
 
 
 class TestAPI(unittest.TestCase):
@@ -72,8 +73,9 @@ class TestAPI(unittest.TestCase):
             model.fit(self.X, self.y)
 
         # When
-        serialized_model = skljson.to_json(model, model_name)
+        skljson.to_json(model, model_name)
         deserialized_model = skljson.from_json(model_name)
+        os.remove(model_name)
 
         # Then
         expected_predictions = model.predict(self.X)
@@ -89,8 +91,9 @@ class TestAPI(unittest.TestCase):
             model.fit(self.X_sparse, self.y_sparse)
 
         # When
-        serialized_model = skljson.to_json(model, model_name)
+        skljson.to_json(model, model_name)
         deserialized_model = skljson.from_json(model_name)
+        os.remove(model_name)
 
         # Then
         expected_predictions = model.predict(self.X)
