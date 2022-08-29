@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from sklearn.cluster import AffinityPropagation, KMeans
+from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
+                             Birch, DBSCAN, FeatureAgglomeration, KMeans,
+                             MiniBatchKMeans, MeanShift, OPTICS, SpectralClustering,
+                             SpectralBiclustering, SpectralCoclustering)
+from sklearn.cluster._birch import _CFNode
 
 
 def serialize_kmeans(model):
@@ -78,3 +82,42 @@ def deserialize_affinity_propagation(model_dict):
         model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
+
+
+def serialize_agglomerative_clustering(model):
+    serialized_model = {
+        'meta': 'agglomerative-clustering',
+        'n_clusters_': model.n_clusters_,
+        'labels_': model.labels_.tolist(),
+        'n_leaves_': model.n_leaves_,
+        'n_connected_components_': model.n_connected_components_,
+        'n_features_in_': model.n_features_in_,
+        'children_': model.children_.tolist(),
+        'params': model.get_params(),
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'distances_' in model.__dict__:
+        serialized_model['distances_'] = model.distances_.tolist()
+
+    return serialized_model
+
+
+def deserialize_agglomerative_clustering(model_dict):
+    model = AgglomerativeClustering(**model_dict['params'])
+
+    model.n_clusters_ = model_dict['n_clusters_']
+    model.labels_ = np.array(model_dict['labels_'])
+    model.n_leaves_ = model_dict['n_leaves_']
+    model.n_connected_components_ = model_dict['n_connected_components_']
+    model.n_features_in_ = model_dict['n_features_in_']
+    model.children_ = np.array(model_dict['children_'])
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'distances_' in model_dict.keys():
+        model.distances_ = np.array(model_dict['distances_'])
+
+    return model
+

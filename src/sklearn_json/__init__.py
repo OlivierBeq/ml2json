@@ -12,7 +12,7 @@ from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
 from sklearn.svm import SVR
-from sklearn.cluster import AffinityPropagation, KMeans
+from sklearn.cluster import AffinityPropagation, AgglomerativeClustering, KMeans
 from sklearn.decomposition import PCA
 
 from . import classification as clf
@@ -76,6 +76,8 @@ def serialize_model(model):
     # Clustering
     elif isinstance(model, AffinityPropagation):
         return clus.serialize_affinity_propagation(model)
+    elif isinstance(model, AgglomerativeClustering):
+        return clus.serialize_agglomerative_clustering(model)
     elif isinstance(model, KMeans):
         return clus.serialize_kmeans(model)
 
@@ -150,6 +152,8 @@ def deserialize_model(model_dict):
     # Clustering
     elif model_dict['meta'] == 'affinity-propagation':
         return clus.deserialize_affinity_propagation(model_dict)
+    elif model_dict['meta'] == 'agglomerative-clustering':
+        return clus.deserialize_agglomerative_clustering(model_dict)
     elif model_dict['meta'] == 'kmeans':
         return clus.deserialize_kmeans(model_dict)
 
