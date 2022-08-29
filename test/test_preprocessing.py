@@ -1,7 +1,13 @@
 from sklearn.preprocessing import MultiLabelBinarizer
-import numpy as np
+# -*- coding: utf-8 -*-
+
+import os
 import unittest
-import sklearn_json as skljson
+
+import numpy as np
+from sklearn.datasets import fetch_california_housing
+
+from src import sklearn_json as skljson
 
 
 class TestAPI(unittest.TestCase):

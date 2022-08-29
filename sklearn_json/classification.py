@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import numpy as np
 import scipy as sp
 from sklearn import svm, discriminant_analysis, dummy
@@ -7,11 +9,10 @@ from sklearn.tree._tree import Tree
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, _gb_losses
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import LabelBinarizer
-from sklearn_json import regression
-from sklearn_json import csr
 
-import json
+from . import regression
+from . import csr
+from .preprocessing import serialize_label_binarizer, deserialize_label_binarizer
 
 
 def serialize_logistic_regression(model):

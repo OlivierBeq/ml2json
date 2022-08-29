@@ -1,7 +1,7 @@
-from sklearn_json import classification as clf
-from sklearn_json import regression as reg
-from sklearn_json import feature_extraction as ext
-from sklearn_json import preprocessing as pre
+# -*- coding: utf-8 -*-
+
+import json
+
 from sklearn import svm, discriminant_analysis, dummy
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import LogisticRegression, Perceptron
@@ -10,9 +10,18 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier,
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.preprocessing import MultiLabelBinarizer, MinMaxScaler, StandardScaler
 from sklearn.svm import SVR
-import json
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+
+from . import classification as clf
+from . import regression as reg
+from . import feature_extraction as ext
+from . import preprocessing as pre
+from . import cluster as clus
+from . import decomposition as dec
+
 
 __version__ = '0.1.0'
 

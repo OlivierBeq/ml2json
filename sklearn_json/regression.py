@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+import numpy as np
+import scipy as sp
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, _gb_losses
@@ -5,9 +9,8 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.tree._tree import Tree
 from sklearn.svm import SVR
 from sklearn import dummy
-from sklearn_json import csr
-import numpy as np
-import scipy as sp
+
+from . import csr
 
 
 def serialize_linear_regressor(model):

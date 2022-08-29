@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+
+import os
+import random
+import unittest
+
 from sklearn.datasets import make_classification
 from sklearn.feature_extraction import FeatureHasher
 from sklearn import svm, discriminant_analysis
@@ -6,8 +12,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
-import unittest
-import random
+
 import numpy as np
 from numpy import testing
 import sklearn_json as skljson

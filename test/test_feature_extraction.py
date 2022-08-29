@@ -1,10 +1,15 @@
-from sklearn.datasets import fetch_20newsgroups
-from sklearn.feature_extraction import DictVectorizer
-from collections import Counter
-from numpy import testing
+# -*- coding: utf-8 -*-
+
+import os
 import re
 import unittest
-import sklearn_json as skljson
+from collections import Counter
+
+from numpy import testing
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.feature_extraction import DictVectorizer
+
+from src import sklearn_json as skljson
 
 
 class TestAPI(unittest.TestCase):
