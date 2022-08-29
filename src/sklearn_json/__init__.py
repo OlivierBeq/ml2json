@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier,
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.preprocessing import MultiLabelBinarizer, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
 from sklearn.svm import SVR
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -86,6 +86,8 @@ def serialize_model(model):
         return ext.serialize_dict_vectorizer(model)
 
     # Preprocess
+    elif isinstance(model, LabelBinarizer):
+        return pre.serialize_label_binarizer(model)
     elif isinstance(model, MultiLabelBinarizer):
         return pre.serialize_multilabel_binarizer(model)
     elif isinstance(model, MinMaxScaler):
@@ -156,6 +158,8 @@ def deserialize_model(model_dict):
         return ext.deserialize_dict_vectorizer(model_dict)
 
     # Preprocess
+    elif model_dict['meta'] == 'label-binarizer':
+        return pre.deserialize_label_binarizer(model_dict)
     elif model_dict['meta'] == 'multilabel-binarizer':
         return pre.deserialize_multilabel_binarizer(model_dict)
     elif model_dict['meta'] == 'minmax-scaler':

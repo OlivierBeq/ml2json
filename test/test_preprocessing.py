@@ -61,19 +61,25 @@ class TestAPI(unittest.TestCase):
                 np.testing.assert_array_equal(expected_ft.indptr, actual_ft.indptr)
                 np.testing.assert_array_equal(expected_ft.indices, actual_ft.indices)
                 np.testing.assert_array_equal(expected_ft.data, actual_ft.data)
-                self.assertEqual(expected_it, actual_it)
+                if isinstance(actual_it, np.ndarray):
+                    np.testing.assert_array_equal(expected_it, actual_it)
+                else:
+                    self.assertEqual(expected_it, actual_it)
             else:
                 np.testing.assert_array_equal(expected_t, actual_t)
                 np.testing.assert_array_equal(expected_ft, actual_ft)
-                self.assertEqual(expected_it, actual_it)
+                if isinstance(actual_it, np.ndarray):
+                    np.testing.assert_array_equal(expected_it, actual_it)
+                else:
+                    self.assertEqual(expected_it, actual_it)
 
     def test_label_binarizer(self):
-        self.check_model(LabelBinarizer(), self.sim)
-        self.check_model(LabelBinarizer(sparse_output=True))
+        self.check_model(LabelBinarizer(), self.simple_test_data, self.simple_test_labels)
+        self.check_model(LabelBinarizer(sparse_output=True), self.simple_test_data, self.simple_test_labels)
 
     def test_multilabel_binarizer(self):
-        self.check_model(MultiLabelBinarizer(), self.data)
-        self.check_model(MultiLabelBinarizer(sparse_output=True), self.labels)
+        self.check_model(MultiLabelBinarizer(), self.data, self.labels)
+        self.check_model(MultiLabelBinarizer(sparse_output=True), self.data, self.labels)
 
     def check_scaler(self, scaler):
         expected_ft = scaler.fit_transform(self.X)
@@ -103,6 +109,6 @@ class TestAPI(unittest.TestCase):
 
     def test_standard_scaler(self):
         self.check_scaler(StandardScaler())
-        # self.check_scaler(StandardScaler(with_mean=False))
-        # self.check_scaler(StandardScaler(with_std=False))
-        # self.check_scaler(StandardScaler(with_mean=False, with_std=False))
+        self.check_scaler(StandardScaler(with_mean=False))
+        self.check_scaler(StandardScaler(with_std=False))
+        self.check_scaler(StandardScaler(with_mean=False, with_std=False))
