@@ -11,7 +11,7 @@ def serialize_dict_vectorizer(model):
         'separator': model.separator,
         'sparse': model.sparse,
         'sort': model.sort,
-        'feature_names': model.get_feature_names(),
+        'feature_names': model.get_feature_names_out(),
         'vocabulary': model.vocabulary_,
     }
 

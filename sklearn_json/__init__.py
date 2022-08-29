@@ -27,6 +27,7 @@ __version__ = '0.1.0'
 
 
 def serialize_model(model):
+    # Classification
     if isinstance(model, LogisticRegression):
         return clf.serialize_logistic_regression(model)
     elif isinstance(model, BernoulliNB):
@@ -54,6 +55,7 @@ def serialize_model(model):
     elif isinstance(model, MLPClassifier):
         return clf.serialize_mlp(model)
 
+    # Regression
     elif isinstance(model, LinearRegression):
         return reg.serialize_linear_regressor(model)
     elif isinstance(model, Lasso):
@@ -71,16 +73,31 @@ def serialize_model(model):
     elif isinstance(model, MLPRegressor):
         return reg.serialize_mlp_regressor(model)
 
+    # Clustering
+    elif isinstance(model, KMeans):
+        return clus.serialize_kmeans(model)
+
+    # Decomposition
+    elif isinstance(model, PCA):
+        return dec.serialize_pca(model)
+
+    # Feature Extraction
     elif isinstance(model, DictVectorizer):
         return ext.serialize_dict_vectorizer(model)
 
+    # Preprocess
     elif isinstance(model, MultiLabelBinarizer):
         return pre.serialize_multilabel_binarizer(model)
+    elif isinstance(model, MinMaxScaler):
+        return pre.serialize_minmax_scaler(model)
+    elif isinstance(model, StandardScaler):
+        return pre.serialize_standard_scaler(model)
     else:
         raise ModellNotSupported('This model type is not currently supported. Email support@mlrequest.com to request a feature or report a bug.')
 
 
 def deserialize_model(model_dict):
+    # Classification
     if model_dict['meta'] == 'lr':
         return clf.deserialize_logistic_regression(model_dict)
     elif model_dict['meta'] == 'bernoulli-nb':
@@ -108,6 +125,7 @@ def deserialize_model(model_dict):
     elif model_dict['meta'] == 'mlp':
         return clf.deserialize_mlp(model_dict)
 
+    # Regression
     elif model_dict['meta'] == 'linear-regression':
         return reg.deserialize_linear_regressor(model_dict)
     elif model_dict['meta'] == 'lasso-regression':
@@ -125,13 +143,27 @@ def deserialize_model(model_dict):
     elif model_dict['meta'] == 'mlp-regression':
         return reg.deserialize_mlp_regressor(model_dict)
 
+    # Clustering
+    elif model_dict['meta'] == 'kmeans':
+        return clus.deserialize_kmeans(model_dict)
+
+    # Decomposition
+    elif model_dict['meta'] == 'pca':
+        return dec.deserialize_pca(model_dict)
+
+    # Feature Extraction
     elif model_dict['meta'] == 'dict-vectorizer':
         return ext.deserialize_dict_vectorizer(model_dict)
 
+    # Preprocess
     elif model_dict['meta'] == 'multilabel-binarizer':
         return pre.deserialize_multilabel_binarizer(model_dict)
+    elif model_dict['meta'] == 'minmax-scaler':
+        return pre.deserialize_minmax_scaler(model_dict)
+    elif model_dict['meta'] == 'standard-scaler':
+        return pre.deserialize_standard_scaler(model_dict)
     else:
-        raise ModellNotSupported('Model type not supported or corrupt JSON file. Email support@mlrequest.com to request a feature or report a bug.')
+        raise ModellNotSupported('Model type not supported or corrupt JSON file.')
 
 
 def to_dict(model):
