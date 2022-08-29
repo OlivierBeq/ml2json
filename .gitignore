@@ -42,4 +42,4 @@ __pycache__/
 build/
 dist/
 sklearn_json.egg-info/
-
+.xlsx

@@ -23,7 +23,7 @@ from . import cluster as clus
 from . import decomposition as dec
 
 
-__version__ = '0.1.0'
+__version__ = '0.1.4'
 
 
 def serialize_model(model):
