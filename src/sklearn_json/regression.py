@@ -12,6 +12,7 @@ from sklearn.tree._tree import Tree
 from sklearn.svm import SVR
 from sklearn import dummy
 from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
+from lightgbm import LGBMRegressor, LGBMRanker, Booster as LGBMBooster
 
 from . import csr
 
@@ -478,5 +479,93 @@ def deserialize_xgboost_rf_regressor(model_dict):
         fh.write(model_dict['advanced-params'])
     model.load_model('model.json')
     os.remove('model.json')
+
+    return model
+
+
+def serialize_lightgbm_regressor(model):
+    serialized_model = {
+        'meta': 'lightgbm-regressor',
+        'params': model.get_params(),
+        'booster': model.booster_.model_to_string(),
+        'fitted_': model.fitted_,
+        '_evals_result': model._evals_result,
+        '_best_score': model._best_score,
+        '_best_iteration': model._best_iteration,
+        '_other_params': model._other_params,
+        '_objective': model._objective,
+        'class_weight': model.class_weight,
+        '_class_weight': model._class_weight,
+        '_class_map': model._class_map,
+        '_n_features': model._n_features,
+        '_n_features_in': model._n_features_in,
+        '_classes': model._classes,
+        '_n_classes': model._n_classes
+    }
+
+    return serialized_model
+
+
+def deserialize_lightgbm_regressor(model_dict):
+    params = model_dict['params']
+    params['_Booster'] = LGBMBooster(model_str=model_dict['booster'])
+    params['fitted_'] = model_dict['fitted_']
+    params['_evals_result'] = model_dict['_evals_result']
+    params['_best_score'] = model_dict['_best_score']
+    params['_best_iteration'] = model_dict['_best_iteration']
+    params['_other_params'] = model_dict['_other_params']
+    params['_objective'] = model_dict['_objective']
+    params['class_weight'] = model_dict['class_weight']
+    params['_class_weight'] = model_dict['_class_weight']
+    params['_class_map'] = model_dict['_class_map']
+    params['_n_features'] = model_dict['_n_features']
+    params['_n_features_in'] = model_dict['_n_features_in']
+    params['_classes'] = model_dict['_classes']
+    params['_n_classes'] = model_dict['_n_classes']
+    model = LGBMRegressor().set_params(**params)
+
+    return model
+
+
+def serialize_lightgbm_ranker(model):
+    serialized_model = {
+        'meta': 'lightgbm-ranker',
+        'params': model.get_params(),
+        'booster': model.booster_.model_to_string(),
+        'fitted_': model.fitted_,
+        '_evals_result': model._evals_result,
+        '_best_score': model._best_score,
+        '_best_iteration': model._best_iteration,
+        '_other_params': model._other_params,
+        '_objective': model._objective,
+        'class_weight': model.class_weight,
+        '_class_weight': model._class_weight,
+        '_class_map': model._class_map,
+        '_n_features': model._n_features,
+        '_n_features_in': model._n_features_in,
+        '_classes': model._classes,
+        '_n_classes': model._n_classes
+    }
+
+    return serialized_model
+
+
+def deserialize_lightgbm_ranker(model_dict):
+    params = model_dict['params']
+    params['_Booster'] = LGBMBooster(model_str=model_dict['booster'])
+    params['fitted_'] = model_dict['fitted_']
+    params['_evals_result'] = model_dict['_evals_result']
+    params['_best_score'] = model_dict['_best_score']
+    params['_best_iteration'] = model_dict['_best_iteration']
+    params['_other_params'] = model_dict['_other_params']
+    params['_objective'] = model_dict['_objective']
+    params['class_weight'] = model_dict['class_weight']
+    params['_class_weight'] = model_dict['_class_weight']
+    params['_class_map'] = model_dict['_class_map']
+    params['_n_features'] = model_dict['_n_features']
+    params['_n_features_in'] = model_dict['_n_features_in']
+    params['_classes'] = model_dict['_classes']
+    params['_n_classes'] = model_dict['_n_classes']
+    model = LGBMRanker().set_params(**params)
 
     return model

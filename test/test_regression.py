@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
+from lightgbm import LGBMRegressor, LGBMRanker
 
 from src import sklearn_json as skljson
 
@@ -21,7 +22,7 @@ class TestAPI(unittest.TestCase):
 
     def setUp(self):
         self.X, self.y = make_regression(n_samples=50, n_features=3, n_informative=3, random_state=0, shuffle=False)
-        self.y_rank = np.argsort(np.argsort(self.y))
+        self.y_rank = np.argsort(np.argsort(self.y)).tolist()
 
         feature_hasher = FeatureHasher(n_features=3)
         features = []
@@ -96,7 +97,7 @@ class TestAPI(unittest.TestCase):
 
     def check_ranking_model(self, model):
         # Given
-        model.fit(self.X, self.y, group=[10, len(self.y) - 10])
+        model.fit(self.X, self.y_rank, group=[10, len(self.y) - 10])
 
         # When
         serialized_model = skljson.to_dict(model)
@@ -116,3 +117,9 @@ class TestAPI(unittest.TestCase):
 
     def test_xgboost_rf_regressor(self):
         self.check_model(XGBRFRegressor())
+
+    def test_lightgbm_regressor(self):
+        self.check_model(LGBMRegressor())
+
+    def test_lightgbm_ranker(self):
+        self.check_ranking_model(LGBMRanker(label_gain=[i for i in range(self.X.shape[0] + 1)]))

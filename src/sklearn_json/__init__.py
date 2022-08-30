@@ -18,6 +18,7 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              SpectralBiclustering, SpectralCoclustering)
 from sklearn.decomposition import PCA
 from xgboost import XGBRegressor, XGBClassifier, XGBRFRegressor, XGBRFClassifier, XGBRanker
+from lightgbm import LGBMClassifier, LGBMRegressor, LGBMRanker
 
 from . import classification as clf
 from . import regression as reg
@@ -62,6 +63,8 @@ def serialize_model(model):
         return clf.serialize_xgboost_classifier(model)
     elif isinstance(model, XGBRFClassifier):
         return clf.serialize_xgboost_rf_classifier(model)
+    elif isinstance(model, LGBMClassifier):
+        return clf.serialize_lightgbm_classifier(model)
 
     # Regression
     elif isinstance(model, LinearRegression):
@@ -88,6 +91,10 @@ def serialize_model(model):
         return reg.serialize_xgboost_regressor(model)
     elif isinstance(model, XGBRFRegressor):
         return reg.serialize_xgboost_rf_regressor(model)
+    elif isinstance(model, LGBMRegressor):
+        return reg.serialize_lightgbm_regressor(model)
+    elif isinstance(model, LGBMRanker):
+        return reg.serialize_lightgbm_ranker(model)
 
     # Clustering
     elif isinstance(model, FeatureAgglomeration):
@@ -170,6 +177,8 @@ def deserialize_model(model_dict):
         return clf.deserialize_xgboost_classifier(model_dict)
     elif model_dict['meta'] == 'xgboost-rf-classifier':
         return clf.deserialize_xgboost_rf_classifier(model_dict)
+    elif model_dict['meta'] == 'lightgbm-classifier':
+        return clf.deserialize_lightgbm_classifier(model_dict)
 
     # Regression
     elif model_dict['meta'] == 'linear-regression':
@@ -196,6 +205,10 @@ def deserialize_model(model_dict):
         return reg.deserialize_xgboost_regressor(model_dict)
     elif model_dict['meta'] == 'xgboost-rf-regressor':
         return reg.deserialize_xgboost_rf_regressor(model_dict)
+    elif model_dict['meta'] == 'lightgbm-regressor':
+        return reg.deserialize_lightgbm_regressor(model_dict)
+    elif model_dict['meta'] == 'lightgbm-ranker':
+        return reg.deserialize_lightgbm_ranker(model_dict)
 
     # Clustering
     elif model_dict['meta'] == 'affinity-propagation':

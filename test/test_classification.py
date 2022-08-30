@@ -13,6 +13,7 @@ from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, Compleme
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier, XGBRFClassifier
+from lightgbm import LGBMClassifier
 
 import numpy as np
 from numpy import testing
@@ -212,4 +213,5 @@ class TestAPI(unittest.TestCase):
     def test_xgboost_rf_classifier(self):
         self.check_model(XGBRFClassifier())
 
-
+    def test_lightgbm_classifier(self):
+        self.check_model(LGBMClassifier())
