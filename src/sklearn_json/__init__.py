@@ -89,6 +89,8 @@ def serialize_model(model):
         return clus.serialize_dbscan(model)
     elif isinstance(model, KMeans):
         return clus.serialize_kmeans(model)
+    elif isinstance(model, MiniBatchKMeans):
+        return clus.serialize_minibatch_kmeans(model)
     elif isinstance(model, OPTICS):
         return clus.serialize_optics(model)
     elif isinstance(model, SpectralClustering):
@@ -175,6 +177,8 @@ def deserialize_model(model_dict):
         return clus.deserialize_feature_agglomeration(model_dict)
     elif model_dict['meta'] == 'kmeans':
         return clus.deserialize_kmeans(model_dict)
+    elif model_dict['meta'] == 'minibatch-kmeans':
+        return clus.deserialize_minibatch_kmeans(model_dict)
     elif model_dict['meta'] == 'optics':
         return clus.deserialize_optics(model_dict)
     elif model_dict['meta'] == 'spectral-clustering':

@@ -127,6 +127,18 @@ class TestAPI(unittest.TestCase):
             self.check_predict_model(model, self.X)
             self.check_fitpredict_model(model, self.X)
 
+    def test_minibatch_kmeans(self):
+        for model in [MiniBatchKMeans(n_clusters=self.n_centers, init='k-means++',
+                             random_state=1234, n_init=100, max_iter=10000,
+                             verbose=0, tol=1e-999),
+                      MiniBatchKMeans(n_clusters=self.n_centers, init='random',
+                             random_state=1234, n_init=100, max_iter=10000,
+                             verbose=0, tol=1e-999)]:
+            self.check_transform_model(model, self.X)
+            self.check_fittransform_model(model, self.X)
+            self.check_predict_model(model, self.X)
+            self.check_fitpredict_model(model, self.X)
+
     def test_affinity_propagation(self):
         self.check_predict_model(AffinityPropagation(), self.simple_X)
         self.check_fitpredict_model(AffinityPropagation(), self.simple_X)
@@ -145,4 +157,4 @@ class TestAPI(unittest.TestCase):
 
     def test_feature_agglomeration(self):
         self.check_transform_model(FeatureAgglomeration(pooling_func=np.mean), self.X)
-        # self.check_fittransform_model(FeatureAgglomeration(pooling_func=np.mean), self.X)
+        self.check_fittransform_model(FeatureAgglomeration(pooling_func=np.mean), self.X)
