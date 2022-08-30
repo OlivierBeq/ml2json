@@ -7,7 +7,7 @@ import unittest
 from numpy import testing
 from sklearn.datasets import make_regression
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.neural_network import MLPRegressor
@@ -63,6 +63,10 @@ class TestAPI(unittest.TestCase):
     def test_lasso_regression(self):
         self.check_model(Lasso(alpha=0.1))
         self.check_sparse_model(Lasso(alpha=0.1))
+
+    def test_elasticnet_regression(self):
+        self.check_model(ElasticNet(alpha=0.1))
+        self.check_sparse_model(ElasticNet(alpha=0.1))
 
     def test_ridge_regression(self):
         self.check_model(Ridge(alpha=0.5))

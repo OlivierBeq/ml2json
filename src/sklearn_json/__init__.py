@@ -8,7 +8,7 @@ from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, RandomForestRegressor, GradientBoostingRegressor, _gb_losses
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
-from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
 from sklearn.svm import SVR
@@ -63,6 +63,8 @@ def serialize_model(model):
         return reg.serialize_linear_regressor(model)
     elif isinstance(model, Lasso):
         return reg.serialize_lasso_regressor(model)
+    elif isinstance(model, ElasticNet):
+        return reg.serialize_elastic_regressor(model)
     elif isinstance(model, Ridge):
         return reg.serialize_ridge_regressor(model)
     elif isinstance(model, SVR):
@@ -141,6 +143,8 @@ def deserialize_model(model_dict):
         return reg.deserialize_linear_regressor(model_dict)
     elif model_dict['meta'] == 'lasso-regression':
         return reg.deserialize_lasso_regressor(model_dict)
+    elif model_dict['meta'] == 'elasticnet-regression':
+        return reg.deserialize_elastic_regressor(model_dict)
     elif model_dict['meta'] == 'ridge-regression':
         return reg.deserialize_ridge_regressor(model_dict)
     elif model_dict['meta'] == 'svr':
