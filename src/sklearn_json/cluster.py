@@ -346,3 +346,71 @@ def deserialize_meanshift(model_dict):
         model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
+
+
+def serialize_spectral_biclustering(model):
+    serialized_model = {
+        'meta': 'spectral-biclustering',
+        'rows_': model.rows_.tolist(),
+        'columns_': model.columns_.tolist(),
+        'row_labels_': model.row_labels_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params()
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'columns_labels_' in model.__dict__:
+        serialized_model['columns_labels_'] = model.columns_labels_.tolist()
+
+    return serialized_model
+
+
+def deserialize_spectral_biclustering(model_dict):
+    model = SpectralBiclustering(**model_dict['params'])
+
+    model.rows_ = np.array(model_dict['rows_'])
+    model.columns_ = np.array(model_dict['columns_'])
+    model.row_labels_ = np.array(model_dict['row_labels_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'columns_labels_' in model_dict.keys():
+        model.columns_labels_ = np.array(model_dict['columns_labels_'])
+
+    return model
+
+
+def serialize_spectral_coclustering(model):
+    serialized_model = {
+        'meta': 'spectral-coclustering',
+        'rows_': model.rows_.tolist(),
+        'columns_': model.columns_.tolist(),
+        'row_labels_': model.row_labels_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params()
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'columns_labels_' in model.__dict__:
+        serialized_model['columns_labels_'] = model.columns_labels_.tolist()
+
+    return serialized_model
+
+
+def deserialize_spectral_coclustering(model_dict):
+    model = SpectralCoclustering(**model_dict['params'])
+
+    model.rows_ = np.array(model_dict['rows_'])
+    model.columns_ = np.array(model_dict['columns_'])
+    model.row_labels_ = np.array(model_dict['row_labels_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'columns_labels_' in model_dict.keys():
+        model.columns_labels_ = np.array(model_dict['columns_labels_'])
+
+    return model

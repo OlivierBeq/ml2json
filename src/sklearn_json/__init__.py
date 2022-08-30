@@ -97,6 +97,10 @@ def serialize_model(model):
         return clus.serialize_optics(model)
     elif isinstance(model, SpectralClustering):
         return clus.serialize_spectral_clustering(model)
+    elif isinstance(model, SpectralBiclustering):
+        return clus.serialize_spectral_biclustering(model)
+    elif isinstance(model, SpectralCoclustering):
+        return clus.serialize_spectral_coclustering(model)
 
     # Decomposition
     elif isinstance(model, PCA):
@@ -187,6 +191,10 @@ def deserialize_model(model_dict):
         return clus.deserialize_optics(model_dict)
     elif model_dict['meta'] == 'spectral-clustering':
         return clus.deserialize_spectral_clustering(model_dict)
+    elif model_dict['meta'] == 'spectral-biclustering':
+        return clus.deserialize_spectral_biclustering(model_dict)
+    elif model_dict['meta'] == 'spectral-coclustering':
+        return clus.deserialize_spectral_coclustering(model_dict)
 
     # Decomposition
     elif model_dict['meta'] == 'pca':

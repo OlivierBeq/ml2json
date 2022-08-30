@@ -2,9 +2,10 @@
 
 import os
 import unittest
+import itertools
 
 import numpy as np
-from sklearn.datasets import make_blobs
+from sklearn.datasets import make_blobs, make_checkerboard
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              MiniBatchKMeans, MeanShift, OPTICS, SpectralClustering,
@@ -162,3 +163,55 @@ class TestAPI(unittest.TestCase):
     def test_meanshift(self):
         self.check_predict_model(MeanShift(), self.simple_X)
         self.check_fitpredict_model(MeanShift(), self.simple_X)
+
+    def check_spectral_model(self, model, n_clusters):
+        n_clusters = (4, 3)
+        data, rows, columns = make_checkerboard(shape=(300, 300), n_clusters=n_clusters,
+                                                noise=10, shuffle=False, random_state=1234)
+        rng = np.random.RandomState(1234)
+        row_idx = rng.permutation(data.shape[0])
+        col_idx = rng.permutation(data.shape[1])
+        data = data[row_idx][:, col_idx]
+
+        # Create model
+        model.fit(data)
+
+        # Compare internal data to serialized
+        expected_indices = [model.get_indices(i) for i in range(len(model.biclusters_))]
+        expected_shapes = [model.get_shape(i) for i in range(len(model.biclusters_))]
+        expected_matrices = [model.get_submatrix(i, data) for i in range(len(model.biclusters_))]
+
+        serialized_dict_model = skljson.to_dict(model)
+        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
+
+        skljson.to_json(model, 'model.json')
+        deserialized_json_model = skljson.from_json('model.json')
+        os.remove('model.json')
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_indices = [deserialized_model.get_indices(i) for i in range(len(deserialized_model.biclusters_))]
+            actual_shapes = [deserialized_model.get_shape(i) for i in range(len(deserialized_model.biclusters_))]
+            actual_matrices = [deserialized_model.get_submatrix(i, data) for i in range(len(deserialized_model.biclusters_))]
+
+            self.assertEqual(len(expected_indices), len(actual_indices))
+            for (w, x), (y,z) in zip(expected_indices, actual_indices):
+                np.testing.assert_array_equal(w, y)
+                np.testing.assert_array_equal(x, z)
+
+            self.assertEqual(len(expected_shapes), len(actual_shapes))
+            for x, y in zip(expected_shapes, actual_shapes):
+                self.assertEqual(x, y)
+
+            self.assertEqual(len(expected_matrices), len(actual_matrices))
+            for x, y in zip(expected_matrices, actual_matrices):
+                np.testing.assert_array_equal(x, y)
+
+    def test_spectral_biclustering(self):
+        n_clusters = (4, 3)
+        self.check_spectral_model(SpectralBiclustering(n_clusters=n_clusters, method="log", random_state=1234),
+                                  n_clusters)
+
+    def test_spectral_coclustering(self):
+        n_clusters = 5
+        self.check_spectral_model(SpectralCoclustering(n_clusters=n_clusters, svd_method="arpack", random_state=1234),
+                                  n_clusters)
