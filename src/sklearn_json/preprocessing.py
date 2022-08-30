@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
 
 
 def serialize_label_binarizer(label_binarizer):
@@ -138,5 +138,20 @@ def deserialize_standard_scaler(model_dict):
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_label_encoder(model):
+    serialized_model = {
+        'meta': 'label-encoder',
+        'classes_': model.classes_.tolist(),
+    }
+
+    return serialized_model
+
+def deserialize_label_encoder(model_dict):
+    model = LabelEncoder()
+    model.classes_ = np.array(model_dict['classes_'])
 
     return model

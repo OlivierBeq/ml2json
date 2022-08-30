@@ -5,7 +5,7 @@ import unittest
 
 import numpy as np
 from sklearn.datasets import fetch_california_housing
-from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
 
 from src import sklearn_json as skljson
 
@@ -54,7 +54,7 @@ class TestAPI(unittest.TestCase):
             actual_ft = deserialized_model.fit_transform(data)
             actual_it = deserialized_model.inverse_transform(labels)
 
-            if model.sparse_output:
+            if hasattr(model, 'sparse_output') and model.sparse_output:
                 np.testing.assert_array_equal(expected_t.indptr, actual_t.indptr)
                 np.testing.assert_array_equal(expected_t.indices, actual_t.indices)
                 np.testing.assert_array_equal(expected_t.data, actual_t.data)
@@ -72,6 +72,9 @@ class TestAPI(unittest.TestCase):
                     np.testing.assert_array_equal(expected_it, actual_it)
                 else:
                     self.assertEqual(expected_it, actual_it)
+
+    def test_label_encoder(self):
+        self.check_model(LabelEncoder(), ["paris", "paris", "tokyo", "amsterdam"], [0, 0, 1, 2])
 
     def test_label_binarizer(self):
         self.check_model(LabelBinarizer(), self.simple_test_data, self.simple_test_labels)

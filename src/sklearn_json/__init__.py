@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier,
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
 from sklearn.svm import SVR
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
@@ -122,6 +122,8 @@ def serialize_model(model):
         return ext.serialize_dict_vectorizer(model)
 
     # Preprocess
+    elif isinstance(model, LabelEncoder):
+        return pre.serialize_label_encoder(model)
     elif isinstance(model, LabelBinarizer):
         return pre.serialize_label_binarizer(model)
     elif isinstance(model, MultiLabelBinarizer):
@@ -130,6 +132,8 @@ def serialize_model(model):
         return pre.serialize_minmax_scaler(model)
     elif isinstance(model, StandardScaler):
         return pre.serialize_standard_scaler(model)
+
+    # Otherwise
     else:
         raise ModellNotSupported('This model type is not currently supported. Email support@mlrequest.com to request a feature or report a bug.')
 
@@ -226,6 +230,8 @@ def deserialize_model(model_dict):
         return ext.deserialize_dict_vectorizer(model_dict)
 
     # Preprocess
+    elif model_dict['meta'] == 'label-encoder':
+        return pre.deserialize_label_encoder(model_dict)
     elif model_dict['meta'] == 'label-binarizer':
         return pre.deserialize_label_binarizer(model_dict)
     elif model_dict['meta'] == 'multilabel-binarizer':
@@ -234,6 +240,8 @@ def deserialize_model(model_dict):
         return pre.deserialize_minmax_scaler(model_dict)
     elif model_dict['meta'] == 'standard-scaler':
         return pre.deserialize_standard_scaler(model_dict)
+
+    # Otherwise
     else:
         raise ModellNotSupported('Model type not supported or corrupt JSON file.')
 
