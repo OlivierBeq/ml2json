@@ -121,3 +121,33 @@ def deserialize_agglomerative_clustering(model_dict):
 
     return model
 
+def serialize_dbscan(model):
+    serialized_model = {
+        'meta': 'dbscan',
+        'components_': model.components_.tolist(),
+        'core_sample_indices_': model.core_sample_indices_.tolist(),
+        'labels_': model.labels_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        '_estimator_type': model._estimator_type,
+        'params': model.get_params()
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+
+def deserialize_dbscan(model_dict):
+    model = DBSCAN(**model_dict['params'])
+
+    model.components_ = np.array(model_dict['components_'])
+    model.labels_ = np.array(model_dict['labels_'])
+    model.core_sample_indices_ = model_dict['core_sample_indices_']
+    model.n_features_in_ = model_dict['n_features_in_']
+    model._estimator_type = model_dict['_estimator_type']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model

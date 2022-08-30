@@ -5,7 +5,10 @@ import unittest
 
 import numpy as np
 from sklearn.datasets import make_blobs
-from sklearn.cluster import AffinityPropagation, AgglomerativeClustering, KMeans
+from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
+                             Birch, DBSCAN, FeatureAgglomeration, KMeans,
+                             MiniBatchKMeans, MeanShift, OPTICS, SpectralClustering,
+                             SpectralBiclustering, SpectralCoclustering)
 
 from src import sklearn_json as skljson
 
@@ -130,3 +133,6 @@ class TestAPI(unittest.TestCase):
 
     def test_agglomerative_clustering(self):
         self.check_fitpredict_model(AgglomerativeClustering(), self.simple_X)
+
+    def test_dbscan(self):
+        self.check_fitpredict_model(DBSCAN(), self.X)
