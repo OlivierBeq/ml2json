@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import importlib
+import inspect
 
 import numpy as np
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
@@ -213,5 +215,48 @@ def deserialize_spectral_clustering(model_dict):
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+def serialize_feature_agglomeration(model):
+    params = model.get_params()
+    serialized_model = {
+        'meta': 'feature-agglomeration',
+        'n_clusters_': model.n_clusters_,
+        'labels_': model.labels_.tolist(),
+        'n_leaves_': model.n_leaves_,
+        'n_features_in_': model.n_features_in_,
+        'children_': model.children_.tolist(),
+        'pooling_func': (inspect.getmodule(params['pooling_func']).__name__,
+                         params['pooling_func'].__name__),
+        '_n_features_out': model._n_features_out,
+        'n_connected_components_': model.n_connected_components_,
+        'params': {key: value for key, value in params.items() if key != 'pooling_func'}
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'distances_' in model.__dict__:
+        serialized_model['distances_'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+def deserialize_feature_agglomeration(model_dict):
+    params = model_dict['params']
+    params['pooling_func'] = getattr(importlib.import_module(model_dict['pooling_func'][0]), model_dict['pooling_func'][1])
+    model = FeatureAgglomeration(**params)
+
+    model.n_clusters_ = model_dict['n_clusters_']
+    model.labels_ = np.array(model_dict['labels_'])
+    model.n_leaves_ = model_dict['n_leaves_']
+    model.n_features_in_ = model_dict['n_features_in_']
+    model.children_ = np.array(model_dict['children_'])
+    model._n_features_out = model_dict['_n_features_out']
+    model.n_connected_components_ = model_dict['n_connected_components_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'distances_' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['distances_'])
 
     return model

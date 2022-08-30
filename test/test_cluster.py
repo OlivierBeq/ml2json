@@ -138,7 +138,11 @@ class TestAPI(unittest.TestCase):
         self.check_fitpredict_model(DBSCAN(), self.X)
 
     def test_optics(self):
-        self.check_fitpredict_model(OPTICS(), self.X)
+        self.check_fitpredict_model(OPTICS(), self.simple_X)
 
     def test_spectral_clustering(self):
-        self.check_fitpredict_model(SpectralClustering(random_state=1234), self.X)
+        self.check_fitpredict_model(SpectralClustering(random_state=1234, n_clusters=2), self.simple_X)
+
+    def test_feature_agglomeration(self):
+        self.check_transform_model(FeatureAgglomeration(pooling_func=np.mean), self.X)
+        # self.check_fittransform_model(FeatureAgglomeration(pooling_func=np.mean), self.X)

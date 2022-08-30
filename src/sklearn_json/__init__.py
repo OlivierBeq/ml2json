@@ -79,6 +79,8 @@ def serialize_model(model):
         return reg.serialize_mlp_regressor(model)
 
     # Clustering
+    elif isinstance(model, FeatureAgglomeration):
+        return clus.serialize_feature_agglomeration(model)
     elif isinstance(model, AffinityPropagation):
         return clus.serialize_affinity_propagation(model)
     elif isinstance(model, AgglomerativeClustering):
@@ -169,6 +171,8 @@ def deserialize_model(model_dict):
         return clus.deserialize_agglomerative_clustering(model_dict)
     elif model_dict['meta'] == 'dbscan':
         return clus.deserialize_dbscan(model_dict)
+    elif model_dict['meta'] == 'feature-agglomeration':
+        return clus.deserialize_feature_agglomeration(model_dict)
     elif model_dict['meta'] == 'kmeans':
         return clus.deserialize_kmeans(model_dict)
     elif model_dict['meta'] == 'optics':
