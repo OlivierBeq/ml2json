@@ -136,3 +136,6 @@ class TestAPI(unittest.TestCase):
 
     def test_dbscan(self):
         self.check_fitpredict_model(DBSCAN(), self.X)
+
+    def test_optics(self):
+        self.check_fitpredict_model(OPTICS(), self.X)

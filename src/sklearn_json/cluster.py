@@ -152,6 +152,37 @@ def deserialize_dbscan(model_dict):
 
     return model
 
+
+def serialize_optics(model):
+    serialized_model = {
+        'meta': 'optics',
+        'labels_': model.labels_.tolist(),
+        'reachability_': model.reachability_.tolist(),
+        'ordering_': model.ordering_.tolist(),
+        'core_distances_': model.core_distances_.tolist(),
+        'predecessor_': model.predecessor_.tolist(),
+        'cluster_hierarchy_': model.cluster_hierarchy_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params()
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+
+def deserialize_optics(model_dict):
+    model = OPTICS(**model_dict['params'])
+
+    model.labels_ = np.array(model_dict['labels_'])
+    model.reachability_ = np.array(model_dict['reachability_'])
+    model.ordering_ = np.array(model_dict['ordering_'])
+    model.core_distances_ = np.array(model_dict['core_distances_'])
+    model.predecessor_ = np.array(model_dict['predecessor_'])
+    model.cluster_hierarchy_ = np.array(model_dict['cluster_hierarchy_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
 

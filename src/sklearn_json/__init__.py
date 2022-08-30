@@ -87,6 +87,8 @@ def serialize_model(model):
         return clus.serialize_dbscan(model)
     elif isinstance(model, KMeans):
         return clus.serialize_kmeans(model)
+    elif isinstance(model, OPTICS):
+        return clus.serialize_optics(model)
 
     # Decomposition
     elif isinstance(model, PCA):
@@ -167,6 +169,8 @@ def deserialize_model(model_dict):
         return clus.deserialize_dbscan(model_dict)
     elif model_dict['meta'] == 'kmeans':
         return clus.deserialize_kmeans(model_dict)
+    elif model_dict['meta'] == 'optics':
+        return clus.deserialize_optics(model_dict)
 
     # Decomposition
     elif model_dict['meta'] == 'pca':
