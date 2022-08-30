@@ -316,3 +316,33 @@ def deserialize_feature_agglomeration(model_dict):
         model.feature_names_in = np.array(model_dict['distances_'])
 
     return model
+
+
+def serialize_meanshift(model):
+    serialized_model = {
+        'meta': 'meanshift',
+        'cluster_centers_': model.cluster_centers_.tolist(),
+        'labels_': model.labels_.tolist(),
+        'n_iter_': model.n_iter_,
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params()
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+
+def deserialize_meanshift(model_dict):
+    model = MeanShift(**model_dict['params'])
+
+    model.cluster_centers_ = np.array(model_dict['cluster_centers_'])
+    model.labels_ = np.array(model_dict['labels_'])
+    model.n_iter_ = model_dict['n_iter_']
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model

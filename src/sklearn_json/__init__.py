@@ -87,6 +87,8 @@ def serialize_model(model):
         return clus.serialize_agglomerative_clustering(model)
     elif isinstance(model, DBSCAN):
         return clus.serialize_dbscan(model)
+    elif isinstance(model, MeanShift):
+        return clus.serialize_meanshift(model)
     elif isinstance(model, KMeans):
         return clus.serialize_kmeans(model)
     elif isinstance(model, MiniBatchKMeans):
@@ -171,10 +173,12 @@ def deserialize_model(model_dict):
         return clus.deserialize_affinity_propagation(model_dict)
     elif model_dict['meta'] == 'agglomerative-clustering':
         return clus.deserialize_agglomerative_clustering(model_dict)
-    elif model_dict['meta'] == 'dbscan':
-        return clus.deserialize_dbscan(model_dict)
     elif model_dict['meta'] == 'feature-agglomeration':
         return clus.deserialize_feature_agglomeration(model_dict)
+    elif model_dict['meta'] == 'dbscan':
+        return clus.deserialize_dbscan(model_dict)
+    elif model_dict['meta'] == 'meanshift':
+        return clus.deserialize_meanshift(model_dict)
     elif model_dict['meta'] == 'kmeans':
         return clus.deserialize_kmeans(model_dict)
     elif model_dict['meta'] == 'minibatch-kmeans':

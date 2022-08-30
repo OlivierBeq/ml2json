@@ -158,3 +158,7 @@ class TestAPI(unittest.TestCase):
     def test_feature_agglomeration(self):
         self.check_transform_model(FeatureAgglomeration(pooling_func=np.mean), self.X)
         self.check_fittransform_model(FeatureAgglomeration(pooling_func=np.mean), self.X)
+
+    def test_meanshift(self):
+        self.check_predict_model(MeanShift(), self.simple_X)
+        self.check_fitpredict_model(MeanShift(), self.simple_X)
