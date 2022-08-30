@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import os
 import random
 import unittest
 
+import numpy as np
 from numpy import testing
 from sklearn.datasets import make_regression
 from sklearn.feature_extraction import FeatureHasher
@@ -12,6 +12,7 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
+from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
 
 from src import sklearn_json as skljson
 
@@ -20,6 +21,7 @@ class TestAPI(unittest.TestCase):
 
     def setUp(self):
         self.X, self.y = make_regression(n_samples=50, n_features=3, n_informative=3, random_state=0, shuffle=False)
+        self.y_rank = np.argsort(np.argsort(self.y))
 
         feature_hasher = FeatureHasher(n_features=3)
         features = []
@@ -92,3 +94,25 @@ class TestAPI(unittest.TestCase):
         self.check_model(MLPRegressor(max_iter=10000))
         self.check_sparse_model(MLPRegressor(max_iter=10000))
 
+    def check_ranking_model(self, model):
+        # Given
+        model.fit(self.X, self.y, group=[10, len(self.y) - 10])
+
+        # When
+        serialized_model = skljson.to_dict(model)
+        deserialized_model = skljson.from_dict(serialized_model)
+
+        # Then
+        expected_predictions = model.predict(self.X)
+        actual_predictions = deserialized_model.predict(self.X)
+
+        testing.assert_array_equal(expected_predictions, actual_predictions)
+
+    def test_xgboost_ranker(self):
+        self.check_ranking_model(XGBRanker())
+
+    def test_xgboost_regressor(self):
+        self.check_model(XGBRegressor())
+
+    def test_xgboost_rf_regressor(self):
+        self.check_model(XGBRFRegressor())

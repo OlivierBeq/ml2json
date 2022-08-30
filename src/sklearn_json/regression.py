@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 import numpy as np
 import scipy as sp
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
@@ -9,6 +11,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.tree._tree import Tree
 from sklearn.svm import SVR
 from sklearn import dummy
+from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
 
 from . import csr
 
@@ -402,5 +405,78 @@ def deserialize_mlp_regressor(model_dict):
     model.n_layers_ = model_dict['n_layers_']
     model.n_outputs_ = model_dict['n_outputs_']
     model.out_activation_ = model_dict['out_activation_']
+
+    return model
+
+
+def serialize_xgboost_ranker(model):
+    serialized_model = {
+        'meta': 'xgboost-ranker',
+        'params': model.get_params()
+    }
+
+    model.save_model('model.json')
+    with open('model.json', 'r') as fh:
+        serialized_model['advanced-params'] = fh.read()
+    os.remove('model.json')
+
+    return serialized_model
+
+
+def deserialize_xgboost_ranker(model_dict):
+    model = XGBRanker(**model_dict['params'])
+
+    with open('model.json', 'w') as fh:
+        fh.write(model_dict['advanced-params'])
+    model.load_model('model.json')
+    os.remove('model.json')
+
+    return model
+
+def serialize_xgboost_regressor(model):
+    serialized_model = {
+        'meta': 'xgboost-regressor',
+        'params': model.get_params()
+    }
+
+    model.save_model('model.json')
+    with open('model.json', 'r') as fh:
+        serialized_model['advanced-params'] = fh.read()
+    os.remove('model.json')
+
+    return serialized_model
+
+
+def deserialize_xgboost_regressor(model_dict):
+    model = XGBRegressor(**model_dict['params'])
+
+    with open('model.json', 'w') as fh:
+        fh.write(model_dict['advanced-params'])
+    model.load_model('model.json')
+    os.remove('model.json')
+
+    return model
+
+def serialize_xgboost_rf_regressor(model):
+    serialized_model = {
+        'meta': 'xgboost-rf-regressor',
+        'params': model.get_params()
+    }
+
+    model.save_model('model.json')
+    with open('model.json', 'r') as fh:
+        serialized_model['advanced-params'] = fh.read()
+    os.remove('model.json')
+
+    return serialized_model
+
+
+def deserialize_xgboost_rf_regressor(model_dict):
+    model = XGBRFRegressor(**model_dict['params'])
+
+    with open('model.json', 'w') as fh:
+        fh.write(model_dict['advanced-params'])
+    model.load_model('model.json')
+    os.remove('model.json')
 
     return model

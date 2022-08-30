@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 import numpy as np
 import scipy as sp
 from sklearn import svm, discriminant_analysis, dummy
@@ -9,6 +11,7 @@ from sklearn.tree._tree import Tree
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, _gb_losses
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
+from xgboost import XGBClassifier, XGBRFClassifier
 
 from . import regression
 from . import csr
@@ -526,5 +529,55 @@ def deserialize_mlp(model_dict):
     model._label_binarizer = deserialize_label_binarizer(model_dict['_label_binarizer'])
 
     model.classes_ = np.array(model_dict['classes_'])
+
+    return model
+
+
+def serialize_xgboost_classifier(model):
+    serialized_model = {
+        'meta': 'xgboost-classifier',
+        'params': model.get_params()
+    }
+
+    model.save_model('model.json')
+    with open('model.json', 'r') as fh:
+        serialized_model['advanced-params'] = fh.read()
+    os.remove('model.json')
+
+    return serialized_model
+
+
+def deserialize_xgboost_classifier(model_dict):
+    model = XGBClassifier(**model_dict['params'])
+
+    with open('model.json', 'w') as fh:
+        fh.write(model_dict['advanced-params'])
+    model.load_model('model.json')
+    os.remove('model.json')
+
+    return model
+
+
+def serialize_xgboost_rf_classifier(model):
+    serialized_model = {
+        'meta': 'xgboost-rf-classifier',
+        'params': model.get_params()
+    }
+
+    model.save_model('model.json')
+    with open('model.json', 'r') as fh:
+        serialized_model['advanced-params'] = fh.read()
+    os.remove('model.json')
+
+    return serialized_model
+
+
+def deserialize_xgboost_rf_classifier(model_dict):
+    model = XGBRFClassifier(**model_dict['params'])
+
+    with open('model.json', 'w') as fh:
+        fh.write(model_dict['advanced-params'])
+    model.load_model('model.json')
+    os.remove('model.json')
 
     return model

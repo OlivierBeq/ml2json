@@ -17,6 +17,7 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              MiniBatchKMeans, MeanShift, OPTICS, SpectralClustering,
                              SpectralBiclustering, SpectralCoclustering)
 from sklearn.decomposition import PCA
+from xgboost import XGBRegressor, XGBClassifier, XGBRFRegressor, XGBRFClassifier, XGBRanker
 
 from . import classification as clf
 from . import regression as reg
@@ -57,6 +58,10 @@ def serialize_model(model):
         return clf.serialize_random_forest(model)
     elif isinstance(model, MLPClassifier):
         return clf.serialize_mlp(model)
+    elif isinstance(model, XGBClassifier):
+        return clf.serialize_xgboost_classifier(model)
+    elif isinstance(model, XGBRFClassifier):
+        return clf.serialize_xgboost_rf_classifier(model)
 
     # Regression
     elif isinstance(model, LinearRegression):
@@ -77,6 +82,12 @@ def serialize_model(model):
         return reg.serialize_random_forest_regressor(model)
     elif isinstance(model, MLPRegressor):
         return reg.serialize_mlp_regressor(model)
+    elif isinstance(model, XGBRanker):
+        return reg.serialize_xgboost_ranker(model)
+    elif isinstance(model, XGBRegressor):
+        return reg.serialize_xgboost_regressor(model)
+    elif isinstance(model, XGBRFRegressor):
+        return reg.serialize_xgboost_rf_regressor(model)
 
     # Clustering
     elif isinstance(model, FeatureAgglomeration):
@@ -151,6 +162,10 @@ def deserialize_model(model_dict):
         return clf.deserialize_random_forest(model_dict)
     elif model_dict['meta'] == 'mlp':
         return clf.deserialize_mlp(model_dict)
+    elif model_dict['meta'] == 'xgboost-classifier':
+        return clf.deserialize_xgboost_classifier(model_dict)
+    elif model_dict['meta'] == 'xgboost-rf-classifier':
+        return clf.deserialize_xgboost_rf_classifier(model_dict)
 
     # Regression
     elif model_dict['meta'] == 'linear-regression':
@@ -171,6 +186,12 @@ def deserialize_model(model_dict):
         return reg.deserialize_random_forest_regressor(model_dict)
     elif model_dict['meta'] == 'mlp-regression':
         return reg.deserialize_mlp_regressor(model_dict)
+    elif model_dict['meta'] == 'xgboost-ranker':
+        return reg.deserialize_xgboost_ranker(model_dict)
+    elif model_dict['meta'] == 'xgboost-regressor':
+        return reg.deserialize_xgboost_regressor(model_dict)
+    elif model_dict['meta'] == 'xgboost-rf-regressor':
+        return reg.deserialize_xgboost_rf_regressor(model_dict)
 
     # Clustering
     elif model_dict['meta'] == 'affinity-propagation':

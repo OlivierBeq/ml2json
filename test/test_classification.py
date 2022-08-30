@@ -4,7 +4,7 @@ import os
 import random
 import unittest
 
-from sklearn.datasets import make_classification
+from sklearn.datasets import make_classification, make_regression
 from sklearn.feature_extraction import FeatureHasher
 from sklearn import svm, discriminant_analysis
 from sklearn.linear_model import LogisticRegression, Perceptron
@@ -12,6 +12,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
+from xgboost import XGBClassifier, XGBRFClassifier
 
 import numpy as np
 from numpy import testing
@@ -204,4 +205,11 @@ class TestAPI(unittest.TestCase):
         model_name = 'mlp.json'
         self.check_model_json(MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1), model_name)
         self.check_sparse_model_json(MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1), model_name)
+
+    def test_xgboost_classifier(self):
+        self.check_model(XGBClassifier())
+
+    def test_xgboost_rf_classifier(self):
+        self.check_model(XGBRFClassifier())
+
 
