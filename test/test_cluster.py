@@ -139,3 +139,6 @@ class TestAPI(unittest.TestCase):
 
     def test_optics(self):
         self.check_fitpredict_model(OPTICS(), self.X)
+
+    def test_spectral_clustering(self):
+        self.check_fitpredict_model(SpectralClustering(random_state=1234), self.X)

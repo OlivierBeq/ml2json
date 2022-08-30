@@ -89,6 +89,8 @@ def serialize_model(model):
         return clus.serialize_kmeans(model)
     elif isinstance(model, OPTICS):
         return clus.serialize_optics(model)
+    elif isinstance(model, SpectralClustering):
+        return clus.serialize_spectral_clustering(model)
 
     # Decomposition
     elif isinstance(model, PCA):
@@ -171,6 +173,8 @@ def deserialize_model(model_dict):
         return clus.deserialize_kmeans(model_dict)
     elif model_dict['meta'] == 'optics':
         return clus.deserialize_optics(model_dict)
+    elif model_dict['meta'] == 'spectral-clustering':
+        return clus.deserialize_spectral_clustering(model_dict)
 
     # Decomposition
     elif model_dict['meta'] == 'pca':

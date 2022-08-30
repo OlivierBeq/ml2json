@@ -187,3 +187,31 @@ def deserialize_optics(model_dict):
         model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
+
+
+def serialize_spectral_clustering(model):
+    serialized_model = {
+        'meta': 'spectral-clustering',
+        'affinity_matrix_': model.affinity_matrix_.tolist(),
+        'labels_': model.labels_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params()
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+
+def deserialize_spectral_clustering(model_dict):
+    model = SpectralClustering(**model_dict['params'])
+
+    model.affinity_matrix_ = np.array(model_dict['affinity_matrix_'])
+    model.labels_ = np.array(model_dict['labels_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
