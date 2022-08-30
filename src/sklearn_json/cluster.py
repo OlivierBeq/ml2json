@@ -151,3 +151,8 @@ def deserialize_dbscan(model_dict):
         model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
