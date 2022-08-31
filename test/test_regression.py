@@ -4,7 +4,6 @@ import random
 import unittest
 
 import numpy as np
-from numpy import testing
 from sklearn.datasets import make_regression
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
@@ -14,6 +13,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
 from lightgbm import LGBMRegressor, LGBMRanker
+from catboost import CatBoostRegressor, CatBoostRanker, Pool
 
 from src import sklearn_json as skljson
 
@@ -43,7 +43,7 @@ class TestAPI(unittest.TestCase):
         expected_predictions = model.predict(self.X)
         actual_predictions = deserialized_model.predict(self.X)
 
-        testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
     def check_sparse_model(self, model):
         # Given
@@ -57,7 +57,7 @@ class TestAPI(unittest.TestCase):
         expected_predictions = model.predict(self.X_sparse)
         actual_predictions = deserialized_model.predict(self.X_sparse)
 
-        testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
     def test_linear_regression(self):
         self.check_model(LinearRegression())
@@ -107,7 +107,7 @@ class TestAPI(unittest.TestCase):
         expected_predictions = model.predict(self.X)
         actual_predictions = deserialized_model.predict(self.X)
 
-        testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
     def test_xgboost_ranker(self):
         self.check_ranking_model(XGBRanker())
@@ -123,3 +123,47 @@ class TestAPI(unittest.TestCase):
 
     def test_lightgbm_ranker(self):
         self.check_ranking_model(LGBMRanker(label_gain=[i for i in range(self.X.shape[0] + 1)]))
+
+    def check_catboost_model(self, model, abs=False):
+        # Given
+        if abs:
+            model.fit(np.absolute(self.X), self.y)
+        else:
+            model.fit(self.X, self.y)
+
+        pool = Pool(data=self.X, label=self.y, feature_names=list(range(self.X.shape[1])))
+
+        # When
+        serialized_model = skljson.to_dict(model, pool)
+        deserialized_model = skljson.from_dict(serialized_model)
+
+        # Then
+        expected_predictions = model.predict(self.X)
+        actual_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
+
+    def check_catboost_ranking_model(self, model, abs=False):
+        # Given
+        if abs:
+            model.fit(np.absolute(self.X), self.y)
+        else:
+            model.fit(self.X, self.y, group_id=[0] * 10 + [1] * (len(self.y) - 10))
+
+        pool = Pool(data=self.X, label=self.y, feature_names=list(range(self.X.shape[1])))
+
+        # When
+        serialized_model = skljson.to_dict(model, pool)
+        deserialized_model = skljson.from_dict(serialized_model)
+
+        # Then
+        expected_predictions = model.predict(self.X)
+        actual_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
+
+    def test_catboost_regressor(self):
+        self.check_catboost_model(CatBoostRegressor(allow_writing_files=False, verbose=False))
+
+    def test_catboost_ranker(self):
+        self.check_catboost_ranking_model(CatBoostRanker(allow_writing_files=False, verbose=False))

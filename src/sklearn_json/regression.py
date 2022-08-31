@@ -13,6 +13,7 @@ from sklearn.svm import SVR
 from sklearn import dummy
 from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
 from lightgbm import LGBMRegressor, LGBMRanker, Booster as LGBMBooster
+from catboost import CatBoostRegressor, CatBoostRanker
 
 from . import csr
 
@@ -567,5 +568,55 @@ def deserialize_lightgbm_ranker(model_dict):
     params['_classes'] = model_dict['_classes']
     params['_n_classes'] = model_dict['_n_classes']
     model = LGBMRanker().set_params(**params)
+
+    return model
+
+
+def serialize_catboost_regressor(model, catboost_data):
+    serialized_model = {
+        'meta': 'catboost-regressor',
+        'params': model.get_params()
+    }
+
+    model.save_model('model.json', format='json', pool=catboost_data)
+    with open('model.json', 'r') as fh:
+        serialized_model['advanced-params'] = fh.read()
+    # os.remove('model.json')
+
+    return serialized_model
+
+
+def deserialize_catboost_regressor(model_dict):
+    model = CatBoostRegressor(**model_dict['params'])
+
+    with open('model.json', 'w') as fh:
+        fh.write(model_dict['advanced-params'])
+    model.load_model('model.json', format='json')
+    os.remove('model.json')
+
+    return model
+
+
+def serialize_catboost_ranker(model: CatBoostRanker, catboost_data):
+    serialized_model = {
+        'meta': 'catboost-ranker',
+        'params': model.get_params()
+    }
+
+    model.save_model('model.json', format='json', pool=catboost_data)
+    with open('model.json', 'r') as fh:
+        serialized_model['advanced-params'] = fh.read()
+    os.remove('model.json')
+
+    return serialized_model
+
+
+def deserialize_catboost_ranker(model_dict):
+    model = CatBoostRanker(**model_dict['params'])
+
+    with open('model.json', 'w') as fh:
+        fh.write(model_dict['advanced-params'])
+    model.load_model('model.json', format='json')
+    os.remove('model.json')
 
     return model

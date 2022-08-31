@@ -2,7 +2,6 @@
 
 import os
 
-import lightgbm
 import numpy as np
 import scipy as sp
 from sklearn import svm, discriminant_analysis, dummy
@@ -14,6 +13,7 @@ from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, Compleme
 from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier, XGBRFClassifier
 from lightgbm import LGBMClassifier, Booster as LGBMBooster
+from catboost import CatBoostClassifier
 
 from . import regression
 from . import csr
@@ -628,5 +628,30 @@ def deserialize_lightgbm_classifier(model_dict):
     params['_n_classes'] = model_dict['_n_classes']
     params['_le'] = deserialize_label_encoder(model_dict['_le'])
     model = LGBMClassifier().set_params(**params)
+
+    return model
+
+
+def serialize_catboost_classifier(model, catboost_data):
+    serialized_model = {
+        'meta': 'catboost-classifier',
+        'params': model.get_params()
+    }
+
+    model.save_model('model.json', format='json', pool=catboost_data)
+    with open('model.json', 'r') as fh:
+        serialized_model['advanced-params'] = fh.read()
+    os.remove('model.json')
+
+    return serialized_model
+
+
+def deserialize_catboost_classifier(model_dict):
+    model = CatBoostClassifier(**model_dict['params'])
+
+    with open('model.json', 'w') as fh:
+        fh.write(model_dict['advanced-params'])
+    model.load_model('model.json', format='json')
+    os.remove('model.json')
 
     return model

@@ -19,6 +19,7 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
 from sklearn.decomposition import PCA
 from xgboost import XGBRegressor, XGBClassifier, XGBRFRegressor, XGBRFClassifier, XGBRanker
 from lightgbm import LGBMClassifier, LGBMRegressor, LGBMRanker
+from catboost import CatBoostClassifier, CatBoostRegressor, CatBoostRanker, Pool
 
 from . import classification as clf
 from . import regression as reg
@@ -31,7 +32,7 @@ from . import decomposition as dec
 __version__ = '0.1.4'
 
 
-def serialize_model(model):
+def serialize_model(model, catboost_data: Pool = None):
     # Classification
     if isinstance(model, LogisticRegression):
         return clf.serialize_logistic_regression(model)
@@ -65,6 +66,8 @@ def serialize_model(model):
         return clf.serialize_xgboost_rf_classifier(model)
     elif isinstance(model, LGBMClassifier):
         return clf.serialize_lightgbm_classifier(model)
+    elif isinstance(model, CatBoostClassifier):
+        return clf.serialize_catboost_classifier(model, catboost_data)
 
     # Regression
     elif isinstance(model, LinearRegression):
@@ -95,6 +98,10 @@ def serialize_model(model):
         return reg.serialize_lightgbm_regressor(model)
     elif isinstance(model, LGBMRanker):
         return reg.serialize_lightgbm_ranker(model)
+    elif isinstance(model, CatBoostRegressor):
+        return reg.serialize_catboost_regressor(model, catboost_data)
+    elif isinstance(model, CatBoostRanker):
+        return reg.serialize_catboost_ranker(model, catboost_data)
 
     # Clustering
     elif isinstance(model, FeatureAgglomeration):
@@ -179,6 +186,8 @@ def deserialize_model(model_dict):
         return clf.deserialize_xgboost_rf_classifier(model_dict)
     elif model_dict['meta'] == 'lightgbm-classifier':
         return clf.deserialize_lightgbm_classifier(model_dict)
+    elif model_dict['meta'] == 'catboost-classifier':
+        return clf.deserialize_catboost_classifier(model_dict)
 
     # Regression
     elif model_dict['meta'] == 'linear-regression':
@@ -209,6 +218,10 @@ def deserialize_model(model_dict):
         return reg.deserialize_lightgbm_regressor(model_dict)
     elif model_dict['meta'] == 'lightgbm-ranker':
         return reg.deserialize_lightgbm_ranker(model_dict)
+    elif model_dict['meta'] == 'catboost-regressor':
+        return reg.deserialize_catboost_regressor(model_dict)
+    elif model_dict['meta'] == 'catboost-ranker':
+        return reg.deserialize_catboost_ranker(model_dict)
 
     # Clustering
     elif model_dict['meta'] == 'affinity-propagation':
@@ -259,17 +272,17 @@ def deserialize_model(model_dict):
         raise ModellNotSupported('Model type not supported or corrupt JSON file.')
 
 
-def to_dict(model):
-    return serialize_model(model)
+def to_dict(model, catboost_data: Pool = None):
+    return serialize_model(model, catboost_data)
 
 
 def from_dict(model_dict):
     return deserialize_model(model_dict)
 
 
-def to_json(model, model_name):
+def to_json(model, model_name, catboost_data: Pool = None):
     with open(model_name, 'w') as model_json:
-        json.dump(serialize_model(model), model_json)
+        json.dump(serialize_model(model, catboost_data), model_json)
 
 
 def from_json(model_name):

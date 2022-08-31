@@ -4,7 +4,9 @@ import os
 import random
 import unittest
 
-from sklearn.datasets import make_classification, make_regression
+import numpy as np
+
+from sklearn.datasets import make_classification
 from sklearn.feature_extraction import FeatureHasher
 from sklearn import svm, discriminant_analysis
 from sklearn.linear_model import LogisticRegression, Perceptron
@@ -14,9 +16,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier, XGBRFClassifier
 from lightgbm import LGBMClassifier
-
-import numpy as np
-from numpy import testing
+from catboost import CatBoostClassifier, Pool
 
 from src import sklearn_json as skljson
 
@@ -48,7 +48,7 @@ class TestAPI(unittest.TestCase):
         expected_predictions = model.predict(self.X)
         actual_predictions = deserialized_model.predict(self.X)
 
-        testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
     def check_sparse_model(self, model, abs=False):
         # Given
@@ -65,7 +65,7 @@ class TestAPI(unittest.TestCase):
         expected_predictions = model.predict(self.X)
         actual_predictions = deserialized_model.predict(self.X)
 
-        testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
     def check_model_json(self, model, model_name, abs=False):
         # Given
@@ -83,7 +83,7 @@ class TestAPI(unittest.TestCase):
         expected_predictions = model.predict(self.X)
         actual_predictions = deserialized_model.predict(self.X)
 
-        testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
     def check_sparse_model_json(self, model, model_name, abs=False):
         # Given
@@ -101,7 +101,7 @@ class TestAPI(unittest.TestCase):
         expected_predictions = model.predict(self.X)
         actual_predictions = deserialized_model.predict(self.X)
 
-        testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
     def test_bernoulli_nb(self):
         self.check_model(BernoulliNB())
@@ -215,3 +215,26 @@ class TestAPI(unittest.TestCase):
 
     def test_lightgbm_classifier(self):
         self.check_model(LGBMClassifier())
+
+    def check_catboost_model(self, model, abs=False):
+        # Given
+        if abs:
+            model.fit(np.absolute(self.X), self.y)
+        else:
+            model.fit(self.X, self.y)
+
+        pool = Pool(data=self.X, label=self.y, feature_names=list(range(self.X.shape[0])))
+
+        # When
+        serialized_model = skljson.to_dict(model, pool)
+        deserialized_model = skljson.from_dict(serialized_model)
+
+        # Then
+        expected_predictions = model.predict(self.X)
+        actual_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+
+    def test_catboost_classifier(self):
+        self.check_model(CatBoostClassifier(allow_writing_files=False, verbose=False))
