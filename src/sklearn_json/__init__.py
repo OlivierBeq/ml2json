@@ -20,6 +20,8 @@ from sklearn.decomposition import PCA
 from xgboost import XGBRegressor, XGBClassifier, XGBRFRegressor, XGBRFClassifier, XGBRanker
 from lightgbm import LGBMClassifier, LGBMRegressor, LGBMRanker
 from catboost import CatBoostClassifier, CatBoostRegressor, CatBoostRanker, Pool
+from kmodes.kmodes import KModes
+from kmodes.kprototypes import KPrototypes
 
 from . import classification as clf
 from . import regression as reg
@@ -126,6 +128,10 @@ def serialize_model(model, catboost_data: Pool = None):
         return clus.serialize_spectral_biclustering(model)
     elif isinstance(model, SpectralCoclustering):
         return clus.serialize_spectral_coclustering(model)
+    elif isinstance(model, KPrototypes):
+        return clus.serialize_kprototypes(model)
+    elif isinstance(model, KModes):
+        return clus.serialize_kmodes(model)
 
     # Decomposition
     elif isinstance(model, PCA):
@@ -246,6 +252,10 @@ def deserialize_model(model_dict):
         return clus.deserialize_spectral_biclustering(model_dict)
     elif model_dict['meta'] == 'spectral-coclustering':
         return clus.deserialize_spectral_coclustering(model_dict)
+    elif model_dict['meta'] == 'kmodes':
+        return clus.deserialize_kmodes(model_dict)
+    elif model_dict['meta'] == 'kprototypes':
+        return clus.deserialize_kprototypes(model_dict)
 
     # Decomposition
     elif model_dict['meta'] == 'pca':

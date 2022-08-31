@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import importlib
 import inspect
 
@@ -8,6 +9,8 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              MiniBatchKMeans, MeanShift, OPTICS, SpectralClustering,
                              SpectralBiclustering, SpectralCoclustering)
 from sklearn.cluster._birch import _CFNode
+from kmodes.kmodes import KModes
+from kmodes.kprototypes import KPrototypes
 
 
 def serialize_kmeans(model):
@@ -412,5 +415,85 @@ def deserialize_spectral_coclustering(model_dict):
         model.feature_names_in = np.array(model_dict['feature_names_in'])
     if 'columns_labels_' in model_dict.keys():
         model.columns_labels_ = np.array(model_dict['columns_labels_'])
+
+    return model
+
+
+def serialize_kmodes(model):
+    params = model.get_params()
+    params['cat_dissim'] = (inspect.getmodule(params['cat_dissim']).__name__,
+                            params['cat_dissim'].__name__)
+
+    serialized_model = {
+        'meta': 'kmodes',
+        '_enc_cluster_centroids': model._enc_cluster_centroids.astype(int).tolist(),
+        'labels_': model.labels_.tolist(),
+        'cost_': float(model.cost_),
+        'n_iter_': model.n_iter_,
+        'epoch_costs_': [float(x) for x in model.epoch_costs_],
+        '_enc_map': model._enc_map,
+        'params': params
+    }
+
+    return serialized_model
+
+
+def deserialize_kmodes(model_dict):
+    params = model_dict['params']
+    params['cat_dissim'] = getattr(importlib.import_module(params['cat_dissim'][0]),
+                                   params['cat_dissim'][1])
+
+    model = KModes(**params)
+
+    model._enc_cluster_centroids = np.array(model_dict['_enc_cluster_centroids'], dtype=np.int32)
+    model.labels_ = np.array(model_dict['labels_'])
+    model.cost_ = model_dict['cost_']
+    model.n_iter_ = model_dict['n_iter_']
+    model.epoch_costs_ = model_dict['epoch_costs_']
+    model._enc_map = model_dict['_enc_map']
+
+    return model
+
+
+def serialize_kprototypes(model):
+    params = model.get_params()
+
+    params['cat_dissim'] = (inspect.getmodule(params['cat_dissim']).__name__,
+                            params['cat_dissim'].__name__)
+    params['num_dissim'] = (inspect.getmodule(params['num_dissim']).__name__,
+                            params['num_dissim'].__name__)
+
+    params['gamma'] = float(params['gamma'])
+
+    serialized_model = {
+        'meta': 'kprototypes',
+        '_enc_cluster_centroids': np.array(model._enc_cluster_centroids).astype(float).tolist(),
+        'labels_': model.labels_.tolist(),
+        'cost_': float(model.cost_),
+        'n_iter_': model.n_iter_,
+        'epoch_costs_': [float(x) for x in model.epoch_costs_],
+        '_enc_map': [{int(key): value for key, value in subdict.items()} for subdict in model._enc_map],
+        'params': params
+    }
+
+    return serialized_model
+
+
+def deserialize_kprototypes(model_dict):
+    params = model_dict['params']
+    params['cat_dissim'] = getattr(importlib.import_module(params['cat_dissim'][0]),
+                                   params['cat_dissim'][1])
+    params['num_dissim'] = getattr(importlib.import_module(params['num_dissim'][0]),
+                                   params['num_dissim'][1])
+    params['gamma'] = np.float64(params['gamma'])
+
+    model = KPrototypes(**params)
+
+    model._enc_cluster_centroids = np.array(model_dict['_enc_cluster_centroids'])
+    model.labels_ = np.array(model_dict['labels_'])
+    model.cost_ = model_dict['cost_']
+    model.n_iter_ = model_dict['n_iter_']
+    model.epoch_costs_ = model_dict['epoch_costs_']
+    model._enc_map = [{np.int32(key): value for key, value in subdict.items()} for subdict in model_dict['_enc_map']]
 
     return model

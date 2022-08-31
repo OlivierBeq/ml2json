@@ -10,6 +10,8 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              MiniBatchKMeans, MeanShift, OPTICS, SpectralClustering,
                              SpectralBiclustering, SpectralCoclustering)
+from kmodes.kmodes import KModes
+from kmodes.kprototypes import KPrototypes
 
 from src import sklearn_json as skljson
 
@@ -23,6 +25,7 @@ class TestAPI(unittest.TestCase):
                                          centers=centers,
                                          cluster_std=0.7,
                                          random_state=1234)
+
         self.simple_X = np.array([[1, 2], [1, 4], [1, 0], [4, 2], [4, 4], [4, 0]])
 
     def check_transform_model(self, model, data):
@@ -89,7 +92,7 @@ class TestAPI(unittest.TestCase):
                 else:
                     print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
 
-            actual_fp = deserialized_model.fit_predict(data)
+            deserialized_model.fit(data)
             actual_p = deserialized_model.predict(data)
 
             np.testing.assert_array_equal(expected_p, actual_p)
@@ -215,3 +218,39 @@ class TestAPI(unittest.TestCase):
         n_clusters = 5
         self.check_spectral_model(SpectralCoclustering(n_clusters=n_clusters, svd_method="arpack", random_state=1234),
                                   n_clusters)
+
+    def test_kmodes(self):
+        self.check_fitpredict_model(KModes(), self.X)
+
+    def check_kprototype_model(self, model, data):
+
+        rng = np.random.default_rng(1234)
+        cat_data = rng.permuted(data.astype(int))
+        all_data = np.concatenate((data, cat_data), axis=1)
+
+        cat_indices = [i + data.shape[1] for i in range(cat_data.shape[1])]
+
+        model.fit(all_data, categorical=cat_indices)
+        expected_t = model.predict(all_data, categorical=cat_indices)
+
+        serialized_dict_model = skljson.to_dict(model)
+        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
+
+        skljson.to_json(model, 'model.json')
+        deserialized_json_model = skljson.from_json('model.json')
+        os.remove('model.json')
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+
+            for key in sorted(model.__dict__.keys()):
+                if isinstance(model.__dict__[key], np.ndarray):
+                    print(key, (model.__dict__[key] == deserialized_dict_model.__dict__[key]).all())
+                else:
+                    print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
+
+            actual_t = deserialized_model.predict(all_data, categorical=cat_indices)
+
+            np.testing.assert_array_almost_equal(expected_t, actual_t)
+
+    def test_kprototypes(self):
+        self.check_kprototype_model(KPrototypes(n_clusters=2, random_state=1234), self.X)
