@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from sklearn.feature_extraction import DictVectorizer
 import numpy as np
+from sklearn.feature_extraction import DictVectorizer
 
 
 def serialize_dict_vectorizer(model):
@@ -11,8 +11,8 @@ def serialize_dict_vectorizer(model):
         'separator': model.separator,
         'sparse': model.sparse,
         'sort': model.sort,
-        'feature_names': model.get_feature_names_out(),
-        'vocabulary': model.vocabulary_,
+        'feature_names': model.feature_names_,
+        'vocabulary': model.vocabulary_
     }
 
     return serialized_model

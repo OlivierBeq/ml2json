@@ -28,16 +28,16 @@ class TestAPI(unittest.TestCase):
 
         self.simple_X = np.array([[1, 2], [1, 4], [1, 0], [4, 2], [4, 4], [4, 0]])
 
-    def check_transform_model(self, model, data):
+    def check_transform_model(self, model, model_name, data):
         model.fit(data)
         expected_t = model.transform(data)
 
         serialized_dict_model = skljson.to_dict(model)
         deserialized_dict_model = skljson.from_dict(serialized_dict_model)
 
-        skljson.to_json(model, 'model.json')
-        deserialized_json_model = skljson.from_json('model.json')
-        os.remove('model.json')
+        skljson.to_json(model, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
 
@@ -51,15 +51,15 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_almost_equal(expected_t, actual_t)
 
-    def check_fittransform_model(self, model, data):
+    def check_fittransform_model(self, model, model_name, data):
         expected_ft = model.fit_transform(data)
 
         serialized_dict_model = skljson.to_dict(model)
         deserialized_dict_model = skljson.from_dict(serialized_dict_model)
 
-        skljson.to_json(model, 'model.json')
-        deserialized_json_model = skljson.from_json('model.json')
-        os.remove('model.json')
+        skljson.to_json(model, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
 
@@ -73,16 +73,16 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_almost_equal(expected_ft, actual_ft)
 
-    def check_predict_model(self, model, data):
+    def check_predict_model(self, model, model_name, data):
         model.fit(data)
         expected_p = model.predict(data)
 
         serialized_dict_model = skljson.to_dict(model)
         deserialized_dict_model = skljson.from_dict(serialized_dict_model)
 
-        skljson.to_json(model, 'model.json')
-        deserialized_json_model = skljson.from_json('model.json')
-        os.remove('model.json')
+        skljson.to_json(model, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
 
@@ -97,15 +97,15 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_equal(expected_p, actual_p)
 
-    def check_fitpredict_model(self, model, data):
+    def check_fitpredict_model(self, model, model_name, data):
         expected_fp = model.fit_predict(data)
 
         serialized_dict_model = skljson.to_dict(model)
         deserialized_dict_model = skljson.from_dict(serialized_dict_model)
 
-        skljson.to_json(model, 'model.json')
-        deserialized_json_model = skljson.from_json('model.json')
-        os.remove('model.json')
+        skljson.to_json(model, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
 
@@ -126,10 +126,10 @@ class TestAPI(unittest.TestCase):
                       KMeans(n_clusters=self.n_centers, init='random',
                              random_state=1234, n_init=100, max_iter=10000,
                              verbose=0, tol=1e-999)]:
-            self.check_transform_model(model, self.X)
-            self.check_fittransform_model(model, self.X)
-            self.check_predict_model(model, self.X)
-            self.check_fitpredict_model(model, self.X)
+            self.check_transform_model(model, 'kmeans.json', self.X)
+            self.check_fittransform_model(model, 'kmeans.json', self.X)
+            self.check_predict_model(model, 'kmeans.json', self.X)
+            self.check_fitpredict_model(model, 'kmeans.json', self.X)
 
     def test_minibatch_kmeans(self):
         for model in [MiniBatchKMeans(n_clusters=self.n_centers, init='k-means++',
@@ -138,37 +138,36 @@ class TestAPI(unittest.TestCase):
                       MiniBatchKMeans(n_clusters=self.n_centers, init='random',
                              random_state=1234, n_init=100, max_iter=10000,
                              verbose=0, tol=1e-999)]:
-            self.check_transform_model(model, self.X)
-            self.check_fittransform_model(model, self.X)
-            self.check_predict_model(model, self.X)
-            self.check_fitpredict_model(model, self.X)
+            self.check_transform_model(model, 'minibatch-kmeans.json', self.X)
+            self.check_fittransform_model(model, 'minibatch-kmeans.json', self.X)
+            self.check_predict_model(model, 'minibatch-kmeans.json', self.X)
+            self.check_fitpredict_model(model, 'minibatch-kmeans.json', self.X)
 
     def test_affinity_propagation(self):
-        self.check_predict_model(AffinityPropagation(), self.simple_X)
-        self.check_fitpredict_model(AffinityPropagation(), self.simple_X)
+        self.check_predict_model(AffinityPropagation(), 'affinity-propagation.json', self.simple_X)
+        self.check_fitpredict_model(AffinityPropagation(), 'affinity-propagation.json', self.simple_X)
 
     def test_agglomerative_clustering(self):
-        self.check_fitpredict_model(AgglomerativeClustering(), self.simple_X)
+        self.check_fitpredict_model(AgglomerativeClustering(), 'agglomerative-clustering.json', self.simple_X)
 
     def test_dbscan(self):
-        self.check_fitpredict_model(DBSCAN(), self.X)
+        self.check_fitpredict_model(DBSCAN(), 'dbscan.json', self.X)
 
     def test_optics(self):
-        self.check_fitpredict_model(OPTICS(), self.simple_X)
+        self.check_fitpredict_model(OPTICS(), 'optics.json', self.simple_X)
 
     def test_spectral_clustering(self):
-        self.check_fitpredict_model(SpectralClustering(random_state=1234, n_clusters=2), self.simple_X)
+        self.check_fitpredict_model(SpectralClustering(random_state=1234, n_clusters=2), 'spectral.json', self.simple_X)
 
     def test_feature_agglomeration(self):
-        self.check_transform_model(FeatureAgglomeration(pooling_func=np.mean), self.X)
-        self.check_fittransform_model(FeatureAgglomeration(pooling_func=np.mean), self.X)
+        self.check_transform_model(FeatureAgglomeration(pooling_func=np.mean), 'feature-agg.json', self.X)
+        self.check_fittransform_model(FeatureAgglomeration(pooling_func=np.mean), 'feature-agg.json', self.X)
 
     def test_meanshift(self):
-        self.check_predict_model(MeanShift(), self.simple_X)
-        self.check_fitpredict_model(MeanShift(), self.simple_X)
+        self.check_predict_model(MeanShift(), 'meanshift.json', self.simple_X)
+        self.check_fitpredict_model(MeanShift(), 'meanshift.json', self.simple_X)
 
-    def check_spectral_model(self, model, n_clusters):
-        n_clusters = (4, 3)
+    def check_spectral_model(self, model, model_name, n_clusters):
         data, rows, columns = make_checkerboard(shape=(300, 300), n_clusters=n_clusters,
                                                 noise=10, shuffle=False, random_state=1234)
         rng = np.random.RandomState(1234)
@@ -187,9 +186,9 @@ class TestAPI(unittest.TestCase):
         serialized_dict_model = skljson.to_dict(model)
         deserialized_dict_model = skljson.from_dict(serialized_dict_model)
 
-        skljson.to_json(model, 'model.json')
-        deserialized_json_model = skljson.from_json('model.json')
-        os.remove('model.json')
+        skljson.to_json(model, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
             actual_indices = [deserialized_model.get_indices(i) for i in range(len(deserialized_model.biclusters_))]
@@ -212,17 +211,17 @@ class TestAPI(unittest.TestCase):
     def test_spectral_biclustering(self):
         n_clusters = (4, 3)
         self.check_spectral_model(SpectralBiclustering(n_clusters=n_clusters, method="log", random_state=1234),
-                                  n_clusters)
+                                  'spectral-biclus.json', n_clusters)
 
     def test_spectral_coclustering(self):
         n_clusters = 5
         self.check_spectral_model(SpectralCoclustering(n_clusters=n_clusters, svd_method="arpack", random_state=1234),
-                                  n_clusters)
+                                  'spectral-coclus.json', n_clusters)
 
     def test_kmodes(self):
-        self.check_fitpredict_model(KModes(), self.X)
+        self.check_fitpredict_model(KModes(), 'kmodes.json', self.X)
 
-    def check_kprototype_model(self, model, data):
+    def check_kprototype_model(self, model, model_name, data):
 
         rng = np.random.default_rng(1234)
         cat_data = rng.permuted(data.astype(int))
@@ -236,9 +235,9 @@ class TestAPI(unittest.TestCase):
         serialized_dict_model = skljson.to_dict(model)
         deserialized_dict_model = skljson.from_dict(serialized_dict_model)
 
-        skljson.to_json(model, 'model.json')
-        deserialized_json_model = skljson.from_json('model.json')
-        os.remove('model.json')
+        skljson.to_json(model, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
 
@@ -253,4 +252,4 @@ class TestAPI(unittest.TestCase):
             np.testing.assert_array_almost_equal(expected_t, actual_t)
 
     def test_kprototypes(self):
-        self.check_kprototype_model(KPrototypes(n_clusters=2, random_state=1234), self.X)
+        self.check_kprototype_model(KPrototypes(n_clusters=2, random_state=1234), 'kproto.json', self.X)

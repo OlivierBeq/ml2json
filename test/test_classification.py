@@ -33,7 +33,7 @@ class TestAPI(unittest.TestCase):
         self.y_sparse = [random.randint(0, 2) for i in range(0, 100)]
         self.X_sparse = feature_hasher.transform(features)
 
-    def check_model(self, model, abs=False):
+    def check_model(self, model, model_name, abs=False):
         # Given
         if abs:
             model.fit(np.absolute(self.X), self.y)
@@ -50,7 +50,17 @@ class TestAPI(unittest.TestCase):
 
         np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
-    def check_sparse_model(self, model, abs=False):
+        # When
+        skljson.to_json(model, model_name)
+        deserialized_model = skljson.from_json(model_name)
+        os.remove(model_name)
+
+        # JSON
+        actual_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+    def check_sparse_model(self, model, model_name, abs=False):
         # Given
         if abs:
             model.fit(np.absolute(self.X_sparse), self.y_sparse)
@@ -67,156 +77,78 @@ class TestAPI(unittest.TestCase):
 
         np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
-    def check_model_json(self, model, model_name, abs=False):
-        # Given
-        if abs:
-            model.fit(np.absolute(self.X), self.y)
-        else:
-            model.fit(self.X, self.y)
-
-        # When
+        # JSON
         skljson.to_json(model, model_name)
         deserialized_model = skljson.from_json(model_name)
         os.remove(model_name)
 
         # Then
-        expected_predictions = model.predict(self.X)
-        actual_predictions = deserialized_model.predict(self.X)
-
-        np.testing.assert_array_equal(expected_predictions, actual_predictions)
-
-    def check_sparse_model_json(self, model, model_name, abs=False):
-        # Given
-        if abs:
-            model.fit(np.absolute(self.X_sparse), self.y_sparse)
-        else:
-            model.fit(self.X_sparse, self.y_sparse)
-
-        # When
-        skljson.to_json(model, model_name)
-        deserialized_model = skljson.from_json(model_name)
-        os.remove(model_name)
-
-        # Then
-        expected_predictions = model.predict(self.X)
         actual_predictions = deserialized_model.predict(self.X)
 
         np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
     def test_bernoulli_nb(self):
-        self.check_model(BernoulliNB())
-        self.check_sparse_model(BernoulliNB())
-
-        model_name = 'bernoulli-nb.json'
-        self.check_model_json(BernoulliNB(), model_name)
-        self.check_sparse_model_json(BernoulliNB(), model_name)
+        self.check_model(BernoulliNB(), 'bernoulli-nb.json')
+        self.check_sparse_model(BernoulliNB(), 'bernoulli-nb.json')
 
     def test_guassian_nb(self):
-        self.check_model(GaussianNB())
-
-        model_name = 'gaussian-nb.json'
-        self.check_model_json(GaussianNB(), model_name)
-
+        self.check_model(GaussianNB(), 'gaussian-nb.json')
         # No sklearn implementation for sparse matrix
 
     def test_multinomial_nb(self):
-        self.check_model(MultinomialNB(), abs=True)
-        self.check_sparse_model(MultinomialNB(), abs=True)
-
-        model_name = 'multinomial-nb.json'
-        self.check_model_json(MultinomialNB(), model_name, abs=True)
-        self.check_sparse_model_json(MultinomialNB(), model_name, abs=True)
+        self.check_model(MultinomialNB(), 'multinomial-nb.json', abs=True)
+        self.check_sparse_model(MultinomialNB(), 'multinomial-nb.json', abs=True)
 
     def test_complement_nb(self):
-        self.check_model(ComplementNB(), abs=True)
-
-        model_name = 'complement-nb.json'
-        self.check_model_json(ComplementNB(), model_name, abs=True)
-
+        self.check_model(ComplementNB(), 'complement-nb.json', abs=True)
         # No sklearn implementation for sparse matrix
 
     def test_logistic_regression(self):
-        self.check_model(LogisticRegression())
-        self.check_sparse_model(LogisticRegression())
-
-        model_name = 'lr.json'
-        self.check_model_json(LogisticRegression(), model_name)
-        self.check_sparse_model_json(LogisticRegression(), model_name)
+        self.check_model(LogisticRegression(), 'lr.json')
+        self.check_sparse_model(LogisticRegression(), 'lr.json')
 
     def test_lda(self):
-        self.check_model(discriminant_analysis.LinearDiscriminantAnalysis())
-
-        model_name = 'lda.json'
-        self.check_model_json(discriminant_analysis.LinearDiscriminantAnalysis(), model_name)
-
+        self.check_model(discriminant_analysis.LinearDiscriminantAnalysis(), 'lda.json')
         # No sklearn implementation for sparse matrix
 
     def test_qda(self):
-        self.check_model(discriminant_analysis.QuadraticDiscriminantAnalysis())
-
-        model_name = 'qda.json'
-        self.check_model_json(discriminant_analysis.QuadraticDiscriminantAnalysis(), model_name)
-
+        self.check_model(discriminant_analysis.QuadraticDiscriminantAnalysis(), 'qda.json')
         # No sklearn implementation for sparse matrix
 
     def test_svm(self):
-        self.check_model(svm.SVC(gamma=0.001, C=100., kernel='linear'))
-        self.check_sparse_model(svm.SVC(gamma=0.001, C=100., kernel='linear'))
-
-        model_name = 'svm.json'
-        self.check_model_json(svm.SVC(), model_name)
-        self.check_sparse_model_json(svm.SVC(), model_name)
+        self.check_model(svm.SVC(gamma=0.001, C=100., kernel='linear'), 'svm.json')
+        self.check_sparse_model(svm.SVC(gamma=0.001, C=100., kernel='linear'), 'svm.json')
 
     def test_decision_tree(self):
-        self.check_model(DecisionTreeClassifier())
-        self.check_sparse_model(DecisionTreeClassifier())
-
-        model_name = 'dt.json'
-        self.check_model_json(DecisionTreeClassifier(), model_name)
-        self.check_sparse_model_json(DecisionTreeClassifier(), model_name)
+        self.check_model(DecisionTreeClassifier(), 'dt.json')
+        self.check_sparse_model(DecisionTreeClassifier(), 'dt.json')
 
     def test_gradient_boosting(self):
-        self.check_model(GradientBoostingClassifier(n_estimators=25, learning_rate=1.0))
-        self.check_sparse_model(GradientBoostingClassifier(n_estimators=25, learning_rate=1.0))
-
-        model_name = 'gb.json'
-        self.check_model_json(GradientBoostingClassifier(), model_name)
-        self.check_sparse_model_json(GradientBoostingClassifier(), model_name)
+        self.check_model(GradientBoostingClassifier(n_estimators=25, learning_rate=1.0), 'gb.json')
+        self.check_sparse_model(GradientBoostingClassifier(n_estimators=25, learning_rate=1.0), 'gb.json')
 
     def test_random_forest(self):
-        self.check_model(RandomForestClassifier(n_estimators=10, max_depth=5, random_state=0))
-        self.check_sparse_model(RandomForestClassifier(n_estimators=10, max_depth=5, random_state=0))
-
-        model_name = 'rf.json'
-        self.check_model_json(RandomForestClassifier(), model_name)
-        self.check_sparse_model_json(RandomForestClassifier(), model_name)
+        self.check_model(RandomForestClassifier(n_estimators=10, max_depth=5, random_state=0), 'rf.json')
+        self.check_sparse_model(RandomForestClassifier(n_estimators=10, max_depth=5, random_state=0), 'rf.json')
 
     def test_perceptron(self):
-        self.check_model(Perceptron())
-        self.check_sparse_model(Perceptron())
-
-        model_name = 'perceptron.json'
-        self.check_model_json(Perceptron(), model_name)
-        self.check_sparse_model_json(Perceptron(), model_name)
+        self.check_model(Perceptron(), 'perceptron.json')
+        self.check_sparse_model(Perceptron(), 'perceptron.json')
 
     def test_mlp(self):
-        self.check_model(MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1))
-        self.check_sparse_model(MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1))
-
-        model_name = 'mlp.json'
-        self.check_model_json(MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1), model_name)
-        self.check_sparse_model_json(MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1), model_name)
+        self.check_model(MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1), 'mlp.json')
+        self.check_sparse_model(MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1), 'mlp.json')
 
     def test_xgboost_classifier(self):
-        self.check_model(XGBClassifier())
+        self.check_model(XGBClassifier(), 'xgb_classifier.json')
 
     def test_xgboost_rf_classifier(self):
-        self.check_model(XGBRFClassifier())
+        self.check_model(XGBRFClassifier(), 'xgb_rf_classifier.json')
 
     def test_lightgbm_classifier(self):
-        self.check_model(LGBMClassifier())
+        self.check_model(LGBMClassifier(), 'lightgbm_classifier.json')
 
-    def check_catboost_model(self, model, abs=False):
+    def check_catboost_model(self, model, model_name, abs=False):
         # Given
         if abs:
             model.fit(np.absolute(self.X), self.y)
@@ -235,6 +167,14 @@ class TestAPI(unittest.TestCase):
 
         np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
+        # JSON
+        skljson.to_json(model, model_name)
+        deserialized_model = skljson.from_json(model_name)
+        os.remove(model_name)
+        json_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, json_predictions)
+
 
     def test_catboost_classifier(self):
-        self.check_model(CatBoostClassifier(allow_writing_files=False, verbose=False))
+        self.check_model(CatBoostClassifier(allow_writing_files=False, verbose=False), 'catboost-cls.json')

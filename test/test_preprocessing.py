@@ -37,7 +37,7 @@ class TestAPI(unittest.TestCase):
         self.X = fetch_california_housing()['data']
 
 
-    def check_model(self, model, data, labels):
+    def check_model(self, model, model_name, data, labels):
         expected_ft = model.fit_transform(data)
         expected_t = model.transform(data)
         expected_it = model.inverse_transform(labels)
@@ -45,9 +45,9 @@ class TestAPI(unittest.TestCase):
         serialized_dict_model = skljson.to_dict(model)
         deserialized_dict_model = skljson.from_dict(serialized_dict_model)
 
-        skljson.to_json(model, 'model.json')
-        deserialized_json_model = skljson.from_json('model.json')
-        os.remove('model.json')
+        skljson.to_json(model, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
             actual_t = deserialized_model.transform(data)
@@ -74,17 +74,17 @@ class TestAPI(unittest.TestCase):
                     self.assertEqual(expected_it, actual_it)
 
     def test_label_encoder(self):
-        self.check_model(LabelEncoder(), ["paris", "paris", "tokyo", "amsterdam"], [0, 0, 1, 2])
+        self.check_model(LabelEncoder(), 'label-encoder.json', ["paris", "paris", "tokyo", "amsterdam"], [0, 0, 1, 2])
 
     def test_label_binarizer(self):
-        self.check_model(LabelBinarizer(), self.simple_test_data, self.simple_test_labels)
-        self.check_model(LabelBinarizer(sparse_output=True), self.simple_test_data, self.simple_test_labels)
+        self.check_model(LabelBinarizer(), 'label-binarizer.json', self.simple_test_data, self.simple_test_labels)
+        self.check_model(LabelBinarizer(sparse_output=True), 'label-binarizer.json', self.simple_test_data, self.simple_test_labels)
 
     def test_multilabel_binarizer(self):
-        self.check_model(MultiLabelBinarizer(), self.data, self.labels)
-        self.check_model(MultiLabelBinarizer(sparse_output=True), self.data, self.labels)
+        self.check_model(MultiLabelBinarizer(), 'multilabel-binarizer.json', self.data, self.labels)
+        self.check_model(MultiLabelBinarizer(sparse_output=True), 'multilabel-binarizer.json', self.data, self.labels)
 
-    def check_scaler(self, scaler):
+    def check_scaler(self, scaler, model_name):
         expected_ft = scaler.fit_transform(self.X)
         expected_t = scaler.transform(self.X)
         expected_it = scaler.inverse_transform(expected_t)
@@ -92,9 +92,9 @@ class TestAPI(unittest.TestCase):
         serialized_dict_model = skljson.to_dict(scaler)
         deserialized_dict_model = skljson.from_dict(serialized_dict_model)
 
-        skljson.to_json(scaler, 'model.json')
-        deserialized_json_model = skljson.from_json('model.json')
-        os.remove('model.json')
+        skljson.to_json(scaler, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
             actual_t = deserialized_model.transform(self.X)
@@ -106,12 +106,12 @@ class TestAPI(unittest.TestCase):
             np.testing.assert_array_equal(expected_it, actual_it)
 
     def test_minmax_scaler(self):
-        self.check_scaler(MinMaxScaler())
-        self.check_scaler(MinMaxScaler(feature_range=(10, 20)))
-        self.check_scaler(MinMaxScaler(clip=True))
+        self.check_scaler(MinMaxScaler(), 'minmax-scaler.json')
+        self.check_scaler(MinMaxScaler(feature_range=(10, 20)), 'minmax-scaler.json')
+        self.check_scaler(MinMaxScaler(clip=True), 'minmax-scaler.json')
 
     def test_standard_scaler(self):
-        self.check_scaler(StandardScaler())
-        self.check_scaler(StandardScaler(with_mean=False))
-        self.check_scaler(StandardScaler(with_std=False))
-        self.check_scaler(StandardScaler(with_mean=False, with_std=False))
+        self.check_scaler(StandardScaler(), 'standard-scaler.json')
+        self.check_scaler(StandardScaler(with_mean=False), 'standard-scaler.json')
+        self.check_scaler(StandardScaler(with_std=False), 'standard-scaler.json')
+        self.check_scaler(StandardScaler(with_mean=False, with_std=False), 'standard-scaler.json')

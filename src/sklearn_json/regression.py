@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import uuid
 
 import numpy as np
 import scipy as sp
@@ -214,7 +215,6 @@ def deserialize_svr(model_dict):
 
 def serialize_tree(tree):
     serialized_tree = tree.__getstate__()
-    # serialized_tree['nodes_dtype'] = serialized_tree['nodes'].dtype
     dtypes = serialized_tree['nodes'].dtype
     serialized_tree['nodes'] = serialized_tree['nodes'].tolist()
     serialized_tree['values'] = serialized_tree['values'].tolist()
@@ -246,8 +246,6 @@ def serialize_decision_tree_regressor(model):
         'tree_': tree
     }
 
-    # serialized_model.
-
     tree_dtypes = []
     for i in range(0, len(dtypes)):
         tree_dtypes.append(dtypes[i].str)
@@ -271,7 +269,10 @@ def deserialize_decision_tree_regressor(model_dict):
 
 
 def serialize_dummy_regressor(model):
-    model.constant = model.constant_.tolist()
+    if isinstance(model.constant_, np.ndarray):
+        model.constant = model.constant_.tolist()
+    else:
+        model.constant = model.constant_
     return model.__dict__
 
 
@@ -286,7 +287,6 @@ def serialize_gradient_boosting_regressor(model):
         'estimators_shape': list(model.estimators_.shape),
         'estimators_': []
     }
-
     if  isinstance(model.init_, dummy.DummyRegressor):
         serialized_model['init_'] = serialize_dummy_regressor(model.init_)
         serialized_model['init_']['meta'] = 'dummy'
@@ -307,6 +307,10 @@ def serialize_gradient_boosting_regressor(model):
 
     for tree in model.estimators_.reshape((-1,)):
         serialized_model['estimators_'].append(serialize_decision_tree_regressor(tree))
+
+    serialized_model['init_'] = {key: value.tolist() if isinstance(value, np.ndarray) else value
+                                 for key, value in serialized_model['init_'].items()}
+
     return serialized_model
 
 
@@ -314,11 +318,14 @@ def deserialize_gradient_boosting_regressor(model_dict):
     model = GradientBoostingRegressor(**model_dict['params'])
     trees = [deserialize_decision_tree_regressor(tree) for tree in model_dict['estimators_']]
     model.estimators_ = np.array(trees).reshape(model_dict['estimators_shape'])
-    if 'init_' in model_dict and model_dict['init_']['meta'] == 'dummy':
-        model.init_ = dummy.DummyRegressor()
+
+    if 'init_' in model_dict:
+        model_dict['init_'] = {key: np.array(value) if isinstance(value, list) else value
+                               for key, value in model_dict['init_'].items()}
+        if model_dict['init_']['meta'] == 'dummy':
+            model.init_ = dummy.DummyRegressor()
         model.init_.__dict__ = model_dict['init_']
         model.init_.__dict__.pop('meta')
-
 
     model.train_score_ = np.array(model_dict['train_score_'])
     model.max_features_ = model_dict['max_features_']
@@ -334,6 +341,7 @@ def deserialize_gradient_boosting_regressor(model_dict):
 
     if 'priors' in model_dict:
         model.init_.priors = np.array(model_dict['priors'])
+
     return model
 
 
@@ -364,14 +372,6 @@ def deserialize_random_forest_regressor(model_dict):
 
     model.n_features_in_ = model_dict['n_features_in_']
     model.n_outputs_ = model_dict['n_outputs_']
-    # model.max_depth = model_dict['max_depth']
-    # model.min_samples_split = model_dict['min_samples_split']
-    # model.min_samples_leaf = model_dict['min_samples_leaf']
-    # model.min_weight_fraction_leaf = model_dict['min_weight_fraction_leaf']
-    # model.max_features = model_dict['max_features']
-    # model.max_leaf_nodes = model_dict['max_leaf_nodes']
-    # model.min_impurity_decrease = model_dict['min_impurity_decrease']
-    # model.min_impurity_split = model_dict['min_impurity_split']
 
     if 'oob_score_' in model_dict:
         model.oob_score_ = model_dict['oob_score_']
@@ -384,9 +384,9 @@ def deserialize_random_forest_regressor(model_dict):
 def serialize_mlp_regressor(model):
     serialized_model = {
         'meta': 'mlp-regression',
-        'coefs_': model.coefs_,
+        'coefs_': [array.tolist() for array in model.coefs_],
         'loss_': model.loss_,
-        'intercepts_': model.intercepts_,
+        'intercepts_': [array.tolist() for array in model.intercepts_],
         'n_iter_': model.n_iter_,
         'n_layers_': model.n_layers_,
         'n_outputs_': model.n_outputs_,
@@ -400,9 +400,9 @@ def serialize_mlp_regressor(model):
 def deserialize_mlp_regressor(model_dict):
     model = MLPRegressor(**model_dict['params'])
 
-    model.coefs_ = model_dict['coefs_']
+    model.coefs_ = [np.array(array) for array in model_dict['coefs_']]
     model.loss_ = model_dict['loss_']
-    model.intercepts_ = model_dict['intercepts_']
+    model.intercepts_ = [np.array(array) for array in model_dict['intercepts_']]
     model.n_iter_ = model_dict['n_iter_']
     model.n_layers_ = model_dict['n_layers_']
     model.n_outputs_ = model_dict['n_outputs_']
@@ -417,10 +417,11 @@ def serialize_xgboost_ranker(model):
         'params': model.get_params()
     }
 
-    model.save_model('model.json')
-    with open('model.json', 'r') as fh:
+    filename = f'{str(uuid.uuid4())}.json'
+    model.save_model(filename)
+    with open(filename, 'r') as fh:
         serialized_model['advanced-params'] = fh.read()
-    os.remove('model.json')
+    os.remove(filename)
 
     return serialized_model
 
@@ -428,10 +429,11 @@ def serialize_xgboost_ranker(model):
 def deserialize_xgboost_ranker(model_dict):
     model = XGBRanker(**model_dict['params'])
 
-    with open('model.json', 'w') as fh:
+    filename = f'{str(uuid.uuid4())}.json'
+    with open(filename, 'w') as fh:
         fh.write(model_dict['advanced-params'])
-    model.load_model('model.json')
-    os.remove('model.json')
+    model.load_model(filename)
+    os.remove(filename)
 
     return model
 
@@ -441,10 +443,11 @@ def serialize_xgboost_regressor(model):
         'params': model.get_params()
     }
 
-    model.save_model('model.json')
-    with open('model.json', 'r') as fh:
+    filename = f'{str(uuid.uuid4())}.json'
+    model.save_model(filename)
+    with open(filename, 'r') as fh:
         serialized_model['advanced-params'] = fh.read()
-    os.remove('model.json')
+    os.remove(filename)
 
     return serialized_model
 
@@ -452,10 +455,11 @@ def serialize_xgboost_regressor(model):
 def deserialize_xgboost_regressor(model_dict):
     model = XGBRegressor(**model_dict['params'])
 
-    with open('model.json', 'w') as fh:
+    filename = f'{str(uuid.uuid4())}.json'
+    with open(filename, 'w') as fh:
         fh.write(model_dict['advanced-params'])
-    model.load_model('model.json')
-    os.remove('model.json')
+    model.load_model(filename)
+    os.remove(filename)
 
     return model
 
@@ -465,10 +469,11 @@ def serialize_xgboost_rf_regressor(model):
         'params': model.get_params()
     }
 
-    model.save_model('model.json')
-    with open('model.json', 'r') as fh:
+    filename = f'{str(uuid.uuid4())}.json'
+    model.save_model(filename)
+    with open(filename, 'r') as fh:
         serialized_model['advanced-params'] = fh.read()
-    os.remove('model.json')
+    os.remove(filename)
 
     return serialized_model
 
@@ -476,10 +481,11 @@ def serialize_xgboost_rf_regressor(model):
 def deserialize_xgboost_rf_regressor(model_dict):
     model = XGBRFRegressor(**model_dict['params'])
 
-    with open('model.json', 'w') as fh:
+    filename = f'{str(uuid.uuid4())}.json'
+    with open(filename, 'w') as fh:
         fh.write(model_dict['advanced-params'])
-    model.load_model('model.json')
-    os.remove('model.json')
+    model.load_model(filename)
+    os.remove(filename)
 
     return model
 
@@ -488,42 +494,41 @@ def serialize_lightgbm_regressor(model):
     serialized_model = {
         'meta': 'lightgbm-regressor',
         'params': model.get_params(),
-        'booster': model.booster_.model_to_string(),
+        '_other_params': model._other_params
+    }
+    serialized_model['params'].update({
+        '_Booster': model.booster_.model_to_string(),
         'fitted_': model.fitted_,
         '_evals_result': model._evals_result,
         '_best_score': model._best_score,
         '_best_iteration': model._best_iteration,
-        '_other_params': model._other_params,
         '_objective': model._objective,
         'class_weight': model.class_weight,
         '_class_weight': model._class_weight,
-        '_class_map': model._class_map,
         '_n_features': model._n_features,
         '_n_features_in': model._n_features_in,
-        '_classes': model._classes,
         '_n_classes': model._n_classes
-    }
+    })
+
+    if hasattr(model, '_class_map') and model._class_map is not None:
+        serialized_model['params']['_class_map'] = {int(key): int(value) for key, value in model._class_map.items()}
+    if hasattr(model, '_classes') and model._classes is not None:
+        serialized_model['params']['_classes'] = model._classes.astype(int).tolist()
 
     return serialized_model
 
 
 def deserialize_lightgbm_regressor(model_dict):
     params = model_dict['params']
-    params['_Booster'] = LGBMBooster(model_str=model_dict['booster'])
-    params['fitted_'] = model_dict['fitted_']
-    params['_evals_result'] = model_dict['_evals_result']
-    params['_best_score'] = model_dict['_best_score']
-    params['_best_iteration'] = model_dict['_best_iteration']
-    params['_other_params'] = model_dict['_other_params']
-    params['_objective'] = model_dict['_objective']
-    params['class_weight'] = model_dict['class_weight']
-    params['_class_weight'] = model_dict['_class_weight']
-    params['_class_map'] = model_dict['_class_map']
-    params['_n_features'] = model_dict['_n_features']
-    params['_n_features_in'] = model_dict['_n_features_in']
-    params['_classes'] = model_dict['_classes']
-    params['_n_classes'] = model_dict['_n_classes']
+    params['_Booster'] = LGBMBooster(model_str=params['_Booster'])
+
+    if '_class_map' in params and params['_class_map'] is not None:
+        params['_class_map'] = {np.int32(key): np.int64(value) for key, value in model_dict['_class_map'].items()}
+    if '_classes' in params and params['_classes'] is not None:
+        params['_classes'] = np.array(model_dict['_classes'], dtype=np.int32)
+
     model = LGBMRegressor().set_params(**params)
+    model._other_params = model_dict['_other_params']
 
     return model
 
@@ -532,42 +537,42 @@ def serialize_lightgbm_ranker(model):
     serialized_model = {
         'meta': 'lightgbm-ranker',
         'params': model.get_params(),
-        'booster': model.booster_.model_to_string(),
+        '_other_params': model._other_params
+    }
+    serialized_model['params'].update({
+        '_Booster': model.booster_.model_to_string(),
         'fitted_': model.fitted_,
         '_evals_result': model._evals_result,
         '_best_score': model._best_score,
         '_best_iteration': model._best_iteration,
-        '_other_params': model._other_params,
         '_objective': model._objective,
         'class_weight': model.class_weight,
         '_class_weight': model._class_weight,
-        '_class_map': model._class_map,
         '_n_features': model._n_features,
         '_n_features_in': model._n_features_in,
-        '_classes': model._classes,
         '_n_classes': model._n_classes
-    }
+    })
+
+    if hasattr(model, '_class_map') and model._class_map is not None:
+        serialized_model['params']['_class_map'] = {int(key): int(value) for key, value in model._class_map.items()}
+    if hasattr(model, '_classes') and model._classes is not None:
+        serialized_model['params']['_classes'] = model._classes.astype(int).tolist()
 
     return serialized_model
 
 
 def deserialize_lightgbm_ranker(model_dict):
     params = model_dict['params']
-    params['_Booster'] = LGBMBooster(model_str=model_dict['booster'])
-    params['fitted_'] = model_dict['fitted_']
-    params['_evals_result'] = model_dict['_evals_result']
-    params['_best_score'] = model_dict['_best_score']
-    params['_best_iteration'] = model_dict['_best_iteration']
-    params['_other_params'] = model_dict['_other_params']
-    params['_objective'] = model_dict['_objective']
-    params['class_weight'] = model_dict['class_weight']
-    params['_class_weight'] = model_dict['_class_weight']
-    params['_class_map'] = model_dict['_class_map']
-    params['_n_features'] = model_dict['_n_features']
-    params['_n_features_in'] = model_dict['_n_features_in']
-    params['_classes'] = model_dict['_classes']
-    params['_n_classes'] = model_dict['_n_classes']
+    params['_Booster'] = LGBMBooster(model_str=params['_Booster'])
+
+    if '_class_map' in params:
+        params['_class_map'] = {np.int32(key): np.int64(value) for key, value in model_dict['_class_map'].items()}
+    if '_classes' in params:
+        params['_classes'] = np.array(model_dict['_classes'], dtype=np.int32)
+
+
     model = LGBMRanker().set_params(**params)
+    model._other_params = model_dict['_other_params']
 
     return model
 
@@ -578,10 +583,11 @@ def serialize_catboost_regressor(model, catboost_data):
         'params': model.get_params()
     }
 
-    model.save_model('model.json', format='json', pool=catboost_data)
-    with open('model.json', 'r') as fh:
+    filename = f'{str(uuid.uuid4())}.json'
+    model.save_model(filename, format='json', pool=catboost_data)
+    with open(filename, 'r') as fh:
         serialized_model['advanced-params'] = fh.read()
-    # os.remove('model.json')
+    os.remove(filename)
 
     return serialized_model
 
@@ -589,10 +595,11 @@ def serialize_catboost_regressor(model, catboost_data):
 def deserialize_catboost_regressor(model_dict):
     model = CatBoostRegressor(**model_dict['params'])
 
-    with open('model.json', 'w') as fh:
+    filename = f'{str(uuid.uuid4())}.json'
+    with open(filename, 'w') as fh:
         fh.write(model_dict['advanced-params'])
-    model.load_model('model.json', format='json')
-    os.remove('model.json')
+    model.load_model(filename, format='json')
+    os.remove(filename)
 
     return model
 
@@ -603,10 +610,11 @@ def serialize_catboost_ranker(model: CatBoostRanker, catboost_data):
         'params': model.get_params()
     }
 
-    model.save_model('model.json', format='json', pool=catboost_data)
-    with open('model.json', 'r') as fh:
+    filename = f'{str(uuid.uuid4())}.json'
+    model.save_model(filename, format='json', pool=catboost_data)
+    with open(filename, 'r') as fh:
         serialized_model['advanced-params'] = fh.read()
-    os.remove('model.json')
+    os.remove(filename)
 
     return serialized_model
 
@@ -614,9 +622,10 @@ def serialize_catboost_ranker(model: CatBoostRanker, catboost_data):
 def deserialize_catboost_ranker(model_dict):
     model = CatBoostRanker(**model_dict['params'])
 
-    with open('model.json', 'w') as fh:
+    filename = f'{str(uuid.uuid4())}.json'
+    with open(filename, 'w') as fh:
         fh.write(model_dict['advanced-params'])
-    model.load_model('model.json', format='json')
-    os.remove('model.json')
+    model.load_model(filename, format='json')
+    os.remove(filename)
 
     return model
