@@ -253,3 +253,9 @@ class TestAPI(unittest.TestCase):
 
     def test_kprototypes(self):
         self.check_kprototype_model(KPrototypes(n_clusters=2, random_state=1234), 'kproto.json', self.X)
+
+    def test_birch(self):
+        self.check_fitpredict_model(Birch(), 'birch.json', self.X)
+        self.check_predict_model(Birch(), 'birch.json', self.X)
+        self.check_fittransform_model(Birch(), 'birch.json', self.X)
+        self.check_transform_model(Birch(), 'birch.json', self.X)

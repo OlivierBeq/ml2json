@@ -132,6 +132,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return clus.serialize_kprototypes(model)
     elif isinstance(model, KModes):
         return clus.serialize_kmodes(model)
+    elif isinstance(model, Birch):
+        return clus.serialize_birch(model)
 
     # Decomposition
     elif isinstance(model, PCA):
@@ -256,6 +258,8 @@ def deserialize_model(model_dict):
         return clus.deserialize_kmodes(model_dict)
     elif model_dict['meta'] == 'kprototypes':
         return clus.deserialize_kprototypes(model_dict)
+    elif model_dict['meta'] == 'birch':
+        return clus.deserialize_birch(model_dict)
 
     # Decomposition
     elif model_dict['meta'] == 'pca':

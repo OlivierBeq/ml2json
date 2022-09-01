@@ -8,7 +8,7 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              MiniBatchKMeans, MeanShift, OPTICS, SpectralClustering,
                              SpectralBiclustering, SpectralCoclustering)
-from sklearn.cluster._birch import _CFNode
+from sklearn.cluster._birch import _CFNode, _CFSubcluster
 from kmodes.kmodes import KModes
 from kmodes.kprototypes import KPrototypes
 
@@ -181,6 +181,164 @@ def deserialize_agglomerative_clustering(model_dict):
         model.distances_ = np.array(model_dict['distances_'])
 
     return model
+
+
+def serialize_cfnode(model):
+    # Get memory address
+    mem = lambda x: hex(id(x)) if x is not None else None
+
+    serialized_model = {
+        'meta': 'cfnode',
+        'threshold': model.threshold,
+        'branching_factor': model.branching_factor,
+        'is_leaf': model.is_leaf,
+        'n_features': model.n_features,
+        'subclusters_': [mem(cfsubcluster) for cfsubcluster in model.subclusters_],
+        'init_centroids_': model.init_centroids_.tolist(),
+        'init_sq_norm_': model.init_sq_norm_.tolist(),
+        'squared_norm_': model.squared_norm_.tolist() if isinstance(model.squared_norm_, np.ndarray) else model.squared_norm_,
+        'prev_leaf_': mem(model.prev_leaf_),
+        'next_leaf_': mem(model.next_leaf_),
+    }
+
+    if hasattr(model, 'centroids_'):
+        serialized_model['centroids_'] = model.centroids_.tolist()
+
+    return serialized_model
+
+
+def deserialize_cfnode(model_dict):
+    model = _CFNode(threshold=model_dict['threshold'],
+                    branching_factor=model_dict['branching_factor'],
+                    is_leaf=model_dict['is_leaf'],
+                    n_features=model_dict['n_features'])
+
+    model.init_centroids_ = np.array(model_dict['init_centroids_'])
+    model.init_sq_norm_ = np.array(model_dict['init_sq_norm_'])
+    model.squared_norm_ = np.array(model_dict['squared_norm_'])
+
+    # To be modified by the Birch deserializer
+    model.subclusters_ = model_dict['subclusters_']
+    model.prev_leaf_ = model_dict['prev_leaf_']
+    model.next_leaf_ = model_dict['next_leaf_']
+
+    return model
+
+
+def serialize_cfsubcluster(model):
+    # Get memory address
+    mem = lambda x: hex(id(x)) if x is not None else None
+
+    serialized_model = {
+        'meta': 'cfsubcluster',
+        'n_samples_': model.n_samples_,
+        'squared_sum_': model.squared_sum_,
+        'centroid_': model.centroid_.tolist(),
+        'linear_sum_': model.linear_sum_.tolist(),
+        'sq_norm_': model.sq_norm_,
+        'child_': mem(model.child_)
+    }
+
+    return serialized_model
+
+
+def deserialize_cfsubcluster(model_dict):
+    model = _CFSubcluster()
+
+    model.n_samples_ = model_dict['n_samples_']
+    model.squared_sum_ = model_dict['squared_sum_']
+    model.centroid_ = np.array(model_dict['centroid_'])
+    model.linear_sum_ = np.array(model_dict['linear_sum_'])
+    model.sq_norm_ = model_dict['sq_norm_']
+    model.child_ = model_dict['child_']
+
+    return model
+
+
+def serialize_birch(model):
+    # Get memory address
+    mem = lambda x: hex(id(x)) if x is not None else None
+
+    # Define a recursive aggregator of _CFNodes and _CFSubclusters
+    def get_nodes_and_subclusters(node):
+        if node is None:
+            return [], []
+        nodes, subclusters = [(mem(node), node)], []
+        for subcluster in node.subclusters_:
+            subnodes, subsubclusters = get_nodes_and_subclusters(subcluster.child_)
+            nodes += subnodes
+            subclusters += [(mem(subcluster), subcluster)] + subsubclusters
+        return nodes, subclusters
+
+    # Obtain _CFNodes and _CFSubclusters
+    nodes, subclusters = get_nodes_and_subclusters(model.root_)
+    # Add the dummy_leaf to nodes
+    nodes = [(mem(model.dummy_leaf_) if model.dummy_leaf_ is not None else None, model.dummy_leaf_)] + nodes
+    # Serialize nodes
+    nodes = {uid: serialize_cfnode(node) for uid, node in nodes}
+    subclusters = {uid: serialize_cfsubcluster(subcluster) for uid, subcluster in subclusters}
+
+    serialized_model = {
+        'meta': 'birch',
+        'root_': mem(model.root_),
+        'dummy_leaf_': mem(model.dummy_leaf_),
+        '_deprecated_fit': model._deprecated_fit,
+        '_deprecated_partial_fit': model._deprecated_partial_fit,
+        'subcluster_centers_': model.subcluster_centers_.tolist(),
+        '_n_features_out': model._n_features_out,
+        '_subcluster_norms': model._subcluster_norms.tolist(),
+        'subcluster_labels_': model.subcluster_labels_.tolist(),
+        'labels_': model.labels_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params(),
+        'nodes': nodes,
+        'subclusters': subclusters
+    }
+
+    return serialized_model
+
+
+def deserialize_birch(model_dict):
+    model = Birch(**model_dict['params'])
+
+    model._deprecated_fit = model_dict['_deprecated_fit']
+    model._deprecated_partial_fit = model_dict['_deprecated_partial_fit']
+    model.subcluster_centers_ = np.array(model_dict['subcluster_centers_'])
+    model._n_features_out = model_dict['_n_features_out']
+    model._subcluster_norms = np.array(model_dict['_subcluster_norms'])
+    model.subcluster_labels_ = np.array(model_dict['subcluster_labels_'])
+    model.labels_ = np.array(model_dict['labels_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    # Deserialize _CFNodes and _CFSubclusters
+    nodes = {uid: deserialize_cfnode(node) for uid, node in model_dict['nodes'].items()}
+    subclusters = {uid: deserialize_cfsubcluster(subcluster) for uid, subcluster in model_dict['subclusters'].items()}
+
+    # Link prev_leaf_ and next_leaf of _CFNodes to other _CFNodes
+    for node_uid in nodes.keys():
+        prev_leaf_uid = nodes[node_uid].prev_leaf_
+        next_leaf_uid = nodes[node_uid].next_leaf_
+        if prev_leaf_uid is not None:
+            nodes[node_uid].prev_leaf_ = nodes[prev_leaf_uid]
+        if next_leaf_uid is not None:
+            nodes[node_uid].next_leaf_ = nodes[next_leaf_uid]
+
+    # Link child_ of _CFSubclusters to _CFNodes
+    for subcluster_uid in subclusters.keys():
+        subclusters[subcluster_uid].child_ = subclusters[subcluster_uid]
+
+    # Link subclusters_ of _CFNodes to _CFSubclusters
+    for node_uid in nodes.keys():
+        old_uids = nodes[node_uid].subclusters_
+        if old_uids is not None:
+            nodes[node_uid].subclusters_ = [subclusters[old_uid] for old_uid in old_uids]
+
+    # Link root_ and dummy_leaf_ _CFNodes
+    model.dummy_leaf_ = nodes[model_dict['dummy_leaf_']]
+    model.root_ = nodes[model_dict['root_']]
+
+    return model
+
 
 def serialize_dbscan(model):
     serialized_model = {
