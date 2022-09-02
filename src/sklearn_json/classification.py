@@ -17,7 +17,7 @@ from lightgbm import LGBMClassifier, Booster as LGBMBooster
 from catboost import CatBoostClassifier
 
 from . import regression
-from . import csr
+from .utils import csr
 from .preprocessing import (serialize_label_binarizer, deserialize_label_binarizer,
                             serialize_label_encoder, deserialize_label_encoder)
 

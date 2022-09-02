@@ -6,11 +6,14 @@ import inspect
 import numpy as np
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
-                             MiniBatchKMeans, MeanShift, OPTICS, SpectralClustering,
-                             SpectralBiclustering, SpectralCoclustering)
+                             BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
+                             SpectralClustering, SpectralBiclustering, SpectralCoclustering)
 from sklearn.cluster._birch import _CFNode, _CFSubcluster
+from sklearn.cluster._bisect_k_means import _BisectingTree
 from kmodes.kmodes import KModes
 from kmodes.kprototypes import KPrototypes
+
+from .utils.random_state import serialize_random_state, deserialize_random_state
 
 
 def serialize_kmeans(model):
@@ -653,5 +656,88 @@ def deserialize_kprototypes(model_dict):
     model.n_iter_ = model_dict['n_iter_']
     model.epoch_costs_ = model_dict['epoch_costs_']
     model._enc_map = [{np.int32(key): value for key, value in subdict.items()} for subdict in model_dict['_enc_map']]
+
+    return model
+
+
+def serialize_bisecting_tree(model):
+    if model is None:
+        return None
+
+    serialized_model = {
+        'meta': 'bisecting-tree',
+        'center': model.center.tolist() if isinstance(model.center, np.ndarray) else model.center,
+        'indices': model.indices.tolist() if isinstance(model.indices, np.ndarray) else model.indices,
+        'score': model.score,
+        'left': serialize_bisecting_tree(model.left),
+        'right': serialize_bisecting_tree(model.right),
+    }
+
+    if hasattr(model, 'label'):
+        serialized_model['label'] = model.label
+
+    return serialized_model
+
+
+def deserialize_bisecting_tree(model_dict):
+    if model_dict is None:
+        return None
+
+    model = _BisectingTree(np.array(model_dict['center']) if isinstance(model_dict['center'], list) else model_dict['center'],
+                           np.array(model_dict['indices']) if isinstance(model_dict['indices'], list) else model_dict['indices'],
+                           model_dict['score'])
+
+    model.left = deserialize_bisecting_tree(model_dict['left'])
+    model.right = deserialize_bisecting_tree(model_dict['right'])
+
+    if 'label' in model_dict:
+        model.label = model_dict['label']
+
+    return model
+
+
+def serialize_bisecting_kmeans(model):
+    serialized_model = {
+        'meta': 'bisecting-kmeans',
+        'cluster_centers_': model.cluster_centers_.tolist(),
+        'labels_': model.labels_.tolist(),
+        'inertia_': model.inertia_,
+        '_tol': model._tol,
+        '_n_init': model._n_init,
+        '_n_threads': model._n_threads,
+        'n_features_in_': model.n_features_in_,
+        '_n_features_out': model._n_features_out,
+        '_X_mean': model._X_mean.tolist(),
+        '_bisecting_tree': serialize_bisecting_tree(model._bisecting_tree),
+        '_kmeans_single': (inspect.getmodule(model._kmeans_single).__name__,
+                           model._kmeans_single.__name__),
+        '_random_state': serialize_random_state(model._random_state),
+        'params': model.get_params(),
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+
+def deserialize_bisecting_kmeans(model_dict):
+    model = BisectingKMeans(**model_dict['params'])
+    model.cluster_centers_ = np.array(model_dict['cluster_centers_'])
+    model.labels_ = np.array(model_dict['labels_'])
+    model.inertia_ = model_dict['inertia_']
+    model._tol = model_dict['_tol']
+    model._n_init = model_dict['_n_init']
+    model._n_threads = model_dict['_n_threads']
+    model.n_features_in_ = model_dict['n_features_in_']
+    model._n_features_out = model_dict['_n_features_out']
+    model._X_mean = np.array(model_dict['_X_mean'])
+    model._bisecting_tree = deserialize_bisecting_tree(model_dict['_bisecting_tree'])
+    model._kmeans_single = getattr(importlib.import_module(model_dict['_kmeans_single'][0]),
+                                   model_dict['_kmeans_single'][1])
+    model._random_state = deserialize_random_state(model_dict['_random_state'])
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model

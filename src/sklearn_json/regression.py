@@ -16,7 +16,7 @@ from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
 from lightgbm import LGBMRegressor, LGBMRanker, Booster as LGBMBooster
 from catboost import CatBoostRegressor, CatBoostRanker
 
-from . import csr
+from .utils import csr
 
 
 def serialize_linear_regressor(model):

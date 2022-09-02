@@ -8,8 +8,8 @@ import numpy as np
 from sklearn.datasets import make_blobs, make_checkerboard
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
-                             MiniBatchKMeans, MeanShift, OPTICS, SpectralClustering,
-                             SpectralBiclustering, SpectralCoclustering)
+                             BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
+                             SpectralClustering, SpectralBiclustering, SpectralCoclustering)
 from kmodes.kmodes import KModes
 from kmodes.kprototypes import KPrototypes
 
@@ -259,3 +259,17 @@ class TestAPI(unittest.TestCase):
         self.check_predict_model(Birch(), 'birch.json', self.X)
         self.check_fittransform_model(Birch(), 'birch.json', self.X)
         self.check_transform_model(Birch(), 'birch.json', self.X)
+
+    def test_bisecting_kmeans(self):
+        self.check_fitpredict_model(
+            BisectingKMeans(n_clusters=2, tol=1e-999, random_state=1234, n_init=100, max_iter=10000),
+            'bisecting-kmeans.json', self.simple_X)
+        self.check_predict_model(
+            BisectingKMeans(n_clusters=2, tol=1e-999, random_state=1234, n_init=100, max_iter=10000),
+            'bisecting-kmeans.json', self.X)
+        self.check_fittransform_model(
+            BisectingKMeans(n_clusters=2, tol=1e-999, random_state=1234, n_init=100, max_iter=10000),
+            'bisecting-kmeans.json', self.X)
+        self.check_transform_model(
+            BisectingKMeans(n_clusters=2, tol=1e-999, random_state=1234, n_init=100, max_iter=10000),
+            'bisecting-kmeans.json', self.X)

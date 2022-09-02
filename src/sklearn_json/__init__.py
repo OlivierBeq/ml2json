@@ -14,8 +14,8 @@ from sklearn.preprocessing import LabelEncoder, LabelBinarizer, MultiLabelBinari
 from sklearn.svm import SVR
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
-                             MiniBatchKMeans, MeanShift, OPTICS, SpectralClustering,
-                             SpectralBiclustering, SpectralCoclustering)
+                             BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
+                             SpectralClustering, SpectralBiclustering, SpectralCoclustering)
 from sklearn.decomposition import PCA
 from xgboost import XGBRegressor, XGBClassifier, XGBRFRegressor, XGBRFClassifier, XGBRanker
 from lightgbm import LGBMClassifier, LGBMRegressor, LGBMRanker
@@ -116,10 +116,12 @@ def serialize_model(model, catboost_data: Pool = None):
         return clus.serialize_dbscan(model)
     elif isinstance(model, MeanShift):
         return clus.serialize_meanshift(model)
-    elif isinstance(model, KMeans):
-        return clus.serialize_kmeans(model)
+    elif isinstance(model, BisectingKMeans):
+        return clus.serialize_bisecting_kmeans(model)
     elif isinstance(model, MiniBatchKMeans):
         return clus.serialize_minibatch_kmeans(model)
+    elif isinstance(model, KMeans):
+        return clus.serialize_kmeans(model)
     elif isinstance(model, OPTICS):
         return clus.serialize_optics(model)
     elif isinstance(model, SpectralClustering):
@@ -260,6 +262,8 @@ def deserialize_model(model_dict):
         return clus.deserialize_kprototypes(model_dict)
     elif model_dict['meta'] == 'birch':
         return clus.deserialize_birch(model_dict)
+    elif model_dict['meta'] == 'bisecting-kmeans':
+        return clus.deserialize_bisecting_kmeans(model_dict)
 
     # Decomposition
     elif model_dict['meta'] == 'pca':
