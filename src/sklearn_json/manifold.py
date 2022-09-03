@@ -108,3 +108,35 @@ def deserialize_isomap(model_dict):
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
+
+
+def serialize_locally_linear_embedding(model):
+    serialized_model = {
+        'meta': 'locally-linear-embedding',
+        'embedding_': model.embedding_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        '_n_features_out': model._n_features_out,
+        'reconstruction_error_': float(model.reconstruction_error_),
+        'nbrs_': serialize_nearest_neighbors(model.nbrs_),
+        'params': model.get_params()
+    }
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_locally_linear_embedding(model_dict):
+    model = LocallyLinearEmbedding(**model_dict['params'])
+
+    model.embedding_ = np.array(model_dict['embedding_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+    model._n_features_out = model_dict['_n_features_out']
+    model.reconstruction_error_ = np.float64(model_dict['reconstruction_error_'])
+    model.nbrs_ = deserialize_nearest_neighbors(model_dict['nbrs_'])
+
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+
+    return model

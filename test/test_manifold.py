@@ -40,4 +40,11 @@ class TestAPI(unittest.TestCase):
         self.check_model(MDS(random_state=1234), 'mds.json')
 
     def test_isomap(self):
+        self.check_model(Isomap(n_neighbors=50, n_components=10, neighbors_algorithm='kd_tree'), 'isomap.json')
         self.check_model(Isomap(n_neighbors=50, n_components=10, neighbors_algorithm='brute'), 'isomap.json')
+        self.check_model(Isomap(n_neighbors=50, n_components=10, neighbors_algorithm='ball_tree'), 'isomap.json')
+
+    def test_locally_linear_embedding(self):
+        self.check_model(LocallyLinearEmbedding(neighbors_algorithm='kd_tree'), 'locally-linear-embedding.json')
+        self.check_model(LocallyLinearEmbedding(neighbors_algorithm='brute'), 'locally-linear-embedding.json')
+        self.check_model(LocallyLinearEmbedding(neighbors_algorithm='ball_tree'), 'locally-linear-embedding.json')
