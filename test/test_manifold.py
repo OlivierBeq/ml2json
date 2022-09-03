@@ -4,7 +4,7 @@ import os
 import unittest
 
 import numpy as np
-from sklearn.datasets import load_iris, load_digits
+from sklearn.datasets import load_iris, load_digits, fetch_california_housing
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
 
@@ -16,6 +16,7 @@ class TestAPI(unittest.TestCase):
     def setUp(self):
         self.iris_data, _ = load_iris(return_X_y=True)
         self.digit_data, _ = load_digits(return_X_y=True)
+        self.calhouse_data, _ = fetch_california_housing(return_X_y=True)
 
     def check_model(self, model, model_name, data):
         expected_ft = model.fit_transform(data)
@@ -52,4 +53,4 @@ class TestAPI(unittest.TestCase):
 
     def test_spectral_embedding(self):
         self.check_model(SpectralEmbedding(affinity='nearest_neighbors', random_state=1234), 'spectral-embedding.json', self.digit_data)
-        # self.check_model(SpectralEmbedding(affinity='rbf', random_state=1234), 'spectral-embedding.json')
+        self.check_model(SpectralEmbedding(affinity='rbf', random_state=1234), 'spectral-embedding.json', self.iris_data)

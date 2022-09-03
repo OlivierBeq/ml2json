@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import scipy
 import numpy as np
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
@@ -148,11 +149,17 @@ def serialize_spectral_embedding(model):
         'meta': 'spectral-embedding',
         'embedding_': model.embedding_.tolist(),
         'n_features_in_': model.n_features_in_,
-        'n_neighbors_': model.n_neighbors_,
-        'affinity_matrix_': serialize_csr_matrix(model.affinity_matrix_),
         'params': model.get_params()
     }
 
+    if 'n_neighbors_' in model.__dict__:
+        serialized_model['n_neighbors_'] = model.n_neighbors_
+    if scipy.sparse.issparse(model.affinity_matrix_):
+        serialized_model['affinity_matrix_'] = serialize_csr_matrix(model.affinity_matrix_)
+        serialized_model['affinity_matrix_type'] = 'sparse'
+    else:
+        serialized_model['affinity_matrix_'] = model.affinity_matrix_.tolist()
+        serialized_model['affinity_matrix_type'] = 'dense'
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
@@ -164,9 +171,13 @@ def deserialize_spectral_embedding(model_dict):
 
     model.embedding_ = np.array(model_dict['embedding_'])
     model.n_features_in_ = model_dict['n_features_in_']
-    model.n_neighbors_ = model_dict['n_neighbors_']
-    model.affinity_matrix_ = deserialize_csr_matrix(model_dict['affinity_matrix_'])
 
+    if model_dict['affinity_matrix_type'] == 'sparse':
+        model.affinity_matrix_ = deserialize_csr_matrix(model_dict['affinity_matrix_'])
+    else:
+        model.affinity_matrix_ = np.array(model_dict['affinity_matrix_'])
+    if 'n_neighbors_' in model_dict.keys():
+        model.n_neighbors_ = model_dict['n_neighbors_']
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
