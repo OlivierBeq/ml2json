@@ -7,6 +7,7 @@ from sklearn.utils import check_random_state
 
 from .decomposition import serialize_kernel_pca, deserialize_kernel_pca
 from .neighbors import serialize_nearest_neighbors, deserialize_nearest_neighbors
+from .utils.csr import serialize_csr_matrix, deserialize_csr_matrix
 from .utils.random_state import serialize_random_state, deserialize_random_state
 
 
@@ -135,6 +136,36 @@ def deserialize_locally_linear_embedding(model_dict):
     model._n_features_out = model_dict['_n_features_out']
     model.reconstruction_error_ = np.float64(model_dict['reconstruction_error_'])
     model.nbrs_ = deserialize_nearest_neighbors(model_dict['nbrs_'])
+
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+
+    return model
+
+
+def serialize_spectral_embedding(model):
+    serialized_model = {
+        'meta': 'spectral-embedding',
+        'embedding_': model.embedding_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        'n_neighbors_': model.n_neighbors_,
+        'affinity_matrix_': serialize_csr_matrix(model.affinity_matrix_),
+        'params': model.get_params()
+    }
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_spectral_embedding(model_dict):
+    model = SpectralEmbedding(**model_dict['params'])
+
+    model.embedding_ = np.array(model_dict['embedding_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+    model.n_neighbors_ = model_dict['n_neighbors_']
+    model.affinity_matrix_ = deserialize_csr_matrix(model_dict['affinity_matrix_'])
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'])

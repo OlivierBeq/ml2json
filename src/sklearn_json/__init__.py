@@ -159,6 +159,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return man.serialize_isomap(model)
     elif isinstance(model, LocallyLinearEmbedding):
         return man.serialize_locally_linear_embedding(model)
+    elif isinstance(model, SpectralEmbedding):
+        return man.serialize_spectral_embedding(model)
 
     # Neighbors
     elif isinstance(model, NearestNeighbors):
@@ -307,6 +309,8 @@ def deserialize_model(model_dict):
         return  man.deserialize_isomap(model_dict)
     elif model_dict['meta'] == 'locally-linear-embedding':
         return  man.deserialize_locally_linear_embedding(model_dict)
+    elif model_dict['meta'] == 'spectral-embedding':
+        return  man.deserialize_spectral_embedding(model_dict)
 
     # Neighbors
     elif model_dict['meta'] == 'nearest-neighbors':
