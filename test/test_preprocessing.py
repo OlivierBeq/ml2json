@@ -5,7 +5,9 @@ import unittest
 
 import numpy as np
 from sklearn.datasets import fetch_california_housing
-from sklearn.preprocessing import LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
+                                   MinMaxScaler, StandardScaler, KernelCenterer)
+from sklearn.metrics.pairwise import pairwise_kernels
 
 from src import sklearn_json as skljson
 
@@ -35,6 +37,7 @@ class TestAPI(unittest.TestCase):
         self.simple_test_labels = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 0]])
 
         self.X = fetch_california_housing()['data']
+        self.kernel_X = pairwise_kernels(self.X[:100], metric="linear", filter_params=True, degree=3, coef0=1)
 
 
     def check_model(self, model, model_name, data, labels):
@@ -115,3 +118,24 @@ class TestAPI(unittest.TestCase):
         self.check_scaler(StandardScaler(with_mean=False), 'standard-scaler.json')
         self.check_scaler(StandardScaler(with_std=False), 'standard-scaler.json')
         self.check_scaler(StandardScaler(with_mean=False, with_std=False), 'standard-scaler.json')
+
+    def check_centerer(self, centerer, model_name):
+        expected_ft = centerer.fit_transform(self.kernel_X)
+        expected_t = centerer.transform(self.kernel_X)
+
+        serialized_dict_model = skljson.to_dict(centerer)
+        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
+
+        skljson.to_json(centerer, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_t = deserialized_model.transform(self.kernel_X)
+            actual_ft = deserialized_model.fit_transform(self.kernel_X)
+
+            np.testing.assert_array_equal(expected_t, actual_t)
+            np.testing.assert_array_equal(expected_ft, actual_ft)
+
+    def test_kernel_centerer(self):
+        self.check_centerer(KernelCenterer(), 'kernel-centerer.json')

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from sklearn.preprocessing import LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler,
+                                   KernelCenterer)
 
 
 def serialize_label_binarizer(label_binarizer):
@@ -153,5 +154,32 @@ def serialize_label_encoder(model):
 def deserialize_label_encoder(model_dict):
     model = LabelEncoder()
     model.classes_ = np.array(model_dict['classes_'])
+
+    return model
+
+
+def serialize_kernel_centerer(model):
+    serialized_model = {
+        'meta': 'kernel-centerer',
+        'K_fit_all_': model.K_fit_all_.astype(float).tolist(),
+        'K_fit_rows_': model.K_fit_rows_.tolist(),
+        'n_features_in_': model.n_features_in_,
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist(),
+
+    return serialized_model
+
+
+def deserialize_kernel_centerer(model_dict):
+    model = KernelCenterer()
+
+    model.K_fit_all_ = np.array(model_dict['K_fit_all_'], dtype=np.float64)
+    model.K_fit_rows_ = np.array(model_dict['K_fit_rows_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model

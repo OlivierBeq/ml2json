@@ -10,7 +10,8 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier,
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.preprocessing import LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
+                                   MinMaxScaler, StandardScaler, KernelCenterer)
 from sklearn.svm import SVR
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
@@ -166,6 +167,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return pre.serialize_minmax_scaler(model)
     elif isinstance(model, StandardScaler):
         return pre.serialize_standard_scaler(model)
+    elif isinstance(model, KernelCenterer):
+        return pre.serialize_kernel_centerer(model)
 
     # Otherwise
     else:
@@ -301,6 +304,8 @@ def deserialize_model(model_dict):
         return pre.deserialize_minmax_scaler(model_dict)
     elif model_dict['meta'] == 'standard-scaler':
         return pre.deserialize_standard_scaler(model_dict)
+    elif model_dict['meta'] == 'kernel-centerer':
+        return pre.deserialize_kernel_centerer(model_dict)
 
     # Otherwise
     else:
