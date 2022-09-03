@@ -5,7 +5,7 @@ import unittest
 
 import numpy as np
 from sklearn.datasets import load_iris
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, KernelPCA
 
 from src import sklearn_json as skljson
 
@@ -39,3 +39,6 @@ class TestAPI(unittest.TestCase):
     def test_pca(self):
         self.check_model(PCA(n_components=2, svd_solver='full'), 'pca.json')
         self.check_model(PCA(svd_solver='arpack'), 'pca.json')
+
+    def test_kernel_pca(self):
+        self.check_model(KernelPCA(fit_inverse_transform=True), 'kernel-pca.json')

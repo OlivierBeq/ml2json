@@ -17,7 +17,7 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
                              SpectralClustering, SpectralBiclustering, SpectralCoclustering)
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
 from xgboost import XGBRegressor, XGBClassifier, XGBRFRegressor, XGBRFClassifier, XGBRanker
@@ -144,6 +144,8 @@ def serialize_model(model, catboost_data: Pool = None):
     # Decomposition
     elif isinstance(model, PCA):
         return dec.serialize_pca(model)
+    elif isinstance(model, KernelPCA):
+        return dec.serialize_kernel_pca(model)
 
     # Manifold
     elif isinstance(model, TSNE):
@@ -281,6 +283,8 @@ def deserialize_model(model_dict):
     # Decomposition
     elif model_dict['meta'] == 'pca':
         return dec.deserialize_pca(model_dict)
+    elif model_dict['meta'] == 'kernel-pca':
+        return  dec.deserialize_kernel_pca(model_dict)
 
     # Manifold
     elif model_dict['meta'] == 'tsne':

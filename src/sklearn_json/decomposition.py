@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, KernelPCA
+
+from .preprocessing import serialize_kernel_centerer, deserialize_kernel_centerer
 
 
 def serialize_pca(model):
@@ -41,6 +43,38 @@ def deserialize_pca(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
     model.noise_variance_ = model_dict['noise_variance_']
     model._fit_svd_solver = model_dict['_fit_svd_solver']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_kernel_pca(model):
+    serialized_model = {
+        'meta': 'kernel-pca',
+        'eigenvalues_': model.eigenvalues_.tolist(),
+        'eigenvectors_': model.eigenvectors_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        'X_fit_': model.X_fit_.tolist(),
+        '_centerer': serialize_kernel_centerer(model._centerer),
+        'params': model.get_params(),
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+
+def deserialize_kernel_pca(model_dict):
+    model = KernelPCA(**model_dict['params'])
+
+    model.eigenvalues_ = np.array(model_dict['eigenvalues_'])
+    model.eigenvectors_ = np.array(model_dict['eigenvectors_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+    model.X_fit_ = np.array(model_dict['X_fit_'])
+    model._centerer = deserialize_kernel_centerer(model_dict['_centerer'])
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
