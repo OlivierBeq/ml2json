@@ -147,6 +147,8 @@ def serialize_model(model, catboost_data: Pool = None):
     # Manifold
     elif isinstance(model, TSNE):
         return man.serialize_tsne(model)
+    elif isinstance(model, MDS):
+        return man.serialize_mds(model)
 
 
     # Feature Extraction
@@ -280,6 +282,8 @@ def deserialize_model(model_dict):
     # Manifold
     elif model_dict['meta'] == 'tsne':
         return  man.deserialize_tsne(model_dict)
+    elif model_dict['meta'] == 'mds':
+        return  man.deserialize_mds(model_dict)
 
 
     # Feature Extraction

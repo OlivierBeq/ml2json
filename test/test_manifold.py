@@ -36,3 +36,6 @@ class TestAPI(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.check_model(TSNE(init='random', learning_rate='auto'), 'tsne.json')
 
+    def test_mds(self):
+        self.check_model(MDS(random_state=1234), 'mds.json')
+

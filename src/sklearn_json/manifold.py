@@ -43,3 +43,35 @@ def deserialize_tsne(model_dict):
 
     return model
 
+
+def serialize_mds(model):
+    serialized_model = {
+        'meta': 'mds',
+        'dissimilarity_matrix_': model.dissimilarity_matrix_.tolist(),
+        'embedding_': model.embedding_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        'n_iter_': model.n_iter_,
+        'stress_': float(model.stress_),
+        'params': model.get_params()
+    }
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_mds(model_dict):
+    model = MDS(**model_dict['params'])
+
+    model.dissimilarity_matrix_ = np.array(model_dict['dissimilarity_matrix_'])
+    model.embedding_ = np.array(model_dict['embedding_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+    model.n_iter_ = model_dict['n_iter_']
+    model.stress_ = np.float64(model_dict['stress_'])
+
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+
+    return model
+
