@@ -39,3 +39,5 @@ class TestAPI(unittest.TestCase):
     def test_mds(self):
         self.check_model(MDS(random_state=1234), 'mds.json')
 
+    def test_isomap(self):
+        self.check_model(Isomap(n_neighbors=50, n_components=10, neighbors_algorithm='brute'), 'isomap.json')

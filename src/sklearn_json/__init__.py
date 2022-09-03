@@ -6,7 +6,8 @@ from sklearn import svm, discriminant_analysis, dummy
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, RandomForestRegressor, GradientBoostingRegressor, _gb_losses
+from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier,
+                              RandomForestRegressor, GradientBoostingRegressor)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -154,6 +155,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return man.serialize_tsne(model)
     elif isinstance(model, MDS):
         return man.serialize_mds(model)
+    elif isinstance(model, Isomap):
+        return man.serialize_isomap(model)
 
     # Neighbors
     elif isinstance(model, NearestNeighbors):
@@ -298,7 +301,8 @@ def deserialize_model(model_dict):
         return  man.deserialize_tsne(model_dict)
     elif model_dict['meta'] == 'mds':
         return  man.deserialize_mds(model_dict)
-
+    elif model_dict['meta'] == 'isomap':
+        return  man.deserialize_isomap(model_dict)
 
     # Neighbors
     elif model_dict['meta'] == 'nearest-neighbors':
