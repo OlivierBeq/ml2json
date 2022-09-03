@@ -20,6 +20,7 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
+from sklearn.neighbors import NearestNeighbors, KDTree
 from xgboost import XGBRegressor, XGBClassifier, XGBRFRegressor, XGBRFClassifier, XGBRanker
 from lightgbm import LGBMClassifier, LGBMRegressor, LGBMRanker
 from catboost import CatBoostClassifier, CatBoostRegressor, CatBoostRanker, Pool
@@ -33,6 +34,7 @@ from . import preprocessing as pre
 from . import cluster as clus
 from . import decomposition as dec
 from . import manifold as man
+from . import neighbors as nei
 
 
 __version__ = '0.1.4'
@@ -153,6 +155,9 @@ def serialize_model(model, catboost_data: Pool = None):
     elif isinstance(model, MDS):
         return man.serialize_mds(model)
 
+    # Neighbors
+    elif isinstance(model, KDTree):
+        return nei.serialize_kdtree(model)
 
     # Feature Extraction
     elif isinstance(model, DictVectorizer):
@@ -292,6 +297,10 @@ def deserialize_model(model_dict):
     elif model_dict['meta'] == 'mds':
         return  man.deserialize_mds(model_dict)
 
+
+    # Neighbors
+    elif model_dict['meta'] == 'kdtree':
+        return  nei.deserialize_kdtree(model_dict)
 
     # Feature Extraction
     elif model_dict['meta'] == 'dict-vectorizer':
