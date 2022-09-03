@@ -17,6 +17,8 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
                              SpectralClustering, SpectralBiclustering, SpectralCoclustering)
 from sklearn.decomposition import PCA
+from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
+                              MDS, SpectralEmbedding, TSNE)
 from xgboost import XGBRegressor, XGBClassifier, XGBRFRegressor, XGBRFClassifier, XGBRanker
 from lightgbm import LGBMClassifier, LGBMRegressor, LGBMRanker
 from catboost import CatBoostClassifier, CatBoostRegressor, CatBoostRanker, Pool
@@ -29,6 +31,7 @@ from . import feature_extraction as ext
 from . import preprocessing as pre
 from . import cluster as clus
 from . import decomposition as dec
+from . import manifold as man
 
 
 __version__ = '0.1.4'
@@ -140,6 +143,11 @@ def serialize_model(model, catboost_data: Pool = None):
     # Decomposition
     elif isinstance(model, PCA):
         return dec.serialize_pca(model)
+
+    # Manifold
+    elif isinstance(model, TSNE):
+        return man.serialize_tsne(model)
+
 
     # Feature Extraction
     elif isinstance(model, DictVectorizer):
@@ -268,6 +276,11 @@ def deserialize_model(model_dict):
     # Decomposition
     elif model_dict['meta'] == 'pca':
         return dec.deserialize_pca(model_dict)
+
+    # Manifold
+    elif model_dict['meta'] == 'tsne':
+        return  man.deserialize_tsne(model_dict)
+
 
     # Feature Extraction
     elif model_dict['meta'] == 'dict-vectorizer':
