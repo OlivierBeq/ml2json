@@ -12,6 +12,7 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              SpectralClustering, SpectralBiclustering, SpectralCoclustering)
 from kmodes.kmodes import KModes
 from kmodes.kprototypes import KPrototypes
+from hdbscan import HDBSCAN
 
 from src import sklearn_json as skljson
 
@@ -263,7 +264,7 @@ class TestAPI(unittest.TestCase):
     def test_bisecting_kmeans(self):
         self.check_fitpredict_model(
             BisectingKMeans(n_clusters=2, tol=1e-999, random_state=1234, n_init=100, max_iter=10000),
-            'bisecting-kmeans.json', self.simple_X)
+            'bisecting-kmeans.json', self.X)
         self.check_predict_model(
             BisectingKMeans(n_clusters=2, tol=1e-999, random_state=1234, n_init=100, max_iter=10000),
             'bisecting-kmeans.json', self.X)
@@ -273,3 +274,7 @@ class TestAPI(unittest.TestCase):
         self.check_transform_model(
             BisectingKMeans(n_clusters=2, tol=1e-999, random_state=1234, n_init=100, max_iter=10000),
             'bisecting-kmeans.json', self.X)
+
+    def test_hdbscan(self):
+        self.check_fitpredict_model(HDBSCAN(), 'hdbscan.json', self.X)
+        self.check_fitpredict_model(HDBSCAN(gen_min_span_tree=True), 'hdbscan.json', self.X)

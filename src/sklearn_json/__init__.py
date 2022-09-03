@@ -27,6 +27,7 @@ from lightgbm import LGBMClassifier, LGBMRegressor, LGBMRanker
 from catboost import CatBoostClassifier, CatBoostRegressor, CatBoostRanker, Pool
 from kmodes.kmodes import KModes
 from kmodes.kprototypes import KPrototypes
+from hdbscan import HDBSCAN
 
 from . import classification as clf
 from . import regression as reg
@@ -143,6 +144,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return clus.serialize_kmodes(model)
     elif isinstance(model, Birch):
         return clus.serialize_birch(model)
+    elif isinstance(model, HDBSCAN):
+        return clus.serialize_hdbscan(model)
 
     # Decomposition
     elif isinstance(model, PCA):
@@ -293,6 +296,8 @@ def deserialize_model(model_dict):
         return clus.deserialize_birch(model_dict)
     elif model_dict['meta'] == 'bisecting-kmeans':
         return clus.deserialize_bisecting_kmeans(model_dict)
+    elif model_dict['meta'] == 'hdbscan':
+        return clus.deserialize_hdbscan(model_dict)
 
     # Decomposition
     elif model_dict['meta'] == 'pca':

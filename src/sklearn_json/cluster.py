@@ -12,8 +12,10 @@ from sklearn.cluster._birch import _CFNode, _CFSubcluster
 from sklearn.cluster._bisect_k_means import _BisectingTree
 from kmodes.kmodes import KModes
 from kmodes.kprototypes import KPrototypes
+from hdbscan import HDBSCAN
 
 from .utils.random_state import serialize_random_state, deserialize_random_state
+from .utils.memory import serialize_memory, deserialize_memory
 
 
 def serialize_kmeans(model):
@@ -739,5 +741,70 @@ def deserialize_bisecting_kmeans(model_dict):
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_hdbscan(model):
+    serialized_model = {
+        'meta': 'hdbscan',
+        '_metric_kwargs': model._metric_kwargs,
+        '_condensed_tree': model._condensed_tree.tolist(),
+        '_condensed_tree_dtype': f"np.dtype({str(model._condensed_tree.dtype)})",
+        '_single_linkage_tree': model._single_linkage_tree.tolist(),
+        '_raw_data': model._raw_data.tolist(),
+        '_all_finite': bool(model._all_finite),
+        'labels_': model.labels_.tolist(),
+        'probabilities_': model.probabilities_.tolist(),
+        'cluster_persistence_': model.cluster_persistence_.tolist(),
+        'params': model.get_params()
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if '_min_spanning_tree' in model.__dict__ and model._min_spanning_tree is not None:
+        serialized_model['_min_spanning_tree'] = model._min_spanning_tree.tolist()
+    else:
+        serialized_model['_min_spanning_tree'] = model._min_spanning_tree
+    if '_outlier_scores' in model.__dict__:
+        serialized_model['_outlier_scores'] = model._outlier_scores
+    if '_prediction_data' in model.__dict__:
+        serialized_model['_prediction_data'] = model._prediction_data
+    if '_relative_validity' in model.__dict__:
+        serialized_model['_relative_validity'] = model._relative_validity
+
+    if serialized_model['params']['memory'] is not None:
+        serialized_model['params']['memory'] = serialize_memory(serialized_model['params']['memory'])
+
+    return serialized_model
+
+
+def deserialize_hdbscan(model_dict):
+
+    if model_dict['params']['memory'] is not None:
+        model_dict['params']['memory'] = deserialize_memory(model_dict['params']['memory'])
+
+    model = HDBSCAN(**model_dict['params'])
+
+    model._metric_kwargs = model_dict['_metric_kwargs']
+    model._condensed_tree = np.array(list(map(tuple, model_dict['_condensed_tree'])),
+                                     dtype=eval(model_dict['_condensed_tree_dtype']))
+    model._single_linkage_tree = np.array(model_dict['_single_linkage_tree'])
+    model._raw_data = np.array(model_dict['_raw_data'])
+    model._all_finite = model_dict['_all_finite']
+    model.labels_ = np.array(model_dict['labels_'])
+    model.probabilities_ = np.array(model_dict['probabilities_'])
+    model.cluster_persistence_ = np.array(model_dict['cluster_persistence_'])
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if '_min_spanning_tree' in model_dict:
+        model._min_spanning_tree = np.array(model_dict['_min_spanning_tree'])
+    if '_outlier_scores' in model_dict:
+        model._outlier_scores = np.array(model_dict['_outlier_scores'])
+    if '_prediction_data' in model_dict:
+        model._prediction_data = np.array(model_dict['_prediction_data'])
+    if '_relative_validity' in model_dict:
+        model._relative_validity = np.array(model_dict['_relative_validity'])
 
     return model
