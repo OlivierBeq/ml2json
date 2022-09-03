@@ -156,6 +156,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return man.serialize_mds(model)
 
     # Neighbors
+    elif isinstance(model, NearestNeighbors):
+        return nei.serialize_nearest_neighbors(model)
     elif isinstance(model, KDTree):
         return nei.serialize_kdtree(model)
 
@@ -299,6 +301,8 @@ def deserialize_model(model_dict):
 
 
     # Neighbors
+    elif model_dict['meta'] == 'nearest-neighbors':
+        return  nei.deserialize_nearest_neighbors(model_dict)
     elif model_dict['meta'] == 'kdtree':
         return  nei.deserialize_kdtree(model_dict)
 

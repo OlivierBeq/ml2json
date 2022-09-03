@@ -7,6 +7,48 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors, KDTree
 
 
+def serialize_nearest_neighbors(model):
+    serialized_model = {
+        'meta': 'nearest-neighbors',
+        'effective_metric_params_': model.effective_metric_params_,
+        '_fit_method': model._fit_method,
+        '_fit_X': model._fit_X.tolist(),
+        'n_samples_fit_': model.n_samples_fit_,
+        'effective_metric_': model.effective_metric_,
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params(),
+    }
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if model._tree is not None:
+        serialized_model['_tree'] = serialize_kdtree(model._tree)
+    else:
+        serialized_model['_tree'] = model._tree
+
+    return serialized_model
+
+
+def deserialize_nearest_neighbors(model_dict):
+    model = NearestNeighbors(**model_dict['params'])
+
+    model.effective_metric_params_ = model_dict['effective_metric_params_']
+    model._fit_method = model_dict['_fit_method']
+    model._fit_X = np.array(model_dict['_fit_X'])
+    model.n_samples_fit_ = model_dict['n_samples_fit_']
+    model.effective_metric_ = model_dict['effective_metric_']
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if model_dict['_tree'] is not None:
+        model._tree = deserialize_kdtree(model_dict['_tree'])
+    else:
+        model._tree = model_dict['_tree']
+
+    return model
+
+
 def serialize_kdtree(model):
     state = model.__getstate__()
     serialized_model = {
