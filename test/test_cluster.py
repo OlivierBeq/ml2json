@@ -2,7 +2,6 @@
 
 import os
 import unittest
-import itertools
 
 import numpy as np
 from sklearn.datasets import make_blobs, make_checkerboard
@@ -70,7 +69,7 @@ class TestAPI(unittest.TestCase):
                 else:
                     print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
 
-            actual_ft = deserialized_model.fit_transform(data)
+            actual_ft = deserialized_model.transform(data)
 
             np.testing.assert_array_almost_equal(expected_ft, actual_ft)
 
@@ -93,7 +92,6 @@ class TestAPI(unittest.TestCase):
                 else:
                     print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
 
-            deserialized_model.fit(data)
             actual_p = deserialized_model.predict(data)
 
             np.testing.assert_array_equal(expected_p, actual_p)
@@ -120,6 +118,28 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_equal(expected_fp, actual_fp)
 
+    def check_fitpredict_and_predict_model(self, model, model_name, data):
+        expected_fp = model.fit_predict(data)
+
+        serialized_dict_model = skljson.to_dict(model)
+        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
+
+        skljson.to_json(model, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+
+            for key in sorted(model.__dict__.keys()):
+                if isinstance(model.__dict__[key], np.ndarray):
+                    print(key, (model.__dict__[key] == deserialized_dict_model.__dict__[key]).all())
+                else:
+                    print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
+
+            actual_fp = deserialized_model.predict(data)
+
+            np.testing.assert_array_equal(expected_fp, actual_fp)
+
     def test_kmeans(self):
         for model in [KMeans(n_clusters=self.n_centers, init='k-means++',
                              random_state=1234, n_init=100, max_iter=10000,
@@ -130,7 +150,7 @@ class TestAPI(unittest.TestCase):
             self.check_transform_model(model, 'kmeans.json', self.X)
             self.check_fittransform_model(model, 'kmeans.json', self.X)
             self.check_predict_model(model, 'kmeans.json', self.X)
-            self.check_fitpredict_model(model, 'kmeans.json', self.X)
+            self.check_fitpredict_and_predict_model(model, 'kmeans.json', self.X)
 
     def test_minibatch_kmeans(self):
         for model in [MiniBatchKMeans(n_clusters=self.n_centers, init='k-means++',
@@ -142,11 +162,11 @@ class TestAPI(unittest.TestCase):
             self.check_transform_model(model, 'minibatch-kmeans.json', self.X)
             self.check_fittransform_model(model, 'minibatch-kmeans.json', self.X)
             self.check_predict_model(model, 'minibatch-kmeans.json', self.X)
-            self.check_fitpredict_model(model, 'minibatch-kmeans.json', self.X)
+            self.check_fitpredict_and_predict_model(model, 'minibatch-kmeans.json', self.X)
 
     def test_affinity_propagation(self):
         self.check_predict_model(AffinityPropagation(), 'affinity-propagation.json', self.simple_X)
-        self.check_fitpredict_model(AffinityPropagation(), 'affinity-propagation.json', self.simple_X)
+        self.check_fitpredict_and_predict_model(AffinityPropagation(), 'affinity-propagation.json', self.simple_X)
 
     def test_agglomerative_clustering(self):
         self.check_fitpredict_model(AgglomerativeClustering(), 'agglomerative-clustering.json', self.simple_X)
@@ -166,7 +186,7 @@ class TestAPI(unittest.TestCase):
 
     def test_meanshift(self):
         self.check_predict_model(MeanShift(), 'meanshift.json', self.simple_X)
-        self.check_fitpredict_model(MeanShift(), 'meanshift.json', self.simple_X)
+        self.check_fitpredict_and_predict_model(MeanShift(), 'meanshift.json', self.simple_X)
 
     def check_spectral_model(self, model, model_name, n_clusters):
         data, rows, columns = make_checkerboard(shape=(300, 300), n_clusters=n_clusters,
@@ -220,7 +240,7 @@ class TestAPI(unittest.TestCase):
                                   'spectral-coclus.json', n_clusters)
 
     def test_kmodes(self):
-        self.check_fitpredict_model(KModes(), 'kmodes.json', self.X)
+        self.check_fitpredict_and_predict_model(KModes(random_state=1234), 'kmodes.json', self.X)
 
     def check_kprototype_model(self, model, model_name, data):
 
@@ -256,13 +276,13 @@ class TestAPI(unittest.TestCase):
         self.check_kprototype_model(KPrototypes(n_clusters=2, random_state=1234), 'kproto.json', self.X)
 
     def test_birch(self):
-        self.check_fitpredict_model(Birch(), 'birch.json', self.X)
+        self.check_fitpredict_and_predict_model(Birch(), 'birch.json', self.X)
         self.check_predict_model(Birch(), 'birch.json', self.X)
         self.check_fittransform_model(Birch(), 'birch.json', self.X)
         self.check_transform_model(Birch(), 'birch.json', self.X)
 
     def test_bisecting_kmeans(self):
-        self.check_fitpredict_model(
+        self.check_fitpredict_and_predict_model(
             BisectingKMeans(n_clusters=2, tol=1e-999, random_state=1234, n_init=100, max_iter=10000),
             'bisecting-kmeans.json', self.X)
         self.check_predict_model(
