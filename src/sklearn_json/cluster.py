@@ -594,7 +594,7 @@ def serialize_kmodes(model):
         'cost_': float(model.cost_),
         'n_iter_': model.n_iter_,
         'epoch_costs_': [float(x) for x in model.epoch_costs_],
-        '_enc_map': model._enc_map,
+        '_enc_map': [{float(key): value for key, value in subdict.items()} for subdict in model._enc_map],
         'params': params
     }
 
@@ -608,12 +608,12 @@ def deserialize_kmodes(model_dict):
 
     model = KModes(**params)
 
-    model._enc_cluster_centroids = np.array(model_dict['_enc_cluster_centroids'], dtype=np.int32)
+    model._enc_cluster_centroids = np.array(model_dict['_enc_cluster_centroids'])
     model.labels_ = np.array(model_dict['labels_'])
     model.cost_ = model_dict['cost_']
     model.n_iter_ = model_dict['n_iter_']
     model.epoch_costs_ = model_dict['epoch_costs_']
-    model._enc_map = model_dict['_enc_map']
+    model._enc_map = [{np.float64(key): value for key, value in subdict.items()} for subdict in model_dict['_enc_map']]
 
     return model
 
