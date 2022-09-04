@@ -28,6 +28,7 @@ from catboost import CatBoostClassifier, CatBoostRegressor, CatBoostRanker, Pool
 from kmodes.kmodes import KModes
 from kmodes.kprototypes import KPrototypes
 from hdbscan import HDBSCAN
+from pynndescent import NNDescent
 
 from . import classification as clf
 from . import regression as reg
@@ -170,6 +171,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return nei.serialize_nearest_neighbors(model)
     elif isinstance(model, KDTree):
         return nei.serialize_kdtree(model)
+    elif isinstance(model, NNDescent):
+        return nei.serialize_nndescent(model)
 
     # Feature Extraction
     elif isinstance(model, DictVectorizer):
@@ -322,6 +325,8 @@ def deserialize_model(model_dict):
         return  nei.deserialize_nearest_neighbors(model_dict)
     elif model_dict['meta'] == 'kdtree':
         return  nei.deserialize_kdtree(model_dict)
+    elif model_dict['meta'] == 'nn-descent':
+        return  nei.deserialize_nndescent(model_dict)
 
     # Feature Extraction
     elif model_dict['meta'] == 'dict-vectorizer':

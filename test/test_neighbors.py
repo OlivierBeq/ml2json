@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 from sklearn.datasets import load_iris
 from sklearn.neighbors import NearestNeighbors, KDTree
+from pynndescent import NNDescent
 
 from src import sklearn_json as skljson
 
@@ -58,3 +59,6 @@ class TestAPI(unittest.TestCase):
 
     def test_kdtree(self):
         self.check_kdtree_model(KDTree(self.data), 'nearest-neighbors.json')
+
+    def test_nndescent(self):
+        self.check_kdtree_model(NNDescent(self.data), 'nn-descent.json')

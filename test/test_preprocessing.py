@@ -39,7 +39,6 @@ class TestAPI(unittest.TestCase):
         self.X = fetch_california_housing()['data']
         self.kernel_X = pairwise_kernels(self.X[:100], metric="linear", filter_params=True, degree=3, coef0=1)
 
-
     def check_model(self, model, model_name, data, labels):
         expected_ft = model.fit_transform(data)
         expected_t = model.transform(data)
