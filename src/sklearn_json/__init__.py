@@ -29,6 +29,7 @@ from kmodes.kmodes import KModes
 from kmodes.kprototypes import KPrototypes
 from hdbscan import HDBSCAN
 from pynndescent import NNDescent
+from umap import UMAP
 
 from . import classification as clf
 from . import regression as reg
@@ -165,6 +166,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return man.serialize_locally_linear_embedding(model)
     elif isinstance(model, SpectralEmbedding):
         return man.serialize_spectral_embedding(model)
+    elif isinstance(model, UMAP):
+        return man.serialize_umap(model)
 
     # Neighbors
     elif isinstance(model, NearestNeighbors):
@@ -319,6 +322,8 @@ def deserialize_model(model_dict):
         return  man.deserialize_locally_linear_embedding(model_dict)
     elif model_dict['meta'] == 'spectral-embedding':
         return  man.deserialize_spectral_embedding(model_dict)
+    elif model_dict['meta'] == 'umap':
+        return  man.deserialize_umap(model_dict)
 
     # Neighbors
     elif model_dict['meta'] == 'nearest-neighbors':

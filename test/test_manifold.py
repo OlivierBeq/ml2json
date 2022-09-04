@@ -7,6 +7,8 @@ import numpy as np
 from sklearn.datasets import load_iris, load_digits, fetch_california_housing
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
+from umap import UMAP
+from umap.umap_ import nearest_neighbors
 
 from src import sklearn_json as skljson
 
@@ -31,7 +33,11 @@ class TestAPI(unittest.TestCase):
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
             actual_ft = deserialized_model.fit_transform(data)
 
-            np.testing.assert_array_almost_equal(expected_ft, actual_ft)
+            if not isinstance(actual_ft, tuple):
+                np.testing.assert_array_almost_equal(expected_ft, actual_ft)
+            else:
+                for x, y in zip(expected_ft, actual_ft):
+                    np.testing.assert_array_almost_equal(x, y)
 
     def test_tsne(self):
         self.check_model(TSNE(init='pca', learning_rate='auto'), 'tsne.json', self.iris_data)
@@ -54,3 +60,15 @@ class TestAPI(unittest.TestCase):
     def test_spectral_embedding(self):
         self.check_model(SpectralEmbedding(affinity='nearest_neighbors', random_state=1234), 'spectral-embedding.json', self.digit_data)
         self.check_model(SpectralEmbedding(affinity='rbf', random_state=1234), 'spectral-embedding.json', self.iris_data)
+
+    def test_umap(self):
+        self.check_model(UMAP(random_state=1234), 'umap.json', self.iris_data)
+        self.check_model(UMAP(random_state=1234, output_dens=True), 'umap.json', self.iris_data)
+        precomputed_knn = nearest_neighbors(self.calhouse_data, 15, random_state=1234, metric='euclidean',
+                                            metric_kwds={}, angular=False, verbose=False)
+        self.check_model(UMAP(n_neighbors=15, random_state=1234, metric='euclidean', output_dens=False,
+                              precomputed_knn=precomputed_knn), 'umap.json',
+                         self.calhouse_data)
+        self.check_model(UMAP(n_neighbors=15, random_state=1234, metric='euclidean', output_dens=True,
+                              precomputed_knn=precomputed_knn), 'umap.json',
+                         self.calhouse_data)
