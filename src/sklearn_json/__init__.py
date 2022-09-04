@@ -18,6 +18,8 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
                              SpectralClustering, SpectralBiclustering, SpectralCoclustering)
+from sklearn.cross_decomposition import (CCA, PLSCanonical,
+                                         PLSRegression, PLSSVD)
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
@@ -39,6 +41,7 @@ from . import cluster as clus
 from . import decomposition as dec
 from . import manifold as man
 from . import neighbors as nei
+from . import cross_decomposition as crdec
 
 
 __version__ = '0.1.4'
@@ -148,6 +151,16 @@ def serialize_model(model, catboost_data: Pool = None):
         return clus.serialize_birch(model)
     elif isinstance(model, HDBSCAN):
         return clus.serialize_hdbscan(model)
+
+    # Decomposition
+    elif isinstance(model, CCA):
+        return crdec.serialize_cca(model)
+    elif isinstance(model, PLSCanonical):
+        return crdec.serialize_pls_canonical(model)
+    elif isinstance(model, PLSRegression):
+        return crdec.serialize_pls_regression(model)
+    elif isinstance(model, PLSSVD):
+        return crdec.serialize_pls_svd(model)
 
     # Decomposition
     elif isinstance(model, PCA):
@@ -304,6 +317,16 @@ def deserialize_model(model_dict):
         return clus.deserialize_bisecting_kmeans(model_dict)
     elif model_dict['meta'] == 'hdbscan':
         return clus.deserialize_hdbscan(model_dict)
+
+    # Cross-decomposition
+    elif model_dict['meta'] == 'cca':
+        return crdec.deserialize_cca(model_dict)
+    elif model_dict['meta'] == 'pls-canonical':
+        return crdec.deserialize_pls_canonical(model_dict)
+    elif model_dict['meta'] == 'pls-regression':
+        return crdec.deserialize_pls_regression(model_dict)
+    elif model_dict['meta'] == 'pls-svd':
+        return crdec.deserialize_pls_svd(model_dict)
 
     # Decomposition
     elif model_dict['meta'] == 'pca':
