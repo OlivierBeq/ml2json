@@ -2,6 +2,8 @@
 
 import os
 import uuid
+import inspect
+import importlib
 
 import numpy as np
 import scipy as sp
@@ -9,7 +11,10 @@ from sklearn import svm, discriminant_analysis, dummy
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.tree._tree import Tree
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, _gb_losses
+from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier,
+                              GradientBoostingClassifier, RandomForestClassifier,
+                              StackingClassifier, VotingClassifier,
+                              HistGradientBoostingClassifier, _gb_losses)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier, XGBRFClassifier
@@ -32,6 +37,9 @@ def serialize_logistic_regression(model):
         'params': model.get_params()
     }
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -42,6 +50,9 @@ def deserialize_logistic_regression(model_dict):
     model.coef_ = np.array(model_dict['coef_'])
     model.intercept_ = np.array(model_dict['intercept_'])
     model.n_iter_ = np.array(model_dict['intercept_'])
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
 
@@ -57,6 +68,9 @@ def serialize_bernoulli_nb(model):
         'params': model.get_params()
     }
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -68,6 +82,9 @@ def deserialize_bernoulli_nb(model_dict):
     model.class_log_prior_ = np.array(model_dict['class_log_prior_'])
     model.feature_count_= np.array(model_dict['feature_count_'])
     model.feature_log_prob_ = np.array(model_dict['feature_log_prob_'])
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
 
@@ -84,6 +101,9 @@ def serialize_gaussian_nb(model):
         'params': model.get_params()
     }
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -96,6 +116,9 @@ def deserialize_gaussian_nb(model_dict):
     model.theta_ = np.array(model_dict['theta_'])
     model.var_ = np.array(model_dict['var_'])
     model.epsilon_ = model_dict['epsilon_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
 
@@ -111,6 +134,9 @@ def serialize_multinomial_nb(model):
         'params': model.get_params()
     }
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -122,6 +148,9 @@ def deserialize_multinomial_nb(model_dict):
     model.class_log_prior_ = np.array(model_dict['class_log_prior_'])
     model.feature_count_= np.array(model_dict['feature_count_'])
     model.feature_log_prob_ = np.array(model_dict['feature_log_prob_'])
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
 
@@ -138,6 +167,9 @@ def serialize_complement_nb(model):
         'params': model.get_params()
     }
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -150,6 +182,9 @@ def deserialize_complement_nb(model_dict):
     model.feature_count_= np.array(model_dict['feature_count_'])
     model.feature_log_prob_ = np.array(model_dict['feature_log_prob_'])
     model.feature_all_ = np.array(model_dict['feature_all_'])
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
 
@@ -170,6 +205,9 @@ def serialize_lda(model):
     if 'covariance_' in model.__dict__:
         serialized_model['covariance_'] = model.covariance_.tolist()
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -184,6 +222,9 @@ def deserialize_lda(model_dict):
     model.scalings_ = np.array(model_dict['scalings_']).astype(np.float64)
     model.xbar_ = np.array(model_dict['xbar_']).astype(np.float64)
     model.classes_ = np.array(model_dict['classes_']).astype(np.int64)
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
 
@@ -201,6 +242,9 @@ def serialize_qda(model):
     if 'covariance_' in model.__dict__:
         serialized_model['covariance_'] = model.covariance_.tolist()
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -212,6 +256,9 @@ def deserialize_qda(model_dict):
     model.scalings_ = np.array(model_dict['scalings_']).astype(np.float64)
     model.rotations_ = np.array(model_dict['rotations_']).astype(np.float64)
     model.classes_ = np.array(model_dict['classes_']).astype(np.int64)
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
 
@@ -247,6 +294,9 @@ def serialize_svm(model):
     elif isinstance(model._dual_coef_, np.ndarray):
         serialized_model['_dual_coef_'] = model._dual_coef_.tolist()
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -280,6 +330,9 @@ def deserialize_svm(model_dict):
         model._dual_coef_ = csr.deserialize_csr_matrix(model_dict['_dual_coef_'])
     else:
         model._dual_coef_ = np.array(model_dict['_dual_coef_']).astype(np.float64)
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
 
@@ -340,6 +393,9 @@ def serialize_decision_tree(model):
 
     serialized_model['tree_']['nodes_dtype'] = tree_dtypes
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -389,6 +445,9 @@ def serialize_gradient_boosting(model):
 
     serialized_model['estimators_'] = [regression.serialize_decision_tree_regressor(regression_tree) for regression_tree in model.estimators_.reshape(-1, )]
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -415,6 +474,10 @@ def deserialize_gradient_boosting(model_dict):
 
     if 'priors' in model_dict:
         model.init_.priors = np.array(model_dict['priors'])
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
     return model
 
 
@@ -445,6 +508,9 @@ def serialize_random_forest(model):
     else:
         serialized_model['n_classes_'] = model.n_classes_.tolist()
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -474,6 +540,9 @@ def deserialize_random_forest(model_dict):
     else:
         model.n_classes_ = model_dict['n_classes_']
 
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
     return model
 
 
@@ -489,6 +558,9 @@ def serialize_perceptron(model):
     if 'covariance_' in model.__dict__:
         serialized_model['covariance_'] = model.covariance_.tolist()
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -500,8 +572,10 @@ def deserialize_perceptron(model_dict):
     model.n_iter_ = np.array(model_dict['n_iter_']).astype(np.float64)
     model.classes_ = np.array(model_dict['classes_']).astype(np.int64)
 
-    return model
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
+    return model
 
 
 def serialize_mlp(model):
@@ -523,6 +597,9 @@ def serialize_mlp(model):
     else:
         serialized_model['classes_'] = model.classes_.tolist()
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -540,6 +617,9 @@ def deserialize_mlp(model_dict):
 
     model.classes_ = np.array(model_dict['classes_'])
 
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
     return model
 
 
@@ -555,6 +635,9 @@ def serialize_xgboost_classifier(model):
         serialized_model['advanced-params'] = fh.read()
     os.remove(filename)
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -566,6 +649,9 @@ def deserialize_xgboost_classifier(model_dict):
         fh.write(model_dict['advanced-params'])
     model.load_model(filename)
     os.remove(filename)
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
 
@@ -582,6 +668,9 @@ def serialize_xgboost_rf_classifier(model):
         serialized_model['advanced-params'] = fh.read()
     os.remove(filename)
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -593,6 +682,9 @@ def deserialize_xgboost_rf_classifier(model_dict):
         fh.write(model_dict['advanced-params'])
     model.load_model(filename)
     os.remove(filename)
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
 
@@ -623,6 +715,9 @@ def serialize_lightgbm_classifier(model):
     if hasattr(model, '_classes') and model._classes is not None:
         serialized_model['params']['_classes'] = model._classes.astype(int).tolist()
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -639,6 +734,9 @@ def deserialize_lightgbm_classifier(model_dict):
     model = LGBMClassifier().set_params(**params)
     model._other_params = model_dict['_other_params']
 
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
     return model
 
 
@@ -654,6 +752,9 @@ def serialize_catboost_classifier(model, catboost_data):
         serialized_model['advanced-params'] = fh.read()
     os.remove(filename)
 
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
     return serialized_model
 
 
@@ -665,5 +766,134 @@ def deserialize_catboost_classifier(model_dict):
         fh.write(model_dict['advanced-params'])
     model.load_model(filename, format='json')
     os.remove(filename)
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_adaboost_classifier(model):
+    serialized_model = {
+        'meta': 'adaboost-classifier',
+        'estimators_': [serialize_decision_tree(decision_tree) for decision_tree in model.estimators_],
+        'classes_': model.classes_.tolist(),
+        'n_classes_': model.n_classes_,
+        'estimator_weights_': model.estimator_weights_.tolist(),
+        'estimator_errors_': model.estimator_errors_.tolist(),
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params()
+    }
+
+    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
+        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
+                                               type(model.base_estimator_).__name__,
+                                               model.base_estimator_.get_params())
+    else:
+        serialized_model['base_estimator_'] = None
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+
+def deserialize_adaboost_classifier(model_dict):
+
+    if model_dict['base_estimator_'] is not None:
+        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                         model_dict['base_estimator_'][1])(
+            **model_dict['base_estimator_'][2])
+    else:
+        model_dict['params']['base_estimator'] = None
+
+    model = AdaBoostClassifier(**model_dict['params'])
+    model.base_estimator_ = model_dict['params']['base_estimator']
+    model.estimators_ = [deserialize_decision_tree(decision_tree) for decision_tree in model_dict['estimators_']]
+    model.classes_ = np.array(model_dict['classes_'])
+    model.n_classes_ = model_dict['n_classes_']
+    model.estimator_weights_ = np.array(model_dict['estimator_weights_'])
+    model.estimator_errors_ = np.array(model_dict['estimator_errors_'])
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_bagging_classifier(model):
+    serialized_model = {
+        'meta': 'bagging-classifier',
+        '_max_samples': model._max_samples,
+        '_n_samples': model._n_samples,
+        '_max_features': model._max_features,
+        'n_features_in_': model.n_features_in_,
+        'classes_': model.classes_.tolist(),
+        '_seeds': model._seeds.tolist(),
+        'estimators_': [serialize_decision_tree(decision_tree) for decision_tree in model.estimators_],
+        'estimator_params': model.estimator_params,
+        'estimators_features_': [array.tolist() for array in model.estimators_features_],
+        'params': model.get_params()
+    }
+
+    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
+        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
+                                               type(model.base_estimator_).__name__,
+                                               model.base_estimator_.get_params())
+    else:
+        serialized_model['base_estimator_'] = None
+
+    if 'oob_score_' in model.__dict__:
+        serialized_model['oob_score_'] = model.oob_score_
+    if 'oob_decision_function_' in model.__dict__:
+        serialized_model['oob_decision_function_'] = model.oob_decision_function_.tolist()
+
+
+    if isinstance(model.n_classes_, int):
+        serialized_model['n_classes_'] = model.n_classes_
+    else:
+        serialized_model['n_classes_'] = model.n_classes_.tolist()
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+
+def deserialize_bagging_classifier(model_dict):
+
+    if model_dict['base_estimator_'] is not None:
+        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                         model_dict['base_estimator_'][1])(
+            **model_dict['base_estimator_'][2])
+    else:
+        model_dict['params']['base_estimator'] = None
+
+    model = BaggingClassifier(**model_dict['params'])
+
+    model.base_estimator_ = model_dict['params']['base_estimator']
+    model.estimators_ = [deserialize_decision_tree(decision_tree) for decision_tree in model_dict['estimators_']]
+    model._max_samples = model_dict['_max_samples']
+    model._n_samples = model_dict['_n_samples']
+    model._max_features = model_dict['_max_features']
+    model.n_features_in_ = model_dict['n_features_in_']
+    model.classes_ = np.array(model_dict['classes_'])
+    model._seeds = np.array(model_dict['_seeds'])
+    model.estimator_params = model_dict['estimator_params']
+    model.estimators_features_ = [np.array(array) for array in model_dict['estimators_features_']]
+
+    if 'oob_score_' in model_dict:
+        model.oob_score_ = model_dict['oob_score_']
+    if 'oob_decision_function_' in model_dict:
+        model.oob_decision_function_ = model_dict['oob_decision_function_']
+
+    if isinstance(model_dict['n_classes_'], list):
+        model.n_classes_ = np.array(model_dict['n_classes_'])
+    else:
+        model.n_classes_ = model_dict['n_classes_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model

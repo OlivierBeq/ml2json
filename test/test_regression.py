@@ -9,7 +9,9 @@ from sklearn.datasets import make_regression
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import (AdaBoostRegressor, BaggingRegressor, ExtraTreesRegressor,
+                              GradientBoostingRegressor, RandomForestRegressor,
+                              StackingRegressor, VotingRegressor, HistGradientBoostingRegressor)
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
@@ -219,3 +221,11 @@ class TestAPI(unittest.TestCase):
 
     def test_catboost_ranker(self):
         self.check_catboost_ranking_model(CatBoostRanker(allow_writing_files=False, verbose=False), 'catboost-ranker.json')
+
+    def test_adaboost_regressor(self):
+        self.check_model(AdaBoostRegressor(n_estimators=25, learning_rate=1.0), 'adaboost-reg.json')
+        self.check_sparse_model(AdaBoostRegressor(n_estimators=25, learning_rate=1.0), 'adaboost-reg.json')
+
+    def test_bagging_regressor(self):
+        self.check_model(BaggingRegressor(n_estimators=25), 'bagging-reg.json')
+        self.check_sparse_model(BaggingRegressor(n_estimators=25), 'bagging-reg.json')

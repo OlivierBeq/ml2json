@@ -10,7 +10,9 @@ from sklearn.datasets import make_classification
 from sklearn.feature_extraction import FeatureHasher
 from sklearn import svm, discriminant_analysis
 from sklearn.linear_model import LogisticRegression, Perceptron
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier,
+                              GradientBoostingClassifier, RandomForestClassifier,
+                              StackingClassifier, VotingClassifier, HistGradientBoostingClassifier)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -175,6 +177,13 @@ class TestAPI(unittest.TestCase):
 
         np.testing.assert_array_equal(expected_predictions, json_predictions)
 
-
     def test_catboost_classifier(self):
         self.check_model(CatBoostClassifier(allow_writing_files=False, verbose=False), 'catboost-cls.json')
+
+    def test_adaboost_classifier(self):
+        self.check_model(AdaBoostClassifier(n_estimators=25, learning_rate=1.0), 'adaboost-cls.json')
+        self.check_sparse_model(AdaBoostClassifier(n_estimators=25, learning_rate=1.0), 'adaboost-cls.json')
+
+    def test_bagging_classifier(self):
+        self.check_model(BaggingClassifier(n_estimators=25), 'bagging-cls.json')
+        self.check_sparse_model(BaggingClassifier(n_estimators=25), 'bagging-cls.json')

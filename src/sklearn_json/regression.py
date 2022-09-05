@@ -2,12 +2,17 @@
 
 import os
 import uuid
+import inspect
+import importlib
 
 import numpy as np
 import scipy as sp
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, _gb_losses
+from sklearn.ensemble import (AdaBoostRegressor, BaggingRegressor, ExtraTreesRegressor,
+                              GradientBoostingRegressor, RandomForestRegressor,
+                              StackingRegressor, VotingRegressor,
+                              HistGradientBoostingRegressor, _gb_losses)
 from sklearn.neural_network import MLPRegressor
 from sklearn.tree._tree import Tree
 from sklearn.svm import SVR
@@ -627,5 +632,116 @@ def deserialize_catboost_ranker(model_dict):
         fh.write(model_dict['advanced-params'])
     model.load_model(filename, format='json')
     os.remove(filename)
+
+    return model
+
+
+def serialize_adaboost_regressor(model):
+    serialized_model = {
+        'meta': 'adaboost-regressor',
+        'estimators_': [serialize_decision_tree_regressor(decision_tree) for decision_tree in model.estimators_],
+        'estimator_weights_': model.estimator_weights_.tolist(),
+        'estimator_errors_': model.estimator_errors_.tolist(),
+        'estimator_params': model.estimator_params,
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params()
+    }
+
+    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
+        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
+                                               type(model.base_estimator_).__name__,
+                                               model.base_estimator_.get_params())
+    else:
+        serialized_model['base_estimator_'] = None
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+
+def deserialize_adaboost_regressor(model_dict):
+
+    if model_dict['base_estimator_'] is not None:
+        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                         model_dict['base_estimator_'][1])(
+            **model_dict['base_estimator_'][2])
+    else:
+        model_dict['params']['base_estimator'] = None
+
+    model = AdaBoostRegressor(**model_dict['params'])
+    model.base_estimator_ = model_dict['params']['base_estimator']
+    model.estimators_ = [deserialize_decision_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
+    model.estimator_weights_ = np.array(model_dict['estimator_weights_'])
+    model.estimator_errors_ = np.array(model_dict['estimator_errors_'])
+    model.estimator_params = tuple(model_dict['estimator_params'])
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_bagging_regressor(model):
+    serialized_model = {
+        'meta': 'bagging-regression',
+        '_max_samples': model._max_samples,
+        '_n_samples': model._n_samples,
+        '_max_features': model._max_features,
+        'n_features_in_': model.n_features_in_,
+        '_seeds': model._seeds.tolist(),
+        'estimators_': [serialize_decision_tree_regressor(decision_tree) for decision_tree in model.estimators_],
+        'estimator_params': model.estimator_params,
+        'estimators_features_': [array.tolist() for array in model.estimators_features_],
+        'params': model.get_params()
+    }
+
+    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
+        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
+                                               type(model.base_estimator_).__name__,
+                                               model.base_estimator_.get_params())
+    else:
+        serialized_model['base_estimator_'] = None
+
+    if 'oob_score_' in model.__dict__:
+        serialized_model['oob_score_'] = model.oob_score_
+    if 'oob_decision_function_' in model.__dict__:
+        serialized_model['oob_decision_function_'] = model.oob_decision_function_.tolist()
+
+    if 'feature_names_in' in model.__dict__:
+        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+    return serialized_model
+
+
+def deserialize_bagging_regressor(model_dict):
+
+    if model_dict['base_estimator_'] is not None:
+        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                         model_dict['base_estimator_'][1])(
+            **model_dict['base_estimator_'][2])
+    else:
+        model_dict['params']['base_estimator'] = None
+
+    model = BaggingRegressor(**model_dict['params'])
+
+    model.base_estimator_ = model_dict['params']['base_estimator']
+    model.estimators_ = [deserialize_decision_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
+    model._max_samples = model_dict['_max_samples']
+    model._n_samples = model_dict['_n_samples']
+    model._max_features = model_dict['_max_features']
+    model.n_features_in_ = model_dict['n_features_in_']
+    model._seeds = np.array(model_dict['_seeds'])
+    model.estimator_params = model_dict['estimator_params']
+    model.estimators_features_ = [np.array(array) for array in model_dict['estimators_features_']]
+
+    if 'oob_score_' in model_dict:
+        model.oob_score_ = model_dict['oob_score_']
+    if 'oob_decision_function_' in model_dict:
+        model.oob_decision_function_ = model_dict['oob_decision_function_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model

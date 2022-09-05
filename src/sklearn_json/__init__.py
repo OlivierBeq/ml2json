@@ -6,8 +6,11 @@ from sklearn import svm, discriminant_analysis, dummy
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier,
-                              RandomForestRegressor, GradientBoostingRegressor)
+from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor, BaggingClassifier, BaggingRegressor,
+                              ExtraTreesClassifier, ExtraTreesRegressor, GradientBoostingClassifier,
+                              GradientBoostingRegressor, RandomForestClassifier, RandomForestRegressor,
+                              StackingClassifier, StackingRegressor, VotingClassifier, VotingRegressor,
+                              HistGradientBoostingClassifier, HistGradientBoostingRegressor)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -85,6 +88,10 @@ def serialize_model(model, catboost_data: Pool = None):
         return clf.serialize_lightgbm_classifier(model)
     elif isinstance(model, CatBoostClassifier):
         return clf.serialize_catboost_classifier(model, catboost_data)
+    elif isinstance(model, AdaBoostClassifier):
+        return clf.serialize_adaboost_classifier(model)
+    elif isinstance(model, BaggingClassifier):
+        return clf.serialize_bagging_classifier(model)
 
     # Regression
     elif isinstance(model, LinearRegression):
@@ -119,6 +126,10 @@ def serialize_model(model, catboost_data: Pool = None):
         return reg.serialize_catboost_regressor(model, catboost_data)
     elif isinstance(model, CatBoostRanker):
         return reg.serialize_catboost_ranker(model, catboost_data)
+    elif isinstance(model, AdaBoostRegressor):
+        return reg.serialize_adaboost_regressor(model)
+    elif isinstance(model, BaggingRegressor):
+        return reg.serialize_bagging_regressor(model)
 
     # Clustering
     elif isinstance(model, FeatureAgglomeration):
@@ -275,6 +286,10 @@ def deserialize_model(model_dict):
         return clf.deserialize_lightgbm_classifier(model_dict)
     elif model_dict['meta'] == 'catboost-classifier':
         return clf.deserialize_catboost_classifier(model_dict)
+    elif model_dict['meta'] == 'adaboost-classifier':
+        return clf.deserialize_adaboost_classifier(model_dict)
+    elif model_dict['meta'] == 'bagging-classifier':
+        return clf.deserialize_bagging_classifier(model_dict)
 
     # Regression
     elif model_dict['meta'] == 'linear-regression':
@@ -309,6 +324,10 @@ def deserialize_model(model_dict):
         return reg.deserialize_catboost_regressor(model_dict)
     elif model_dict['meta'] == 'catboost-ranker':
         return reg.deserialize_catboost_ranker(model_dict)
+    elif model_dict['meta'] == 'adaboost-regressor':
+        return reg.deserialize_adaboost_regressor(model_dict)
+    elif model_dict['meta'] == 'bagging-regression':
+        return reg.deserialize_bagging_regressor(model_dict)
 
     # Clustering
     elif model_dict['meta'] == 'affinity-propagation':
