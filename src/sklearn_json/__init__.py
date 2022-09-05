@@ -20,7 +20,9 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              SpectralClustering, SpectralBiclustering, SpectralCoclustering)
 from sklearn.cross_decomposition import (CCA, PLSCanonical,
                                          PLSRegression, PLSSVD)
-from sklearn.decomposition import PCA, KernelPCA
+from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAnalysis, FastICA, IncrementalPCA,
+                                   LatentDirichletAllocation, MiniBatchDictionaryLearning, MiniBatchSparsePCA, NMF,
+                                   MiniBatchNMF, SparsePCA, SparseCoder, TruncatedSVD)
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
 from sklearn.neighbors import NearestNeighbors, KDTree
@@ -167,6 +169,30 @@ def serialize_model(model, catboost_data: Pool = None):
         return dec.serialize_pca(model)
     elif isinstance(model, KernelPCA):
         return dec.serialize_kernel_pca(model)
+    elif isinstance(model, IncrementalPCA):
+        return dec.serialize_incremental_pca(model)
+    elif isinstance(model, MiniBatchSparsePCA):
+        return dec.serialize_minibatch_sparse_pca(model)
+    elif isinstance(model, SparsePCA):
+        return dec.serialize_sparse_pca(model)
+    elif isinstance(model, MiniBatchDictionaryLearning):
+        return dec.serialize_minibatch_dictionary_learning(model)
+    elif isinstance(model, DictionaryLearning):
+        return dec.serialize_dictionary_learning(model)
+    elif isinstance(model, FactorAnalysis):
+        return dec.serialize_factor_analysis(model)
+    elif isinstance(model, FastICA):
+        return dec.serialize_fast_ica(model)
+    elif isinstance(model, LatentDirichletAllocation):
+        return dec.serialize_latent_dirichlet_allocation(model)
+    elif isinstance(model, MiniBatchNMF):
+        return dec.serialize_minibatch_nmf(model)
+    elif isinstance(model, NMF):
+        return dec.serialize_nmf(model)
+    elif isinstance(model, SparseCoder):
+        return dec.serialize_sparse_coder(model)
+    elif isinstance(model, TruncatedSVD):
+        return dec.serialize_truncated_svd(model)
 
     # Manifold
     elif isinstance(model, TSNE):
@@ -333,6 +359,30 @@ def deserialize_model(model_dict):
         return dec.deserialize_pca(model_dict)
     elif model_dict['meta'] == 'kernel-pca':
         return  dec.deserialize_kernel_pca(model_dict)
+    elif model_dict['meta'] == 'incremental-pca':
+        return  dec.deserialize_incremental_pca(model_dict)
+    elif model_dict['meta'] == 'sparse-pca':
+        return  dec.deserialize_sparse_pca(model_dict)
+    elif model_dict['meta'] == 'minibatch-sparse-pca':
+        return  dec.deserialize_minibatch_sparse_pca(model_dict)
+    elif model_dict['meta'] == 'dictionary-learning':
+        return  dec.deserialize_dictionary_learning(model_dict)
+    elif model_dict['meta'] == 'minibatch-dictionary-learning':
+        return  dec.deserialize_minibatch_dictionary_learning(model_dict)
+    elif model_dict['meta'] == 'factor-analysis':
+        return  dec.deserialize_factor_analysis(model_dict)
+    elif model_dict['meta'] == 'fast-ica':
+        return  dec.deserialize_fast_ica(model_dict)
+    elif model_dict['meta'] == 'latent-dirichlet-allocation':
+        return  dec.deserialize_latent_dirichlet_allocation(model_dict)
+    elif model_dict['meta'] == 'nmf':
+        return  dec.deserialize_nmf(model_dict)
+    elif model_dict['meta'] == 'minibatch-nmf':
+        return  dec.deserialize_minibatch_nmf(model_dict)
+    elif model_dict['meta'] == 'sparse-coder':
+        return  dec.deserialize_sparse_coder(model_dict)
+    elif model_dict['meta'] == 'truncated-svd':
+        return  dec.deserialize_truncated_svd(model_dict)
 
     # Manifold
     elif model_dict['meta'] == 'tsne':
