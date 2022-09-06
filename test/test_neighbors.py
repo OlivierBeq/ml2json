@@ -58,7 +58,7 @@ class TestAPI(unittest.TestCase):
             np.testing.assert_array_almost_equal(expected_ft_i, actual_ft_i)
 
     def test_kdtree(self):
-        self.check_kdtree_model(KDTree(self.data), 'nearest-neighbors.json')
+        self.check_kdtree_model(KDTree(self.data), 'kd-tree.json')
 
     def test_nndescent(self):
         self.check_kdtree_model(NNDescent(self.data), 'nn-descent.json')

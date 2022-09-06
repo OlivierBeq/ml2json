@@ -108,7 +108,7 @@ class TestAPI(unittest.TestCase):
                                                           transform_alpha=0.1, random_state=1234),
                                        'dictionary-learning.json',
                                        self.dict_X)
-    #
+
     def test_minibatch_dictionary_learning(self):
         self.check_fit_transform_model(MiniBatchDictionaryLearning(n_components=10, transform_algorithm='lars',
                                                                    transform_alpha=0.1, random_state=1234,

@@ -19,6 +19,7 @@ class TestAPI(unittest.TestCase):
         self.iris_data, _ = load_iris(return_X_y=True)
         self.digit_data, _ = load_digits(return_X_y=True)
         self.calhouse_data, _ = fetch_california_housing(return_X_y=True)
+        self.calhouse_data = self.calhouse_data[:5000, :]
 
     def check_model(self, model, model_name, data):
         expected_ft = model.fit_transform(data)
@@ -62,13 +63,13 @@ class TestAPI(unittest.TestCase):
         self.check_model(SpectralEmbedding(affinity='rbf', random_state=1234), 'spectral-embedding.json', self.iris_data)
 
     def test_umap(self):
-        self.check_model(UMAP(random_state=1234), 'umap.json', self.iris_data)
-        self.check_model(UMAP(random_state=1234, output_dens=True), 'umap.json', self.iris_data)
+        self.check_model(UMAP(random_state=1234, low_memory=False), 'umap.json', self.iris_data)
+        self.check_model(UMAP(random_state=1234, output_dens=True, low_memory=False), 'umap.json', self.iris_data)
         precomputed_knn = nearest_neighbors(self.calhouse_data, 15, random_state=1234, metric='euclidean',
-                                            metric_kwds={}, angular=False, verbose=False)
+                                            metric_kwds={}, angular=False, verbose=False, low_memory=False)
         self.check_model(UMAP(n_neighbors=15, random_state=1234, metric='euclidean', output_dens=False,
-                              precomputed_knn=precomputed_knn), 'umap.json',
+                              precomputed_knn=precomputed_knn, low_memory=False), 'umap.json',
                          self.calhouse_data)
         self.check_model(UMAP(n_neighbors=15, random_state=1234, metric='euclidean', output_dens=True,
-                              precomputed_knn=precomputed_knn), 'umap.json',
+                              precomputed_knn=precomputed_knn, low_memory=False), 'umap.json',
                          self.calhouse_data)
