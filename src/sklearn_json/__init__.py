@@ -5,7 +5,7 @@ import json
 from sklearn import svm, discriminant_analysis, dummy
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import LogisticRegression, Perceptron
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor, ExtraTreeClassifier, ExtraTreeRegressor
 from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor, BaggingClassifier, BaggingRegressor,
                               ExtraTreesClassifier, ExtraTreesRegressor, GradientBoostingClassifier,
                               GradientBoostingRegressor, RandomForestClassifier, RandomForestRegressor,
@@ -92,6 +92,10 @@ def serialize_model(model, catboost_data: Pool = None):
         return clf.serialize_adaboost_classifier(model)
     elif isinstance(model, BaggingClassifier):
         return clf.serialize_bagging_classifier(model)
+    elif isinstance(model, ExtraTreeClassifier):
+        return clf.serialize_extra_tree(model)
+    elif isinstance(model, ExtraTreesClassifier):
+        return clf.serialize_extratrees_classifier(model)
 
     # Regression
     elif isinstance(model, LinearRegression):
@@ -104,12 +108,16 @@ def serialize_model(model, catboost_data: Pool = None):
         return reg.serialize_ridge_regressor(model)
     elif isinstance(model, SVR):
         return reg.serialize_svr(model)
+    elif isinstance(model, ExtraTreeRegressor):
+        return reg.serialize_extra_tree_regressor(model)
     elif isinstance(model, DecisionTreeRegressor):
         return reg.serialize_decision_tree_regressor(model)
     elif isinstance(model, GradientBoostingRegressor):
         return reg.serialize_gradient_boosting_regressor(model)
     elif isinstance(model, RandomForestRegressor):
         return reg.serialize_random_forest_regressor(model)
+    elif isinstance(model, ExtraTreesRegressor):
+        return reg.serialize_extratrees_regressor(model)
     elif isinstance(model, MLPRegressor):
         return reg.serialize_mlp_regressor(model)
     elif isinstance(model, XGBRanker):
@@ -290,6 +298,10 @@ def deserialize_model(model_dict):
         return clf.deserialize_adaboost_classifier(model_dict)
     elif model_dict['meta'] == 'bagging-classifier':
         return clf.deserialize_bagging_classifier(model_dict)
+    elif model_dict['meta'] == 'extra-tree-cls':
+        return clf.deserialize_extra_tree(model_dict)
+    elif model_dict['meta'] == 'extratrees-classifier':
+        return clf.deserialize_extratrees_classifier(model_dict)
 
     # Regression
     elif model_dict['meta'] == 'linear-regression':
@@ -328,6 +340,10 @@ def deserialize_model(model_dict):
         return reg.deserialize_adaboost_regressor(model_dict)
     elif model_dict['meta'] == 'bagging-regression':
         return reg.deserialize_bagging_regressor(model_dict)
+    elif model_dict['meta'] == 'extra-tree-reg':
+        return reg.deserialize_extra_tree_regressor(model_dict)
+    elif model_dict['meta'] == 'extratrees-regressor':
+        return reg.deserialize_extratrees_regressor(model_dict)
 
     # Clustering
     elif model_dict['meta'] == 'affinity-propagation':

@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.datasets import make_regression
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor, ExtraTreeRegressor
 from sklearn.ensemble import (AdaBoostRegressor, BaggingRegressor, ExtraTreesRegressor,
                               GradientBoostingRegressor, RandomForestRegressor,
                               StackingRegressor, VotingRegressor, HistGradientBoostingRegressor)
@@ -106,6 +106,10 @@ class TestAPI(unittest.TestCase):
     def test_decision_tree_regression(self):
         self.check_model(DecisionTreeRegressor(), 'decision-tree.json')
         self.check_sparse_model(DecisionTreeRegressor(), 'decision-tree.json')
+
+    def test_extra_tree_regression(self):
+        self.check_model(ExtraTreeRegressor(), 'extra-tree-reg.json')
+        self.check_sparse_model(ExtraTreeRegressor(), 'extra-tree-reg.json')
 
     def test_gradient_boosting_regression(self):
         self.check_model(GradientBoostingRegressor(), 'gradientboosting-regressor.json')
@@ -229,3 +233,10 @@ class TestAPI(unittest.TestCase):
     def test_bagging_regressor(self):
         self.check_model(BaggingRegressor(n_estimators=25), 'bagging-reg.json')
         self.check_sparse_model(BaggingRegressor(n_estimators=25), 'bagging-reg.json')
+
+    def test_extratrees_regressor(self):
+        self.check_model(ExtraTreesRegressor(n_estimators=25), 'extratrees-reg.json')
+        self.check_sparse_model(ExtraTreesRegressor(n_estimators=25), 'extratrees-reg.json')
+        self.check_model(ExtraTreesRegressor(n_estimators=25, oob_score=True, bootstrap=True), 'extratrees-reg.json')
+        self.check_sparse_model(ExtraTreesRegressor(n_estimators=25, oob_score=True, bootstrap=True), 'extratrees-reg.json')
+

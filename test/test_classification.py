@@ -15,7 +15,7 @@ from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesC
                               StackingClassifier, VotingClassifier, HistGradientBoostingClassifier)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from xgboost import XGBClassifier, XGBRFClassifier
 from lightgbm import LGBMClassifier
 from catboost import CatBoostClassifier, Pool
@@ -125,6 +125,10 @@ class TestAPI(unittest.TestCase):
         self.check_model(DecisionTreeClassifier(), 'dt.json')
         self.check_sparse_model(DecisionTreeClassifier(), 'dt.json')
 
+    def test_extra_tree(self):
+        self.check_model(ExtraTreeClassifier(), 'extra-tree.json')
+        self.check_sparse_model(ExtraTreeClassifier(), 'extra-tree.json')
+
     def test_gradient_boosting(self):
         self.check_model(GradientBoostingClassifier(n_estimators=25, learning_rate=1.0), 'gb.json')
         self.check_sparse_model(GradientBoostingClassifier(n_estimators=25, learning_rate=1.0), 'gb.json')
@@ -187,3 +191,9 @@ class TestAPI(unittest.TestCase):
     def test_bagging_classifier(self):
         self.check_model(BaggingClassifier(n_estimators=25), 'bagging-cls.json')
         self.check_sparse_model(BaggingClassifier(n_estimators=25), 'bagging-cls.json')
+
+    def test_extratrees_classifier(self):
+        self.check_model(ExtraTreesClassifier(n_estimators=10, max_depth=5, random_state=1234), 'extra-trees-cls.json')
+        self.check_sparse_model(ExtraTreesClassifier(n_estimators=10, max_depth=5, random_state=1234), 'extra-trees-cls.json')
+        self.check_model(ExtraTreesClassifier(n_estimators=10, max_depth=5, oob_score=True, bootstrap=True, random_state=1234), 'extra-trees-cls.json')
+        self.check_sparse_model(ExtraTreesClassifier(n_estimators=10, max_depth=5, oob_score=True, bootstrap=True, random_state=1234), 'extra-trees-cls.json')

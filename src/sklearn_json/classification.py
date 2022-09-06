@@ -9,7 +9,7 @@ import numpy as np
 import scipy as sp
 from sklearn import svm, discriminant_analysis, dummy
 from sklearn.linear_model import LogisticRegression, Perceptron
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.tree._tree import Tree
 from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier,
                               GradientBoostingClassifier, RandomForestClassifier,
@@ -385,7 +385,6 @@ def serialize_decision_tree(model):
         'classes_': model.classes_.tolist(),
         'params': model.get_params()
     }
-
 
     tree_dtypes = []
     for i in range(0, len(dtypes)):
@@ -882,6 +881,115 @@ def deserialize_bagging_classifier(model_dict):
     model._seeds = np.array(model_dict['_seeds'])
     model.estimator_params = model_dict['estimator_params']
     model.estimators_features_ = [np.array(array) for array in model_dict['estimators_features_']]
+
+    if 'oob_score_' in model_dict:
+        model.oob_score_ = model_dict['oob_score_']
+    if 'oob_decision_function_' in model_dict:
+        model.oob_decision_function_ = model_dict['oob_decision_function_']
+
+    if isinstance(model_dict['n_classes_'], list):
+        model.n_classes_ = np.array(model_dict['n_classes_'])
+    else:
+        model.n_classes_ = model_dict['n_classes_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_extra_tree(model):
+    tree, dtypes = serialize_tree(model.tree_)
+    serialized_model = {
+        'meta': 'extra-tree-cls',
+        'max_features_': model.max_features_,
+        'n_classes_': int(model.n_classes_),
+        'n_features_in_': model.n_features_in_,
+        'n_outputs_': model.n_outputs_,
+        'tree_': tree,
+        'classes_': model.classes_.tolist(),
+        'params': model.get_params()
+    }
+
+    tree_dtypes = []
+    for i in range(0, len(dtypes)):
+        tree_dtypes.append(dtypes[i].str)
+
+    serialized_model['tree_']['nodes_dtype'] = tree_dtypes
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_extra_tree(model_dict):
+    deserialized_model = ExtraTreeClassifier(**model_dict['params'])
+
+    deserialized_model.classes_ = np.array(model_dict['classes_'])
+    deserialized_model.max_features_ = model_dict['max_features_']
+    deserialized_model.n_classes_ = model_dict['n_classes_']
+    deserialized_model.n_features_in_ = model_dict['n_features_in_']
+    deserialized_model.n_outputs_ = model_dict['n_outputs_']
+
+    tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_in_'], model_dict['n_classes_'], model_dict['n_outputs_'])
+    deserialized_model.tree_ = tree
+
+    if 'feature_names_in' in model_dict.keys():
+        deserialized_model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return deserialized_model
+
+
+def serialize_extratrees_classifier(model):
+    serialized_model = {
+        'meta': 'extratrees-classifier',
+        'n_features_in_': model.n_features_in_,
+        'n_outputs_': model.n_outputs_,
+        'classes_': model.classes_.tolist(),
+        'estimators_': [serialize_extra_tree(extra_tree) for extra_tree in model.estimators_],
+        'params': model.get_params()
+    }
+
+    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
+        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
+                                               type(model.base_estimator_).__name__,
+                                               model.base_estimator_.get_params())
+    else:
+        serialized_model['base_estimator_'] = None
+
+    if 'oob_score_' in model.__dict__:
+        serialized_model['oob_score_'] = model.oob_score_
+    if 'oob_decision_function_' in model.__dict__:
+        serialized_model['oob_decision_function_'] = model.oob_decision_function_.tolist()
+
+
+    if isinstance(model.n_classes_, int):
+        serialized_model['n_classes_'] = model.n_classes_
+    else:
+        serialized_model['n_classes_'] = model.n_classes_.tolist()
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_extratrees_classifier(model_dict):
+    model = ExtraTreesClassifier(**model_dict['params'])
+
+    if model_dict['base_estimator_'] is not None:
+        model_dict['base_estimator_'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                model_dict['base_estimator_'][1])(
+            **model_dict['base_estimator_'][2])
+    else:
+        model_dict['base_estimator_'] = None
+
+    model.base_estimator_ = model_dict['base_estimator_']
+    model.estimators_ = [deserialize_extra_tree(decision_tree) for decision_tree in model_dict['estimators_']]
+    model.n_features_in_ = model_dict['n_features_in_']
+    model.n_outputs_ = model_dict['n_outputs_']
+    model.classes_ = np.array(model_dict['classes_'])
 
     if 'oob_score_' in model_dict:
         model.oob_score_ = model_dict['oob_score_']

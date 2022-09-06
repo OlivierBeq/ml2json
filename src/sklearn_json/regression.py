@@ -8,7 +8,7 @@ import importlib
 import numpy as np
 import scipy as sp
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor, ExtraTreeRegressor
 from sklearn.ensemble import (AdaBoostRegressor, BaggingRegressor, ExtraTreesRegressor,
                               GradientBoostingRegressor, RandomForestRegressor,
                               StackingRegressor, VotingRegressor,
@@ -227,14 +227,17 @@ def serialize_tree(tree):
     return serialized_tree, dtypes
 
 
-def deserialize_tree(tree_dict, n_features, n_classes, n_outputs):
+def deserialize_tree(tree_dict, n_features, n_outputs):
     tree_dict['nodes'] = [tuple(lst) for lst in tree_dict['nodes']]
 
     names = ['left_child', 'right_child', 'feature', 'threshold', 'impurity', 'n_node_samples', 'weighted_n_node_samples']
     tree_dict['nodes'] = np.array(tree_dict['nodes'], dtype=np.dtype({'names': names, 'formats': tree_dict['nodes_dtype']}))
     tree_dict['values'] = np.array(tree_dict['values'])
 
-    tree = Tree(n_features, np.array([n_classes], dtype=np.intp), n_outputs)
+    # Dummy classes
+    dummy_classes = np.array([1] * n_outputs, dtype=np.intp)
+
+    tree = Tree(n_features, dummy_classes, n_outputs)
     tree.__setstate__(tree_dict)
 
     return tree
@@ -267,7 +270,7 @@ def deserialize_decision_tree_regressor(model_dict):
     deserialized_decision_tree.n_features_in_ = model_dict['n_features_in_']
     deserialized_decision_tree.n_outputs_ = model_dict['n_outputs_']
 
-    tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_in_'], 1, model_dict['n_outputs_'])
+    tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_in_'], model_dict['n_outputs_'])
     deserialized_decision_tree.tree_ = tree
 
     return deserialized_decision_tree
@@ -740,6 +743,98 @@ def deserialize_bagging_regressor(model_dict):
         model.oob_score_ = model_dict['oob_score_']
     if 'oob_decision_function_' in model_dict:
         model.oob_decision_function_ = model_dict['oob_decision_function_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_extra_tree_regressor(model):
+    tree, dtypes = serialize_tree(model.tree_)
+    serialized_model = {
+        'meta': 'extra-tree-reg',
+        'max_features_': model.max_features_,
+        'n_features_in_': model.n_features_in_,
+        'n_outputs_': model.n_outputs_,
+        'tree_': tree,
+        'params': model.get_params()
+    }
+
+    tree_dtypes = []
+    for i in range(0, len(dtypes)):
+        tree_dtypes.append(dtypes[i].str)
+
+    serialized_model['tree_']['nodes_dtype'] = tree_dtypes
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_extra_tree_regressor(model_dict):
+    deserialized_model = ExtraTreeRegressor(**model_dict['params'])
+
+    deserialized_model.max_features_ = model_dict['max_features_']
+    deserialized_model.n_features_in_ = model_dict['n_features_in_']
+    deserialized_model.n_outputs_ = model_dict['n_outputs_']
+
+    tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_in_'], model_dict['n_outputs_'])
+    deserialized_model.tree_ = tree
+
+    if 'feature_names_in' in model_dict.keys():
+        deserialized_model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return deserialized_model
+
+
+def serialize_extratrees_regressor(model):
+    serialized_model = {
+        'meta': 'extratrees-regressor',
+        'n_features_in_': model.n_features_in_,
+        'n_outputs_': model.n_outputs_,
+        'estimators_': [serialize_extra_tree_regressor(extra_tree) for extra_tree in model.estimators_],
+        'params': model.get_params()
+    }
+
+    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
+        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
+                                               type(model.base_estimator_).__name__,
+                                               model.base_estimator_.get_params())
+    else:
+        serialized_model['base_estimator_'] = None
+
+    if 'oob_score_' in model.__dict__:
+        serialized_model['oob_score_'] = model.oob_score_
+    if 'oob_prediction_' in model.__dict__:
+        serialized_model['oob_prediction_'] = model.oob_prediction_.tolist()
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_extratrees_regressor(model_dict):
+    model = ExtraTreesRegressor(**model_dict['params'])
+
+    if model_dict['base_estimator_'] is not None:
+        model_dict['base_estimator_'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                model_dict['base_estimator_'][1])(
+            **model_dict['base_estimator_'][2])
+    else:
+        model_dict['base_estimator_'] = None
+
+    model.base_estimator_ = model_dict['base_estimator_']
+    model.estimators_ = [deserialize_extra_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
+    model.n_features_in_ = model_dict['n_features_in_']
+    model.n_outputs_ = model_dict['n_outputs_']
+
+    if 'oob_score_' in model_dict:
+        model.oob_score_ = model_dict['oob_score_']
+    if 'oob_prediction_' in model_dict:
+        model.oob_prediction_ = model_dict['oob_prediction_']
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
