@@ -11,7 +11,7 @@ from sklearn.feature_extraction import FeatureHasher
 from sklearn import svm, discriminant_analysis
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier,
-                              GradientBoostingClassifier, RandomForestClassifier,
+                              GradientBoostingClassifier, RandomForestClassifier, IsolationForest,
                               StackingClassifier, VotingClassifier, HistGradientBoostingClassifier)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
@@ -193,7 +193,13 @@ class TestAPI(unittest.TestCase):
         self.check_sparse_model(BaggingClassifier(n_estimators=25), 'bagging-cls.json')
 
     def test_extratrees_classifier(self):
-        self.check_model(ExtraTreesClassifier(n_estimators=10, max_depth=5, random_state=1234), 'extra-trees-cls.json')
-        self.check_sparse_model(ExtraTreesClassifier(n_estimators=10, max_depth=5, random_state=1234), 'extra-trees-cls.json')
-        self.check_model(ExtraTreesClassifier(n_estimators=10, max_depth=5, oob_score=True, bootstrap=True, random_state=1234), 'extra-trees-cls.json')
-        self.check_sparse_model(ExtraTreesClassifier(n_estimators=10, max_depth=5, oob_score=True, bootstrap=True, random_state=1234), 'extra-trees-cls.json')
+        self.check_model(ExtraTreesClassifier(n_estimators=100, max_depth=5, random_state=1234), 'extra-trees-cls.json')
+        self.check_sparse_model(ExtraTreesClassifier(n_estimators=100, max_depth=5, random_state=1234), 'extra-trees-cls.json')
+        self.check_model(ExtraTreesClassifier(n_estimators=100, max_depth=5, oob_score=True, bootstrap=True, random_state=1234), 'extra-trees-cls.json')
+        self.check_sparse_model(ExtraTreesClassifier(n_estimators=100, max_depth=5, oob_score=True, bootstrap=True, random_state=1234), 'extra-trees-cls.json')
+
+    def test_isolation_forest(self):
+        self.check_model(IsolationForest(n_estimators=100, random_state=1234), 'isolation-forest.json')
+        self.check_sparse_model(IsolationForest(n_estimators=100, random_state=1234), 'isolation-forest-cls.json')
+        self.check_model(IsolationForest(n_estimators=100, bootstrap=True, random_state=1234), 'isolation-forest-cls.json')
+        self.check_sparse_model(IsolationForest(n_estimators=100, bootstrap=True, random_state=1234), 'isolation-forest-cls.json')

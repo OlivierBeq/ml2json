@@ -8,9 +8,9 @@ from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor, ExtraTreeClassifier, ExtraTreeRegressor
 from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor, BaggingClassifier, BaggingRegressor,
                               ExtraTreesClassifier, ExtraTreesRegressor, GradientBoostingClassifier,
-                              GradientBoostingRegressor, RandomForestClassifier, RandomForestRegressor,
-                              StackingClassifier, StackingRegressor, VotingClassifier, VotingRegressor,
-                              HistGradientBoostingClassifier, HistGradientBoostingRegressor)
+                              GradientBoostingRegressor, IsolationForest, RandomForestClassifier,
+                              RandomForestRegressor, StackingClassifier, StackingRegressor, VotingClassifier,
+                              VotingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -93,9 +93,11 @@ def serialize_model(model, catboost_data: Pool = None):
     elif isinstance(model, BaggingClassifier):
         return clf.serialize_bagging_classifier(model)
     elif isinstance(model, ExtraTreeClassifier):
-        return clf.serialize_extra_tree(model)
+        return clf.serialize_extra_tree_classifier(model)
     elif isinstance(model, ExtraTreesClassifier):
         return clf.serialize_extratrees_classifier(model)
+    elif isinstance(model, IsolationForest):
+        return clf.serialize_isolation_forest(model)
 
     # Regression
     elif isinstance(model, LinearRegression):
@@ -299,9 +301,11 @@ def deserialize_model(model_dict):
     elif model_dict['meta'] == 'bagging-classifier':
         return clf.deserialize_bagging_classifier(model_dict)
     elif model_dict['meta'] == 'extra-tree-cls':
-        return clf.deserialize_extra_tree(model_dict)
+        return clf.deserialize_extra_tree_classifier(model_dict)
     elif model_dict['meta'] == 'extratrees-classifier':
         return clf.deserialize_extratrees_classifier(model_dict)
+    elif model_dict['meta'] == 'isolation-forest':
+        return clf.deserialize_isolation_forest(model_dict)
 
     # Regression
     elif model_dict['meta'] == 'linear-regression':

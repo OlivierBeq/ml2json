@@ -13,7 +13,7 @@ from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.tree._tree import Tree
 from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier,
                               GradientBoostingClassifier, RandomForestClassifier,
-                              StackingClassifier, VotingClassifier,
+                              StackingClassifier, VotingClassifier, IsolationForest,
                               HistGradientBoostingClassifier, _gb_losses)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
@@ -898,7 +898,7 @@ def deserialize_bagging_classifier(model_dict):
     return model
 
 
-def serialize_extra_tree(model):
+def serialize_extra_tree_classifier(model):
     tree, dtypes = serialize_tree(model.tree_)
     serialized_model = {
         'meta': 'extra-tree-cls',
@@ -923,7 +923,7 @@ def serialize_extra_tree(model):
     return serialized_model
 
 
-def deserialize_extra_tree(model_dict):
+def deserialize_extra_tree_classifier(model_dict):
     deserialized_model = ExtraTreeClassifier(**model_dict['params'])
 
     deserialized_model.classes_ = np.array(model_dict['classes_'])
@@ -947,7 +947,7 @@ def serialize_extratrees_classifier(model):
         'n_features_in_': model.n_features_in_,
         'n_outputs_': model.n_outputs_,
         'classes_': model.classes_.tolist(),
-        'estimators_': [serialize_extra_tree(extra_tree) for extra_tree in model.estimators_],
+        'estimators_': [serialize_extra_tree_classifier(extra_tree) for extra_tree in model.estimators_],
         'params': model.get_params()
     }
 
@@ -986,7 +986,7 @@ def deserialize_extratrees_classifier(model_dict):
         model_dict['base_estimator_'] = None
 
     model.base_estimator_ = model_dict['base_estimator_']
-    model.estimators_ = [deserialize_extra_tree(decision_tree) for decision_tree in model_dict['estimators_']]
+    model.estimators_ = [deserialize_extra_tree_classifier(decision_tree) for decision_tree in model_dict['estimators_']]
     model.n_features_in_ = model_dict['n_features_in_']
     model.n_outputs_ = model_dict['n_outputs_']
     model.classes_ = np.array(model_dict['classes_'])
@@ -1000,6 +1000,67 @@ def deserialize_extratrees_classifier(model_dict):
         model.n_classes_ = np.array(model_dict['n_classes_'])
     else:
         model.n_classes_ = model_dict['n_classes_']
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_isolation_forest(model):
+    serialized_model = {
+        'meta': 'isolation-forest',
+        'n_features_in_': model.n_features_in_,
+        '_max_features': model._max_features,
+        'max_samples_': model.max_samples_,
+        '_max_samples': model._max_samples,
+        '_n_samples': model._n_samples,
+        'offset_': model.offset_,
+        'oob_score': model.oob_score,
+        'bootstrap_features': model.bootstrap_features,
+        '_seeds': model._seeds.tolist(),
+        'estimators_': [regression.serialize_extra_tree_regressor(extra_tree) for extra_tree in model.estimators_],
+        'estimators_features_': [array.tolist() for array in model.estimators_features_],
+        'estimator_params': list(model.estimator_params),
+        'params': model.get_params()
+    }
+
+    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
+        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
+                                               type(model.base_estimator_).__name__,
+                                               model.base_estimator_.get_params())
+    else:
+        serialized_model['base_estimator_'] = None
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_isolation_forest(model_dict):
+    model = IsolationForest(**model_dict['params'])
+
+    if model_dict['base_estimator_'] is not None:
+        model_dict['base_estimator_'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                model_dict['base_estimator_'][1])(
+            **model_dict['base_estimator_'][2])
+    else:
+        model_dict['base_estimator_'] = None
+
+    model.base_estimator_ = model.base_estimator = model_dict['base_estimator_']
+    model.estimators_ = [regression.deserialize_extra_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
+    model.n_features_in_ = model_dict['n_features_in_']
+    model._max_features = model_dict['_max_features']
+    model.max_samples_ = model_dict['max_samples_']
+    model._max_samples = model_dict['_max_samples']
+    model._n_samples = model_dict['_n_samples']
+    model.offset_ = model_dict['offset_']
+    model.oob_score = model_dict['oob_score']
+    model.bootstrap_features = model_dict['bootstrap_features']
+    model._seeds = np.array(model_dict['_seeds'])
+    model.estimators_features_ = [np.array(array) for array in model_dict['estimators_features_']]
+    model.estimator_params = tuple(model_dict['estimator_params'])
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
