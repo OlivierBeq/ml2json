@@ -6,7 +6,8 @@ import unittest
 import numpy as np
 from sklearn.datasets import fetch_california_housing
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
-                                   MinMaxScaler, StandardScaler, KernelCenterer)
+                                   MinMaxScaler, StandardScaler, KernelCenterer,
+                                   OneHotEncoder)
 from sklearn.metrics.pairwise import pairwise_kernels
 
 from src import sklearn_json as skljson
@@ -138,3 +139,24 @@ class TestAPI(unittest.TestCase):
 
     def test_kernel_centerer(self):
         self.check_centerer(KernelCenterer(), 'kernel-centerer.json')
+
+    def test_onehot_encoder(self):
+        model  = OneHotEncoder(handle_unknown='ignore')
+        model.fit([['Male', 1], ['Female', 3], ['Female', 2]])
+        expected_t = model.transform([['Female', 1], ['Male', 4]]).toarray()
+        expected_it = model.inverse_transform(expected_t)
+
+        serialized_dict_model = skljson.to_dict(model)
+        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
+
+        model_name = 'onehot-encoder.json'
+        skljson.to_json(model, model_name)
+        deserialized_json_model = skljson.from_json(model_name)
+        os.remove(model_name)
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_t = deserialized_model.transform([['Female', 1], ['Male', 4]]).toarray()
+            actual_it = deserialized_model.inverse_transform(actual_t)
+
+            np.testing.assert_array_equal(expected_t, actual_t)
+            np.testing.assert_array_equal(expected_it, actual_it)

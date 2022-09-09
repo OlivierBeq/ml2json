@@ -14,7 +14,8 @@ from sklearn.tree._tree import Tree
 from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier,
                               GradientBoostingClassifier, RandomForestClassifier,
                               StackingClassifier, VotingClassifier, IsolationForest,
-                              HistGradientBoostingClassifier, _gb_losses)
+                              HistGradientBoostingClassifier, _gb_losses,
+                              RandomTreesEmbedding)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier, XGBRFClassifier
@@ -24,7 +25,8 @@ from catboost import CatBoostClassifier
 from . import regression
 from .utils import csr
 from .preprocessing import (serialize_label_binarizer, deserialize_label_binarizer,
-                            serialize_label_encoder, deserialize_label_encoder)
+                            serialize_label_encoder, deserialize_label_encoder,
+                            serialize_onehot_encoder, deserialize_onehot_encoder)
 
 
 def serialize_logistic_regression(model):
@@ -1048,7 +1050,7 @@ def deserialize_isolation_forest(model_dict):
     else:
         model_dict['base_estimator_'] = None
 
-    model.base_estimator_ = model.base_estimator = model_dict['base_estimator_']
+    model.base_estimator_ = model_dict['base_estimator_']
     model.estimators_ = [regression.deserialize_extra_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
     model.n_features_in_ = model_dict['n_features_in_']
     model._max_features = model_dict['_max_features']
@@ -1060,6 +1062,63 @@ def deserialize_isolation_forest(model_dict):
     model.bootstrap_features = model_dict['bootstrap_features']
     model._seeds = np.array(model_dict['_seeds'])
     model.estimators_features_ = [np.array(array) for array in model_dict['estimators_features_']]
+    model.estimator_params = tuple(model_dict['estimator_params'])
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_random_trees_embedding(model):
+    serialized_model = {
+        'meta': 'random-trees-embedding',
+        'n_features_in_': model.n_features_in_,
+        '_n_features_out': model._n_features_out,
+        'max_samples': model.max_samples,
+        'n_outputs_': model.n_outputs_,
+        'oob_score': model.oob_score,
+        'bootstrap': model.bootstrap,
+        'class_weight': model.class_weight,
+        'one_hot_encoder_': serialize_onehot_encoder(model.one_hot_encoder_),
+        'estimators_': [regression.serialize_extra_tree_regressor(extra_tree) for extra_tree in model.estimators_],
+        'estimator_params': list(model.estimator_params),
+        'params': model.get_params()
+    }
+
+    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
+        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
+                                               type(model.base_estimator_).__name__,
+                                               model.base_estimator_.get_params())
+    else:
+        serialized_model['base_estimator_'] = None
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_random_trees_embedding(model_dict):
+    model = RandomTreesEmbedding(**model_dict['params'])
+
+    if model_dict['base_estimator_'] is not None:
+        model_dict['base_estimator_'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                model_dict['base_estimator_'][1])(
+            **model_dict['base_estimator_'][2])
+    else:
+        model_dict['base_estimator_'] = None
+
+    model.base_estimator_ = model_dict['base_estimator_']
+    model.estimators_ = [regression.deserialize_extra_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
+    model.n_features_in_ = model_dict['n_features_in_']
+    model._n_features_out = model_dict['_n_features_out']
+    model.max_samples = model_dict['max_samples']
+    model.n_outputs_ = model_dict['n_outputs_']
+    model.oob_score = model_dict['oob_score']
+    model.bootstrap = model_dict['bootstrap']
+    model.class_weight = model_dict['class_weight']
+    model.one_hot_encoder_ = deserialize_onehot_encoder(model_dict['one_hot_encoder_'])
     model.estimator_params = tuple(model_dict['estimator_params'])
 
     if 'feature_names_in' in model_dict.keys():

@@ -12,7 +12,8 @@ from sklearn import svm, discriminant_analysis
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier,
                               GradientBoostingClassifier, RandomForestClassifier, IsolationForest,
-                              StackingClassifier, VotingClassifier, HistGradientBoostingClassifier)
+                              StackingClassifier, VotingClassifier, HistGradientBoostingClassifier,
+                              RandomTreesEmbedding)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
@@ -203,3 +204,29 @@ class TestAPI(unittest.TestCase):
         self.check_sparse_model(IsolationForest(n_estimators=100, random_state=1234), 'isolation-forest-cls.json')
         self.check_model(IsolationForest(n_estimators=100, bootstrap=True, random_state=1234), 'isolation-forest-cls.json')
         self.check_sparse_model(IsolationForest(n_estimators=100, bootstrap=True, random_state=1234), 'isolation-forest-cls.json')
+
+    def check_random_trees_embedding_model(self, model, model_name):
+        model.fit(self.X)
+
+        # When
+        serialized_model = skljson.to_dict(model)
+        deserialized_model = skljson.from_dict(serialized_model)
+
+        # Then
+        expected_predictions = model.transform(self.X).toarray()
+        actual_predictions = deserialized_model.transform(self.X).toarray()
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+        # When
+        skljson.to_json(model, model_name)
+        deserialized_model = skljson.from_json(model_name)
+        os.remove(model_name)
+
+        # JSON
+        actual_predictions = deserialized_model.transform(self.X).toarray()
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+    def test_random_trees_embedding(self):
+        self.check_random_trees_embedding_model(RandomTreesEmbedding(n_estimators=100, random_state=1234), 'random-trees-embedding.json')

@@ -10,12 +10,14 @@ from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor, BaggingClas
                               ExtraTreesClassifier, ExtraTreesRegressor, GradientBoostingClassifier,
                               GradientBoostingRegressor, IsolationForest, RandomForestClassifier,
                               RandomForestRegressor, StackingClassifier, StackingRegressor, VotingClassifier,
-                              VotingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor)
+                              VotingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor,
+                              RandomTreesEmbedding)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
-                                   MinMaxScaler, StandardScaler, KernelCenterer)
+                                   MinMaxScaler, StandardScaler, KernelCenterer,
+                                   OneHotEncoder)
 from sklearn.svm import SVR
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
@@ -98,6 +100,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return clf.serialize_extratrees_classifier(model)
     elif isinstance(model, IsolationForest):
         return clf.serialize_isolation_forest(model)
+    elif isinstance(model, RandomTreesEmbedding):
+        return clf.serialize_random_trees_embedding(model)
 
     # Regression
     elif isinstance(model, LinearRegression):
@@ -254,6 +258,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return pre.serialize_standard_scaler(model)
     elif isinstance(model, KernelCenterer):
         return pre.serialize_kernel_centerer(model)
+    elif isinstance(model, OneHotEncoder):
+        return pre.serialize_onehot_encoder(model)
 
     # Otherwise
     else:
@@ -306,6 +312,8 @@ def deserialize_model(model_dict):
         return clf.deserialize_extratrees_classifier(model_dict)
     elif model_dict['meta'] == 'isolation-forest':
         return clf.deserialize_isolation_forest(model_dict)
+    elif model_dict['meta'] == 'random-trees-embedding':
+        return clf.deserialize_random_trees_embedding(model_dict)
 
     # Regression
     elif model_dict['meta'] == 'linear-regression':
@@ -462,6 +470,8 @@ def deserialize_model(model_dict):
         return pre.deserialize_standard_scaler(model_dict)
     elif model_dict['meta'] == 'kernel-centerer':
         return pre.deserialize_kernel_centerer(model_dict)
+    elif model_dict['meta'] == 'onehot-encoder':
+        return pre.deserialize_onehot_encoder(model_dict)
 
     # Otherwise
     else:

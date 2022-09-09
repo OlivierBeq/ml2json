@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import inspect
+import importlib
+
 import numpy as np
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler,
-                                   KernelCenterer)
+                                   KernelCenterer, OneHotEncoder)
 
 
 def serialize_label_binarizer(label_binarizer):
@@ -181,5 +184,38 @@ def deserialize_kernel_centerer(model_dict):
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+def serialize_onehot_encoder(model):
+    serialized_model = {
+        'meta': 'onehot-encoder',
+        'categories_': [category.tolist() for category in model.categories_],
+        'categories_dtype': [f"np.dtype('{str(category.dtype)}')" for category in model.categories_],
+        'drop_idx_': model.drop_idx_ if model.drop_idx_ is None else model.drop_idx_.tolist(),
+        '_infrequent_enabled': model._infrequent_enabled,
+        'n_features_in_': model.n_features_in_,
+        '_n_features_outs': model._n_features_outs,
+        'params': model.get_params(),
+    }
+
+    serialized_model['params']['dtype'] = (inspect.getmodule(serialized_model['params']['dtype']).__name__,
+                                           serialized_model['params']['dtype'].__name__)
+
+    return serialized_model
+
+def deserialize_onehot_encoder(model_dict):
+
+    model_dict['params']['dtype'] = getattr(importlib.import_module(model_dict['params']['dtype'][0]),
+                                            model_dict['params']['dtype'][1])
+
+    model = OneHotEncoder(**model_dict['params'])
+
+    model.categories_ = [np.array(category, dtype=eval(dtype))
+                         for category, dtype in zip(model_dict['categories_'], model_dict['categories_dtype'])]
+    model.drop_idx_ = model_dict['drop_idx_'] if model_dict['drop_idx_'] is None else np.array(model_dict['drop_idx_'])
+    model._infrequent_enabled = model_dict['_infrequent_enabled']
+    model.n_features_in_ = model_dict['n_features_in_']
+    model._n_features_outs = model_dict['_n_features_outs']
 
     return model
