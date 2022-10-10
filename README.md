@@ -18,7 +18,7 @@ sklearn-json makes exporting model files to JSON simple.
 
 ## Install
 ```
-pip install sklearn-json
+pip install https://github.com/OlivierBeq/sklearn-json/tarball/master
 ```
 ## Example Usage
 
