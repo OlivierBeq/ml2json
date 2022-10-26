@@ -18,9 +18,24 @@ from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesC
                               RandomTreesEmbedding)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
-from xgboost import XGBClassifier, XGBRFClassifier
-from lightgbm import LGBMClassifier, Booster as LGBMBooster
-from catboost import CatBoostClassifier
+
+# Allow additional dependencies to be optional
+__optionals__ = []
+try:
+    from xgboost import XGBClassifier, XGBRFClassifier
+    __optionals__.extend(['XGBClassifier', 'XGBRFClassifier'])
+except:
+    pass
+try:
+    from lightgbm import LGBMClassifier, Booster as LGBMBooster
+    __optionals__.append('LGBMClassifier')
+except:
+    pass
+try:
+    from catboost import CatBoostClassifier
+    __optionals__.append('CatBoostClassifier')
+except:
+    pass
 
 from . import regression
 from .utils import csr
@@ -642,136 +657,140 @@ def serialize_xgboost_classifier(model):
     return serialized_model
 
 
-def deserialize_xgboost_classifier(model_dict):
-    model = XGBClassifier(**model_dict['params'])
+if 'XGBClassifier' in __optionals__:
+    def deserialize_xgboost_classifier(model_dict):
+        model = XGBClassifier(**model_dict['params'])
 
-    filename = f'{str(uuid.uuid4())}.json'
-    with open(filename, 'w') as fh:
-        fh.write(model_dict['advanced-params'])
-    model.load_model(filename)
-    os.remove(filename)
+        filename = f'{str(uuid.uuid4())}.json'
+        with open(filename, 'w') as fh:
+            fh.write(model_dict['advanced-params'])
+        model.load_model(filename)
+        os.remove(filename)
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+        if 'feature_names_in' in model_dict.keys():
+            model.feature_names_in = np.array(model_dict['feature_names_in'])
 
-    return model
-
-
-def serialize_xgboost_rf_classifier(model):
-    serialized_model = {
-        'meta': 'xgboost-rf-classifier',
-        'params': model.get_params()
-    }
-
-    filename = f'{str(uuid.uuid4())}.json'
-    model.save_model(filename)
-    with open(filename, 'r') as fh:
-        serialized_model['advanced-params'] = fh.read()
-    os.remove(filename)
-
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
-
-    return serialized_model
+        return model
 
 
-def deserialize_xgboost_rf_classifier(model_dict):
-    model = XGBRFClassifier(**model_dict['params'])
+if 'XGBRFClassifier' in __optionals__:
+    def serialize_xgboost_rf_classifier(model):
+        serialized_model = {
+            'meta': 'xgboost-rf-classifier',
+            'params': model.get_params()
+        }
 
-    filename = f'{str(uuid.uuid4())}.json'
-    with open(filename, 'w') as fh:
-        fh.write(model_dict['advanced-params'])
-    model.load_model(filename)
-    os.remove(filename)
+        filename = f'{str(uuid.uuid4())}.json'
+        model.save_model(filename)
+        with open(filename, 'r') as fh:
+            serialized_model['advanced-params'] = fh.read()
+        os.remove(filename)
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+        if 'feature_names_in' in model.__dict__:
+            serialized_model['feature_names_in'] = model.feature_names_in.tolist()
 
-    return model
-
-
-def serialize_lightgbm_classifier(model):
-    serialized_model = {
-        'meta': 'lightgbm-classifier',
-        'params': model.get_params(),
-        '_other_params': model._other_params
-    }
-    serialized_model['params'].update({
-        '_Booster': model.booster_.model_to_string(),
-        'fitted_': model.fitted_,
-        '_evals_result': model._evals_result,
-        '_best_score': model._best_score,
-        '_best_iteration': model._best_iteration,
-        '_objective': model._objective,
-        'class_weight': model.class_weight,
-        '_class_weight': model._class_weight,
-        '_n_features': model._n_features,
-        '_n_features_in': model._n_features_in,
-        '_n_classes': model._n_classes,
-        '_le': serialize_label_encoder(model._le)
-    })
-
-    if hasattr(model, '_class_map') and model._class_map is not None:
-        serialized_model['params']['_class_map'] = {int(key): int(value) for key, value in model._class_map.items()}
-    if hasattr(model, '_classes') and model._classes is not None:
-        serialized_model['params']['_classes'] = model._classes.astype(int).tolist()
-
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
-
-    return serialized_model
+        return serialized_model
 
 
-def deserialize_lightgbm_classifier(model_dict):
-    params = model_dict['params']
-    params['_Booster'] = LGBMBooster(model_str=params['_Booster'])
-    params['_le'] = deserialize_label_encoder(params['_le'])
+    def deserialize_xgboost_rf_classifier(model_dict):
+        model = XGBRFClassifier(**model_dict['params'])
 
-    if '_class_map' in params and params['_class_map'] is not None:
-        params['_class_map'] = {np.int32(key): np.int64(value) for key, value in params['_class_map'].items()}
-    if '_classes' in params and params['_classes'] is not None:
-        params['_classes'] = np.array(params['_classes'], dtype=np.int32)
+        filename = f'{str(uuid.uuid4())}.json'
+        with open(filename, 'w') as fh:
+            fh.write(model_dict['advanced-params'])
+        model.load_model(filename)
+        os.remove(filename)
 
-    model = LGBMClassifier().set_params(**params)
-    model._other_params = model_dict['_other_params']
+        if 'feature_names_in' in model_dict.keys():
+            model.feature_names_in = np.array(model_dict['feature_names_in'])
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
-
-    return model
+        return model
 
 
-def serialize_catboost_classifier(model, catboost_data):
-    serialized_model = {
-        'meta': 'catboost-classifier',
-        'params': model.get_params()
-    }
+if 'LGBMClassifier' in __optionals__:
+    def serialize_lightgbm_classifier(model):
+        serialized_model = {
+            'meta': 'lightgbm-classifier',
+            'params': model.get_params(),
+            '_other_params': model._other_params
+        }
+        serialized_model['params'].update({
+            '_Booster': model.booster_.model_to_string(),
+            'fitted_': model.fitted_,
+            '_evals_result': model._evals_result,
+            '_best_score': model._best_score,
+            '_best_iteration': model._best_iteration,
+            '_objective': model._objective,
+            'class_weight': model.class_weight,
+            '_class_weight': model._class_weight,
+            '_n_features': model._n_features,
+            '_n_features_in': model._n_features_in,
+            '_n_classes': model._n_classes,
+            '_le': serialize_label_encoder(model._le)
+        })
 
-    filename = f'{str(uuid.uuid4())}.json'
-    model.save_model(filename, format='json', pool=catboost_data)
-    with open(filename, 'r') as fh:
-        serialized_model['advanced-params'] = fh.read()
-    os.remove(filename)
+        if hasattr(model, '_class_map') and model._class_map is not None:
+            serialized_model['params']['_class_map'] = {int(key): int(value) for key, value in model._class_map.items()}
+        if hasattr(model, '_classes') and model._classes is not None:
+            serialized_model['params']['_classes'] = model._classes.astype(int).tolist()
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+        if 'feature_names_in' in model.__dict__:
+            serialized_model['feature_names_in'] = model.feature_names_in.tolist()
 
-    return serialized_model
+        return serialized_model
 
 
-def deserialize_catboost_classifier(model_dict):
-    model = CatBoostClassifier(**model_dict['params'])
+    def deserialize_lightgbm_classifier(model_dict):
+        params = model_dict['params']
+        params['_Booster'] = LGBMBooster(model_str=params['_Booster'])
+        params['_le'] = deserialize_label_encoder(params['_le'])
 
-    filename = f'{str(uuid.uuid4())}.json'
-    with open(filename, 'w') as fh:
-        fh.write(model_dict['advanced-params'])
-    model.load_model(filename, format='json')
-    os.remove(filename)
+        if '_class_map' in params and params['_class_map'] is not None:
+            params['_class_map'] = {np.int32(key): np.int64(value) for key, value in params['_class_map'].items()}
+        if '_classes' in params and params['_classes'] is not None:
+            params['_classes'] = np.array(params['_classes'], dtype=np.int32)
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+        model = LGBMClassifier().set_params(**params)
+        model._other_params = model_dict['_other_params']
 
-    return model
+        if 'feature_names_in' in model_dict.keys():
+            model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+        return model
+
+
+if 'CatBoostClassifier' in __optionals__:
+    def serialize_catboost_classifier(model, catboost_data):
+        serialized_model = {
+            'meta': 'catboost-classifier',
+            'params': model.get_params()
+        }
+
+        filename = f'{str(uuid.uuid4())}.json'
+        model.save_model(filename, format='json', pool=catboost_data)
+        with open(filename, 'r') as fh:
+            serialized_model['advanced-params'] = fh.read()
+        os.remove(filename)
+
+        if 'feature_names_in' in model.__dict__:
+            serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+
+        return serialized_model
+
+
+    def deserialize_catboost_classifier(model_dict):
+        model = CatBoostClassifier(**model_dict['params'])
+
+        filename = f'{str(uuid.uuid4())}.json'
+        with open(filename, 'w') as fh:
+            fh.write(model_dict['advanced-params'])
+        model.load_model(filename, format='json')
+        os.remove(filename)
+
+        if 'feature_names_in' in model_dict.keys():
+            model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+        return model
 
 
 def serialize_adaboost_classifier(model):

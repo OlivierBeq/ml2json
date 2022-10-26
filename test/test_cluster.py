@@ -9,9 +9,20 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
                              SpectralClustering, SpectralBiclustering, SpectralCoclustering)
-from kmodes.kmodes import KModes
-from kmodes.kprototypes import KPrototypes
-from hdbscan import HDBSCAN
+
+# Allow testing of additional optional dependencies
+__optionals__ = []
+try:
+    from kmodes.kmodes import KModes
+    from kmodes.kprototypes import KPrototypes
+    __optionals__.extend(['KModes', 'KPrototypes'])
+except:
+    pass
+try:
+    from hdbscan import HDBSCAN
+    __optionals__.append('HDBSCAN')
+except:
+    pass
 
 from src import sklearn_json as skljson
 
@@ -240,7 +251,8 @@ class TestAPI(unittest.TestCase):
                                   'spectral-coclus.json', n_clusters)
 
     def test_kmodes(self):
-        self.check_fitpredict_and_predict_model(KModes(random_state=1234), 'kmodes.json', self.X)
+        if 'KModes' in __optionals__:
+            self.check_fitpredict_and_predict_model(KModes(random_state=1234), 'kmodes.json', self.X)
 
     def check_kprototype_model(self, model, model_name, data):
 
@@ -273,7 +285,8 @@ class TestAPI(unittest.TestCase):
             np.testing.assert_array_almost_equal(expected_t, actual_t)
 
     def test_kprototypes(self):
-        self.check_kprototype_model(KPrototypes(n_clusters=2, random_state=1234), 'kproto.json', self.X)
+        if 'KPrototypes' in __optionals__:
+            self.check_kprototype_model(KPrototypes(n_clusters=2, random_state=1234), 'kproto.json', self.X)
 
     def test_birch(self):
         self.check_fitpredict_and_predict_model(Birch(), 'birch.json', self.X)
@@ -296,5 +309,6 @@ class TestAPI(unittest.TestCase):
             'bisecting-kmeans.json', self.X)
 
     def test_hdbscan(self):
-        self.check_fitpredict_model(HDBSCAN(), 'hdbscan.json', self.X)
-        self.check_fitpredict_model(HDBSCAN(gen_min_span_tree=True), 'hdbscan.json', self.X)
+        if 'HDBSCAN' in __optionals__:
+            self.check_fitpredict_model(HDBSCAN(), 'hdbscan.json', self.X)
+            self.check_fitpredict_model(HDBSCAN(gen_min_span_tree=True), 'hdbscan.json', self.X)

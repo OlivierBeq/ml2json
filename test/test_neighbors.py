@@ -6,7 +6,14 @@ import unittest
 import numpy as np
 from sklearn.datasets import load_iris
 from sklearn.neighbors import NearestNeighbors, KDTree
-from pynndescent import NNDescent
+
+# Allow testing of additional optional dependencies
+__optionals__ = []
+try:
+    from pynndescent import NNDescent
+    __optionals__.append('NNDescent')
+except:
+    pass
 
 from src import sklearn_json as skljson
 
@@ -61,4 +68,5 @@ class TestAPI(unittest.TestCase):
         self.check_kdtree_model(KDTree(self.data), 'kd-tree.json')
 
     def test_nndescent(self):
-        self.check_kdtree_model(NNDescent(self.data), 'nn-descent.json')
+        if 'NNDescent' in __optionals__:
+            self.check_kdtree_model(NNDescent(self.data), 'nn-descent.json')

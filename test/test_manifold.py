@@ -7,8 +7,15 @@ import numpy as np
 from sklearn.datasets import load_iris, load_digits, fetch_california_housing
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
-from umap import UMAP
-from umap.umap_ import nearest_neighbors
+
+# Allow testing of additional optional dependencies
+__optionals__ = []
+try:
+    from umap import UMAP
+    from umap.umap_ import nearest_neighbors
+    __optionals__.append('UMAP')
+except:
+    pass
 
 from src import sklearn_json as skljson
 
@@ -63,13 +70,14 @@ class TestAPI(unittest.TestCase):
         self.check_model(SpectralEmbedding(affinity='rbf', random_state=1234), 'spectral-embedding.json', self.iris_data)
 
     def test_umap(self):
-        self.check_model(UMAP(random_state=1234, low_memory=False), 'umap.json', self.iris_data)
-        self.check_model(UMAP(random_state=1234, output_dens=True, low_memory=False), 'umap.json', self.iris_data)
-        precomputed_knn = nearest_neighbors(self.calhouse_data, 15, random_state=1234, metric='euclidean',
-                                            metric_kwds={}, angular=False, verbose=False, low_memory=False)
-        self.check_model(UMAP(n_neighbors=15, random_state=1234, metric='euclidean', output_dens=False,
-                              precomputed_knn=precomputed_knn, low_memory=False), 'umap.json',
-                         self.calhouse_data)
-        self.check_model(UMAP(n_neighbors=15, random_state=1234, metric='euclidean', output_dens=True,
-                              precomputed_knn=precomputed_knn, low_memory=False), 'umap.json',
-                         self.calhouse_data)
+        if 'UMAP' in __optionals__:
+            self.check_model(UMAP(random_state=1234, low_memory=False), 'umap.json', self.iris_data)
+            self.check_model(UMAP(random_state=1234, output_dens=True, low_memory=False), 'umap.json', self.iris_data)
+            precomputed_knn = nearest_neighbors(self.calhouse_data, 15, random_state=1234, metric='euclidean',
+                                                metric_kwds={}, angular=False, verbose=False, low_memory=False)
+            self.check_model(UMAP(n_neighbors=15, random_state=1234, metric='euclidean', output_dens=False,
+                                  precomputed_knn=precomputed_knn, low_memory=False), 'umap.json',
+                             self.calhouse_data)
+            self.check_model(UMAP(n_neighbors=15, random_state=1234, metric='euclidean', output_dens=True,
+                                  precomputed_knn=precomputed_knn, low_memory=False), 'umap.json',
+                             self.calhouse_data)

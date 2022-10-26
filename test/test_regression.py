@@ -14,9 +14,24 @@ from sklearn.ensemble import (AdaBoostRegressor, BaggingRegressor, ExtraTreesReg
                               StackingRegressor, VotingRegressor, HistGradientBoostingRegressor)
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
-from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
-from lightgbm import LGBMRegressor, LGBMRanker
-from catboost import CatBoostRegressor, CatBoostRanker, Pool
+
+# Allow testing of additional optional dependencies
+__optionals__ = []
+try:
+    from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
+    __optionals__.extend(['XGBRegressor', 'XGBRFRegressor', 'XGBRanker'])
+except:
+    pass
+try:
+    from lightgbm import LGBMRegressor, LGBMRanker
+    __optionals__.extend(['LGBMRegressor', 'LGBMRanker'])
+except:
+    pass
+try:
+    from catboost import CatBoostRegressor, CatBoostRanker, Pool
+    __optionals__.extend(['CatBoostRegressor', 'CatBoostRanker'])
+except:
+    pass
 
 from src import sklearn_json as skljson
 
@@ -148,19 +163,24 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
     def test_xgboost_ranker(self):
-        self.check_ranking_model(XGBRanker(), 'XGB-ranker.json')
+        if 'XGBRanker' in __optionals__:
+            self.check_ranking_model(XGBRanker(), 'XGB-ranker.json')
 
     def test_xgboost_regressor(self):
-        self.check_model(XGBRegressor(), 'XGB-regressor.json')
+        if 'XGBRegressor' in __optionals__:
+            self.check_model(XGBRegressor(), 'XGB-regressor.json')
 
     def test_xgboost_rf_regressor(self):
-        self.check_model(XGBRFRegressor(), 'XGB-RF-regressor.json')
+        if 'XGBRFRegressor' in __optionals__:
+            self.check_model(XGBRFRegressor(), 'XGB-RF-regressor.json')
 
     def test_lightgbm_regressor(self):
-        self.check_model(LGBMRegressor(), 'lightgbm-regressor.json')
+        if 'LGBMRegressor' in __optionals__:
+            self.check_model(LGBMRegressor(), 'lightgbm-regressor.json')
 
     def test_lightgbm_ranker(self):
-        self.check_ranking_model(LGBMRanker(label_gain=[i for i in range(self.X.shape[0] + 1)]), 'lightgbm-ranker.json')
+        if 'LGBMRanker' in __optionals__:
+            self.check_ranking_model(LGBMRanker(label_gain=[i for i in range(self.X.shape[0] + 1)]), 'lightgbm-ranker.json')
 
     def check_catboost_model(self, model, model_name, abs=False):
         # Given
@@ -221,10 +241,12 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
 
     def test_catboost_regressor(self):
-        self.check_catboost_model(CatBoostRegressor(allow_writing_files=False, verbose=False), 'catboost-regressor.json')
+        if 'CatBoostRegressor' in __optionals__:
+            self.check_catboost_model(CatBoostRegressor(allow_writing_files=False, verbose=False), 'catboost-regressor.json')
 
     def test_catboost_ranker(self):
-        self.check_catboost_ranking_model(CatBoostRanker(allow_writing_files=False, verbose=False), 'catboost-ranker.json')
+        if 'CatBoostRanker' in __optionals__:
+            self.check_catboost_ranking_model(CatBoostRanker(allow_writing_files=False, verbose=False), 'catboost-ranker.json')
 
     def test_adaboost_regressor(self):
         self.check_model(AdaBoostRegressor(n_estimators=25, learning_rate=1.0), 'adaboost-reg.json')

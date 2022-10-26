@@ -10,9 +10,21 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              SpectralClustering, SpectralBiclustering, SpectralCoclustering)
 from sklearn.cluster._birch import _CFNode, _CFSubcluster
 from sklearn.cluster._bisect_k_means import _BisectingTree
-from kmodes.kmodes import KModes
-from kmodes.kprototypes import KPrototypes
-from hdbscan import HDBSCAN
+
+# Allow additional dependencies to be optional
+__optionals__ = []
+try:
+    from kmodes.kmodes import KModes
+    from kmodes.kprototypes import KPrototypes
+    __optionals__.extend(['KModes', 'KPrototypes'])
+except:
+    pass
+try:
+    from hdbscan import HDBSCAN
+    __optionals__.append('HDBSCAN')
+except:
+    pass
+
 
 from .utils.random_state import serialize_random_state, deserialize_random_state
 from .utils.memory import serialize_memory, deserialize_memory
@@ -582,84 +594,86 @@ def deserialize_spectral_coclustering(model_dict):
     return model
 
 
-def serialize_kmodes(model):
-    params = model.get_params()
-    params['cat_dissim'] = (inspect.getmodule(params['cat_dissim']).__name__,
-                            params['cat_dissim'].__name__)
+if 'KModes' in __optionals__:
+    def serialize_kmodes(model):
+        params = model.get_params()
+        params['cat_dissim'] = (inspect.getmodule(params['cat_dissim']).__name__,
+                                params['cat_dissim'].__name__)
 
-    serialized_model = {
-        'meta': 'kmodes',
-        '_enc_cluster_centroids': model._enc_cluster_centroids.astype(int).tolist(),
-        'labels_': model.labels_.tolist(),
-        'cost_': float(model.cost_),
-        'n_iter_': model.n_iter_,
-        'epoch_costs_': [float(x) for x in model.epoch_costs_],
-        '_enc_map': [{float(key): value for key, value in subdict.items()} for subdict in model._enc_map],
-        'params': params
-    }
+        serialized_model = {
+            'meta': 'kmodes',
+            '_enc_cluster_centroids': model._enc_cluster_centroids.astype(int).tolist(),
+            'labels_': model.labels_.tolist(),
+            'cost_': float(model.cost_),
+            'n_iter_': model.n_iter_,
+            'epoch_costs_': [float(x) for x in model.epoch_costs_],
+            '_enc_map': [{float(key): value for key, value in subdict.items()} for subdict in model._enc_map],
+            'params': params
+        }
 
-    return serialized_model
-
-
-def deserialize_kmodes(model_dict):
-    params = model_dict['params']
-    params['cat_dissim'] = getattr(importlib.import_module(params['cat_dissim'][0]),
-                                   params['cat_dissim'][1])
-
-    model = KModes(**params)
-
-    model._enc_cluster_centroids = np.array(model_dict['_enc_cluster_centroids'])
-    model.labels_ = np.array(model_dict['labels_'])
-    model.cost_ = model_dict['cost_']
-    model.n_iter_ = model_dict['n_iter_']
-    model.epoch_costs_ = model_dict['epoch_costs_']
-    model._enc_map = [{np.float64(key): value for key, value in subdict.items()} for subdict in model_dict['_enc_map']]
-
-    return model
+        return serialized_model
 
 
-def serialize_kprototypes(model):
-    params = model.get_params()
+    def deserialize_kmodes(model_dict):
+        params = model_dict['params']
+        params['cat_dissim'] = getattr(importlib.import_module(params['cat_dissim'][0]),
+                                       params['cat_dissim'][1])
 
-    params['cat_dissim'] = (inspect.getmodule(params['cat_dissim']).__name__,
-                            params['cat_dissim'].__name__)
-    params['num_dissim'] = (inspect.getmodule(params['num_dissim']).__name__,
-                            params['num_dissim'].__name__)
+        model = KModes(**params)
 
-    params['gamma'] = float(params['gamma'])
+        model._enc_cluster_centroids = np.array(model_dict['_enc_cluster_centroids'])
+        model.labels_ = np.array(model_dict['labels_'])
+        model.cost_ = model_dict['cost_']
+        model.n_iter_ = model_dict['n_iter_']
+        model.epoch_costs_ = model_dict['epoch_costs_']
+        model._enc_map = [{np.float64(key): value for key, value in subdict.items()} for subdict in model_dict['_enc_map']]
 
-    serialized_model = {
-        'meta': 'kprototypes',
-        '_enc_cluster_centroids': np.array(model._enc_cluster_centroids).astype(float).tolist(),
-        'labels_': model.labels_.tolist(),
-        'cost_': float(model.cost_),
-        'n_iter_': model.n_iter_,
-        'epoch_costs_': [float(x) for x in model.epoch_costs_],
-        '_enc_map': [{int(key): value for key, value in subdict.items()} for subdict in model._enc_map],
-        'params': params
-    }
-
-    return serialized_model
+        return model
 
 
-def deserialize_kprototypes(model_dict):
-    params = model_dict['params']
-    params['cat_dissim'] = getattr(importlib.import_module(params['cat_dissim'][0]),
-                                   params['cat_dissim'][1])
-    params['num_dissim'] = getattr(importlib.import_module(params['num_dissim'][0]),
-                                   params['num_dissim'][1])
-    params['gamma'] = np.float64(params['gamma'])
+if 'KPrototypes' in __optionals__:
+    def serialize_kprototypes(model):
+        params = model.get_params()
 
-    model = KPrototypes(**params)
+        params['cat_dissim'] = (inspect.getmodule(params['cat_dissim']).__name__,
+                                params['cat_dissim'].__name__)
+        params['num_dissim'] = (inspect.getmodule(params['num_dissim']).__name__,
+                                params['num_dissim'].__name__)
 
-    model._enc_cluster_centroids = np.array(model_dict['_enc_cluster_centroids'])
-    model.labels_ = np.array(model_dict['labels_'])
-    model.cost_ = model_dict['cost_']
-    model.n_iter_ = model_dict['n_iter_']
-    model.epoch_costs_ = model_dict['epoch_costs_']
-    model._enc_map = [{np.int32(key): value for key, value in subdict.items()} for subdict in model_dict['_enc_map']]
+        params['gamma'] = float(params['gamma'])
 
-    return model
+        serialized_model = {
+            'meta': 'kprototypes',
+            '_enc_cluster_centroids': np.array(model._enc_cluster_centroids).astype(float).tolist(),
+            'labels_': model.labels_.tolist(),
+            'cost_': float(model.cost_),
+            'n_iter_': model.n_iter_,
+            'epoch_costs_': [float(x) for x in model.epoch_costs_],
+            '_enc_map': [{int(key): value for key, value in subdict.items()} for subdict in model._enc_map],
+            'params': params
+        }
+
+        return serialized_model
+
+
+    def deserialize_kprototypes(model_dict):
+        params = model_dict['params']
+        params['cat_dissim'] = getattr(importlib.import_module(params['cat_dissim'][0]),
+                                       params['cat_dissim'][1])
+        params['num_dissim'] = getattr(importlib.import_module(params['num_dissim'][0]),
+                                       params['num_dissim'][1])
+        params['gamma'] = np.float64(params['gamma'])
+
+        model = KPrototypes(**params)
+
+        model._enc_cluster_centroids = np.array(model_dict['_enc_cluster_centroids'])
+        model.labels_ = np.array(model_dict['labels_'])
+        model.cost_ = model_dict['cost_']
+        model.n_iter_ = model_dict['n_iter_']
+        model.epoch_costs_ = model_dict['epoch_costs_']
+        model._enc_map = [{np.int32(key): value for key, value in subdict.items()} for subdict in model_dict['_enc_map']]
+
+        return model
 
 
 def serialize_bisecting_tree(model):
@@ -745,66 +759,67 @@ def deserialize_bisecting_kmeans(model_dict):
     return model
 
 
-def serialize_hdbscan(model):
-    serialized_model = {
-        'meta': 'hdbscan',
-        '_metric_kwargs': model._metric_kwargs,
-        '_condensed_tree': model._condensed_tree.tolist(),
-        '_condensed_tree_dtype': f"np.dtype({str(model._condensed_tree.dtype)})",
-        '_single_linkage_tree': model._single_linkage_tree.tolist(),
-        '_raw_data': model._raw_data.tolist(),
-        '_all_finite': bool(model._all_finite),
-        'labels_': model.labels_.tolist(),
-        'probabilities_': model.probabilities_.tolist(),
-        'cluster_persistence_': model.cluster_persistence_.tolist(),
-        'params': model.get_params()
-    }
+if 'HDBSCAN' in __optionals__:
+    def serialize_hdbscan(model):
+        serialized_model = {
+            'meta': 'hdbscan',
+            '_metric_kwargs': model._metric_kwargs,
+            '_condensed_tree': model._condensed_tree.tolist(),
+            '_condensed_tree_dtype': f"np.dtype({str(model._condensed_tree.dtype)})",
+            '_single_linkage_tree': model._single_linkage_tree.tolist(),
+            '_raw_data': model._raw_data.tolist(),
+            '_all_finite': bool(model._all_finite),
+            'labels_': model.labels_.tolist(),
+            'probabilities_': model.probabilities_.tolist(),
+            'cluster_persistence_': model.cluster_persistence_.tolist(),
+            'params': model.get_params()
+        }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
-    if '_min_spanning_tree' in model.__dict__ and model._min_spanning_tree is not None:
-        serialized_model['_min_spanning_tree'] = model._min_spanning_tree.tolist()
-    else:
-        serialized_model['_min_spanning_tree'] = model._min_spanning_tree
-    if '_outlier_scores' in model.__dict__:
-        serialized_model['_outlier_scores'] = model._outlier_scores
-    if '_prediction_data' in model.__dict__:
-        serialized_model['_prediction_data'] = model._prediction_data
-    if '_relative_validity' in model.__dict__:
-        serialized_model['_relative_validity'] = model._relative_validity
+        if 'feature_names_in' in model.__dict__:
+            serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+        if '_min_spanning_tree' in model.__dict__ and model._min_spanning_tree is not None:
+            serialized_model['_min_spanning_tree'] = model._min_spanning_tree.tolist()
+        else:
+            serialized_model['_min_spanning_tree'] = model._min_spanning_tree
+        if '_outlier_scores' in model.__dict__:
+            serialized_model['_outlier_scores'] = model._outlier_scores
+        if '_prediction_data' in model.__dict__:
+            serialized_model['_prediction_data'] = model._prediction_data
+        if '_relative_validity' in model.__dict__:
+            serialized_model['_relative_validity'] = model._relative_validity
 
-    if serialized_model['params']['memory'] is not None:
-        serialized_model['params']['memory'] = serialize_memory(serialized_model['params']['memory'])
+        if serialized_model['params']['memory'] is not None:
+            serialized_model['params']['memory'] = serialize_memory(serialized_model['params']['memory'])
 
-    return serialized_model
+        return serialized_model
 
 
-def deserialize_hdbscan(model_dict):
+    def deserialize_hdbscan(model_dict):
 
-    if model_dict['params']['memory'] is not None:
-        model_dict['params']['memory'] = deserialize_memory(model_dict['params']['memory'])
+        if model_dict['params']['memory'] is not None:
+            model_dict['params']['memory'] = deserialize_memory(model_dict['params']['memory'])
 
-    model = HDBSCAN(**model_dict['params'])
+        model = HDBSCAN(**model_dict['params'])
 
-    model._metric_kwargs = model_dict['_metric_kwargs']
-    model._condensed_tree = np.array(list(map(tuple, model_dict['_condensed_tree'])),
-                                     dtype=eval(model_dict['_condensed_tree_dtype']))
-    model._single_linkage_tree = np.array(model_dict['_single_linkage_tree'])
-    model._raw_data = np.array(model_dict['_raw_data'])
-    model._all_finite = model_dict['_all_finite']
-    model.labels_ = np.array(model_dict['labels_'])
-    model.probabilities_ = np.array(model_dict['probabilities_'])
-    model.cluster_persistence_ = np.array(model_dict['cluster_persistence_'])
+        model._metric_kwargs = model_dict['_metric_kwargs']
+        model._condensed_tree = np.array(list(map(tuple, model_dict['_condensed_tree'])),
+                                         dtype=eval(model_dict['_condensed_tree_dtype']))
+        model._single_linkage_tree = np.array(model_dict['_single_linkage_tree'])
+        model._raw_data = np.array(model_dict['_raw_data'])
+        model._all_finite = model_dict['_all_finite']
+        model.labels_ = np.array(model_dict['labels_'])
+        model.probabilities_ = np.array(model_dict['probabilities_'])
+        model.cluster_persistence_ = np.array(model_dict['cluster_persistence_'])
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
-    if '_min_spanning_tree' in model_dict:
-        model._min_spanning_tree = np.array(model_dict['_min_spanning_tree'])
-    if '_outlier_scores' in model_dict:
-        model._outlier_scores = np.array(model_dict['_outlier_scores'])
-    if '_prediction_data' in model_dict:
-        model._prediction_data = np.array(model_dict['_prediction_data'])
-    if '_relative_validity' in model_dict:
-        model._relative_validity = np.array(model_dict['_relative_validity'])
+        if 'feature_names_in' in model_dict.keys():
+            model.feature_names_in = np.array(model_dict['feature_names_in'])
+        if '_min_spanning_tree' in model_dict:
+            model._min_spanning_tree = np.array(model_dict['_min_spanning_tree'])
+        if '_outlier_scores' in model_dict:
+            model._outlier_scores = np.array(model_dict['_outlier_scores'])
+        if '_prediction_data' in model_dict:
+            model._prediction_data = np.array(model_dict['_prediction_data'])
+        if '_relative_validity' in model_dict:
+            model._relative_validity = np.array(model_dict['_relative_validity'])
 
-    return model
+        return model

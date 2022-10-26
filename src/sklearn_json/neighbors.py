@@ -5,7 +5,14 @@ import importlib
 
 import numpy as np
 from sklearn.neighbors import NearestNeighbors, KDTree
-from pynndescent import NNDescent
+
+# Allow additional dependencies to be optional
+__optionals__ = []
+try:
+    from pynndescent import NNDescent
+    __optionals__.append('NNDescent')
+except:
+    pass
 
 from .utils.csr import serialize_csr_matrix, deserialize_csr_matrix
 
@@ -111,59 +118,59 @@ def deserialize_kdtree(model_dict):
 
     return model
 
+if 'NNDescent' in __optionals__:
+    def serialize_nndescent(model):
+        state = model.__getstate__()
 
-def serialize_nndescent(model):
-    state = model.__getstate__()
+        del state['_distance_func'], state['_tree_search']
+        del state['_search_function'], state['_deheap_function']
+        del state['_distance_correction']
 
-    del state['_distance_func'], state['_tree_search']
-    del state['_search_function'], state['_deheap_function']
-    del state['_distance_correction']
+        state['_raw_data'] = state['_raw_data'].astype(float).tolist()
+        state['rng_state'] = state['rng_state'].astype(int).tolist()
+        state['search_rng_state'] = state['search_rng_state'].astype(int).tolist()
+        state['_search_graph'] = serialize_csr_matrix(state['_search_graph'])
+        state['_visited'] = state['_visited'].astype(int).tolist()
+        state['_vertex_order'] = state['_vertex_order'].astype(int).tolist()
+        state['_neighbor_graph'] = (state['_neighbor_graph'][0].tolist(),
+                                    state['_neighbor_graph'][1].astype(float).tolist())
+        state['_search_forest'] = ((state['_search_forest'][0][0].astype(float).tolist(),
+                                    state['_search_forest'][0][1].astype(float).tolist(),
+                                    state['_search_forest'][0][2].astype(int).tolist(),
+                                    state['_search_forest'][0][3].astype(int).tolist(),
+                                    state['_search_forest'][0][4]),)
 
-    state['_raw_data'] = state['_raw_data'].astype(float).tolist()
-    state['rng_state'] = state['rng_state'].astype(int).tolist()
-    state['search_rng_state'] = state['search_rng_state'].astype(int).tolist()
-    state['_search_graph'] = serialize_csr_matrix(state['_search_graph'])
-    state['_visited'] = state['_visited'].astype(int).tolist()
-    state['_vertex_order'] = state['_vertex_order'].astype(int).tolist()
-    state['_neighbor_graph'] = (state['_neighbor_graph'][0].tolist(),
-                                state['_neighbor_graph'][1].astype(float).tolist())
-    state['_search_forest'] = ((state['_search_forest'][0][0].astype(float).tolist(),
-                                state['_search_forest'][0][1].astype(float).tolist(),
-                                state['_search_forest'][0][2].astype(int).tolist(),
-                                state['_search_forest'][0][3].astype(int).tolist(),
-                                state['_search_forest'][0][4]),)
+        serialized_model = {
+            'meta': 'nn-descent',
+            'params': state
+        }
 
-    serialized_model = {
-        'meta': 'nn-descent',
-        'params': state
-    }
-
-    return serialized_model
+        return serialized_model
 
 
-def deserialize_nndescent(model_dict):
+    def deserialize_nndescent(model_dict):
 
-    params = model_dict['params']
+        params = model_dict['params']
 
-    params['_raw_data'] = np.array(params['_raw_data'], dtype=np.float32)
-    params['rng_state'] = np.array(params['rng_state'], dtype=np.int64)
-    params['search_rng_state'] = np.array(params['search_rng_state'], dtype=np.int64)
-    params['_search_graph'] = deserialize_csr_matrix(params['_search_graph'])
-    params['_visited'] = np.array(params['_visited'], dtype=np.uint8)
-    params['_vertex_order'] = np.array(params['_vertex_order'], dtype=np.int32)
-    params['_neighbor_graph'] = (np.array(params['_neighbor_graph'][0]),
-                                 np.array(params['_neighbor_graph'][1], dtype=np.float32))
-    params['_search_forest'] = ((np.array(params['_search_forest'][0][0], dtype=np.float32),
-                                 np.array(params['_search_forest'][0][1], dtype=np.float32),
-                                 np.array(params['_search_forest'][0][2], dtype=np.int32),
-                                 np.array(params['_search_forest'][0][3], dtype=np.int32),
-                                 params['_search_forest'][0][4]),)
+        params['_raw_data'] = np.array(params['_raw_data'], dtype=np.float32)
+        params['rng_state'] = np.array(params['rng_state'], dtype=np.int64)
+        params['search_rng_state'] = np.array(params['search_rng_state'], dtype=np.int64)
+        params['_search_graph'] = deserialize_csr_matrix(params['_search_graph'])
+        params['_visited'] = np.array(params['_visited'], dtype=np.uint8)
+        params['_vertex_order'] = np.array(params['_vertex_order'], dtype=np.int32)
+        params['_neighbor_graph'] = (np.array(params['_neighbor_graph'][0]),
+                                     np.array(params['_neighbor_graph'][1], dtype=np.float32))
+        params['_search_forest'] = ((np.array(params['_search_forest'][0][0], dtype=np.float32),
+                                     np.array(params['_search_forest'][0][1], dtype=np.float32),
+                                     np.array(params['_search_forest'][0][2], dtype=np.int32),
+                                     np.array(params['_search_forest'][0][3], dtype=np.int32),
+                                     params['_search_forest'][0][4]),)
 
-    model = NNDescent(params['_raw_data'], metric=params['metric'], metric_kwds=params['metric_kwds'])
+        model = NNDescent(params['_raw_data'], metric=params['metric'], metric_kwds=params['metric_kwds'])
 
-    params['_distance_func'] = model._distance_func
-    params['_distance_correction'] = model._distance_correction
+        params['_distance_func'] = model._distance_func
+        params['_distance_correction'] = model._distance_correction
 
-    model.__setstate__(params)
+        model.__setstate__(params)
 
-    return model
+        return model

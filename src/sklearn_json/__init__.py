@@ -31,14 +31,6 @@ from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAna
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
 from sklearn.neighbors import NearestNeighbors, KDTree
-from xgboost import XGBRegressor, XGBClassifier, XGBRFRegressor, XGBRFClassifier, XGBRanker
-from lightgbm import LGBMClassifier, LGBMRegressor, LGBMRanker
-from catboost import CatBoostClassifier, CatBoostRegressor, CatBoostRanker, Pool
-from kmodes.kmodes import KModes
-from kmodes.kprototypes import KPrototypes
-from hdbscan import HDBSCAN
-from pynndescent import NNDescent
-from umap import UMAP
 
 from . import classification as clf
 from . import regression as reg
@@ -49,6 +41,26 @@ from . import decomposition as dec
 from . import manifold as man
 from . import neighbors as nei
 from . import cross_decomposition as crdec
+
+# Make additional dependencies optional
+if 'XGBRegressor' in reg.__optionals__:
+    from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker, XGBClassifier, XGBRFClassifier
+if 'LGBMRegressor' in reg.__optionals__:
+    from lightgbm import LGBMRegressor, LGBMRanker, LGBMClassifier
+if 'CatBoostRegressor' in reg.__optionals__:
+    from catboost import CatBoostRegressor, CatBoostRanker, Pool, CatBoostClassifier
+else:
+    from typing import TypeVar
+    Pool = TypeVar('Pool')
+if 'KModes' in clus.__optionals__:
+    from kmodes.kmodes import KModes
+    from kmodes.kprototypes import KPrototypes
+if 'HDBSCAN' in clus.__optionals__:
+    from hdbscan import HDBSCAN
+if 'NNDescent' in nei.__optionals__:
+    from pynndescent import NNDescent
+if 'UMAP' in man.__optionals__:
+    from umap import UMAP
 
 
 __version__ = '0.1.4'
@@ -82,13 +94,13 @@ def serialize_model(model, catboost_data: Pool = None):
         return clf.serialize_random_forest(model)
     elif isinstance(model, MLPClassifier):
         return clf.serialize_mlp(model)
-    elif isinstance(model, XGBClassifier):
+    elif 'XGBClassifier' in clf.__optionals__ and isinstance(model, XGBClassifier):
         return clf.serialize_xgboost_classifier(model)
-    elif isinstance(model, XGBRFClassifier):
+    elif 'XGBRFClassifier' in clf.__optionals__ and isinstance(model, XGBRFClassifier):
         return clf.serialize_xgboost_rf_classifier(model)
-    elif isinstance(model, LGBMClassifier):
+    elif 'LGBMClassifier' in clf.__optionals__ and isinstance(model, LGBMClassifier):
         return clf.serialize_lightgbm_classifier(model)
-    elif isinstance(model, CatBoostClassifier):
+    elif 'CatBoostClassifier' in clf.__optionals__ and isinstance(model, CatBoostClassifier):
         return clf.serialize_catboost_classifier(model, catboost_data)
     elif isinstance(model, AdaBoostClassifier):
         return clf.serialize_adaboost_classifier(model)
@@ -126,19 +138,19 @@ def serialize_model(model, catboost_data: Pool = None):
         return reg.serialize_extratrees_regressor(model)
     elif isinstance(model, MLPRegressor):
         return reg.serialize_mlp_regressor(model)
-    elif isinstance(model, XGBRanker):
+    elif 'XGBRanker' in reg.__optionals__ and isinstance(model, XGBRanker):
         return reg.serialize_xgboost_ranker(model)
-    elif isinstance(model, XGBRegressor):
+    elif 'XGBRegressor' in reg.__optionals__ and isinstance(model, XGBRegressor):
         return reg.serialize_xgboost_regressor(model)
-    elif isinstance(model, XGBRFRegressor):
+    elif 'XGBRFRegressor' in reg.__optionals__ and isinstance(model, XGBRFRegressor):
         return reg.serialize_xgboost_rf_regressor(model)
-    elif isinstance(model, LGBMRegressor):
+    elif 'LGBMRegressor' in reg.__optionals__ and isinstance(model, LGBMRegressor):
         return reg.serialize_lightgbm_regressor(model)
-    elif isinstance(model, LGBMRanker):
+    elif 'LGBMRanker' in reg.__optionals__ and isinstance(model, LGBMRanker):
         return reg.serialize_lightgbm_ranker(model)
-    elif isinstance(model, CatBoostRegressor):
+    elif 'CatBoostRegressor' in reg.__optionals__ and isinstance(model, CatBoostRegressor):
         return reg.serialize_catboost_regressor(model, catboost_data)
-    elif isinstance(model, CatBoostRanker):
+    elif 'CatBoostRanker' in reg.__optionals__ and isinstance(model, CatBoostRanker):
         return reg.serialize_catboost_ranker(model, catboost_data)
     elif isinstance(model, AdaBoostRegressor):
         return reg.serialize_adaboost_regressor(model)
@@ -170,13 +182,13 @@ def serialize_model(model, catboost_data: Pool = None):
         return clus.serialize_spectral_biclustering(model)
     elif isinstance(model, SpectralCoclustering):
         return clus.serialize_spectral_coclustering(model)
-    elif isinstance(model, KPrototypes):
+    elif 'KPrototypes' in clus.__optionals__ and isinstance(model, KPrototypes):
         return clus.serialize_kprototypes(model)
-    elif isinstance(model, KModes):
+    elif 'KModes' in clus.__optionals__ and isinstance(model, KModes):
         return clus.serialize_kmodes(model)
     elif isinstance(model, Birch):
         return clus.serialize_birch(model)
-    elif isinstance(model, HDBSCAN):
+    elif 'HDBSCAN' in clus.__optionals__ and isinstance(model, HDBSCAN):
         return clus.serialize_hdbscan(model)
 
     # Decomposition
@@ -230,7 +242,7 @@ def serialize_model(model, catboost_data: Pool = None):
         return man.serialize_locally_linear_embedding(model)
     elif isinstance(model, SpectralEmbedding):
         return man.serialize_spectral_embedding(model)
-    elif isinstance(model, UMAP):
+    elif 'UMAP' in man.__optionals__ and isinstance(model, UMAP):
         return man.serialize_umap(model)
 
     # Neighbors
@@ -238,7 +250,7 @@ def serialize_model(model, catboost_data: Pool = None):
         return nei.serialize_nearest_neighbors(model)
     elif isinstance(model, KDTree):
         return nei.serialize_kdtree(model)
-    elif isinstance(model, NNDescent):
+    elif 'NNDescent' in nei.__optionals__ and isinstance(model, NNDescent):
         return nei.serialize_nndescent(model)
 
     # Feature Extraction

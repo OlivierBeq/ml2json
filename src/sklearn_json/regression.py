@@ -17,9 +17,25 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.tree._tree import Tree
 from sklearn.svm import SVR
 from sklearn import dummy
-from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
-from lightgbm import LGBMRegressor, LGBMRanker, Booster as LGBMBooster
-from catboost import CatBoostRegressor, CatBoostRanker
+
+# Allow additional dependencies to be optional
+__optionals__ = []
+try:
+    from xgboost import XGBRegressor, XGBRFRegressor, XGBRanker
+    __optionals__.extend(['XGBRegressor', 'XGBRFRegressor', 'XGBRanker'])
+except:
+    pass
+try:
+    from lightgbm import LGBMRegressor, LGBMRanker, Booster as LGBMBooster
+    __optionals__.extend(['LGBMRegressor', 'LGBMRanker'])
+except:
+    pass
+try:
+    from catboost import CatBoostRegressor, CatBoostRanker
+    __optionals__.extend(['CatBoostRegressor', 'CatBoostRanker'])
+except:
+    pass
+
 
 from .utils import csr
 
@@ -419,224 +435,230 @@ def deserialize_mlp_regressor(model_dict):
     return model
 
 
-def serialize_xgboost_ranker(model):
-    serialized_model = {
-        'meta': 'xgboost-ranker',
-        'params': model.get_params()
-    }
+if 'XGBRanker' in __optionals__:
+    def serialize_xgboost_ranker(model):
+        serialized_model = {
+            'meta': 'xgboost-ranker',
+            'params': model.get_params()
+        }
 
-    filename = f'{str(uuid.uuid4())}.json'
-    model.save_model(filename)
-    with open(filename, 'r') as fh:
-        serialized_model['advanced-params'] = fh.read()
-    os.remove(filename)
+        filename = f'{str(uuid.uuid4())}.json'
+        model.save_model(filename)
+        with open(filename, 'r') as fh:
+            serialized_model['advanced-params'] = fh.read()
+        os.remove(filename)
 
-    return serialized_model
-
-
-def deserialize_xgboost_ranker(model_dict):
-    model = XGBRanker(**model_dict['params'])
-
-    filename = f'{str(uuid.uuid4())}.json'
-    with open(filename, 'w') as fh:
-        fh.write(model_dict['advanced-params'])
-    model.load_model(filename)
-    os.remove(filename)
-
-    return model
-
-def serialize_xgboost_regressor(model):
-    serialized_model = {
-        'meta': 'xgboost-regressor',
-        'params': model.get_params()
-    }
-
-    filename = f'{str(uuid.uuid4())}.json'
-    model.save_model(filename)
-    with open(filename, 'r') as fh:
-        serialized_model['advanced-params'] = fh.read()
-    os.remove(filename)
-
-    return serialized_model
+        return serialized_model
 
 
-def deserialize_xgboost_regressor(model_dict):
-    model = XGBRegressor(**model_dict['params'])
+    def deserialize_xgboost_ranker(model_dict):
+        model = XGBRanker(**model_dict['params'])
 
-    filename = f'{str(uuid.uuid4())}.json'
-    with open(filename, 'w') as fh:
-        fh.write(model_dict['advanced-params'])
-    model.load_model(filename)
-    os.remove(filename)
+        filename = f'{str(uuid.uuid4())}.json'
+        with open(filename, 'w') as fh:
+            fh.write(model_dict['advanced-params'])
+        model.load_model(filename)
+        os.remove(filename)
 
-    return model
+        return model
 
-def serialize_xgboost_rf_regressor(model):
-    serialized_model = {
-        'meta': 'xgboost-rf-regressor',
-        'params': model.get_params()
-    }
+if 'XGBRegressor' in __optionals__:
+    def serialize_xgboost_regressor(model):
+        serialized_model = {
+            'meta': 'xgboost-regressor',
+            'params': model.get_params()
+        }
 
-    filename = f'{str(uuid.uuid4())}.json'
-    model.save_model(filename)
-    with open(filename, 'r') as fh:
-        serialized_model['advanced-params'] = fh.read()
-    os.remove(filename)
+        filename = f'{str(uuid.uuid4())}.json'
+        model.save_model(filename)
+        with open(filename, 'r') as fh:
+            serialized_model['advanced-params'] = fh.read()
+        os.remove(filename)
 
-    return serialized_model
-
-
-def deserialize_xgboost_rf_regressor(model_dict):
-    model = XGBRFRegressor(**model_dict['params'])
-
-    filename = f'{str(uuid.uuid4())}.json'
-    with open(filename, 'w') as fh:
-        fh.write(model_dict['advanced-params'])
-    model.load_model(filename)
-    os.remove(filename)
-
-    return model
+        return serialized_model
 
 
-def serialize_lightgbm_regressor(model):
-    serialized_model = {
-        'meta': 'lightgbm-regressor',
-        'params': model.get_params(),
-        '_other_params': model._other_params
-    }
-    serialized_model['params'].update({
-        '_Booster': model.booster_.model_to_string(),
-        'fitted_': model.fitted_,
-        '_evals_result': model._evals_result,
-        '_best_score': model._best_score,
-        '_best_iteration': model._best_iteration,
-        '_objective': model._objective,
-        'class_weight': model.class_weight,
-        '_class_weight': model._class_weight,
-        '_n_features': model._n_features,
-        '_n_features_in': model._n_features_in,
-        '_n_classes': model._n_classes
-    })
+    def deserialize_xgboost_regressor(model_dict):
+        model = XGBRegressor(**model_dict['params'])
 
-    if hasattr(model, '_class_map') and model._class_map is not None:
-        serialized_model['params']['_class_map'] = {int(key): int(value) for key, value in model._class_map.items()}
-    if hasattr(model, '_classes') and model._classes is not None:
-        serialized_model['params']['_classes'] = model._classes.astype(int).tolist()
+        filename = f'{str(uuid.uuid4())}.json'
+        with open(filename, 'w') as fh:
+            fh.write(model_dict['advanced-params'])
+        model.load_model(filename)
+        os.remove(filename)
 
-    return serialized_model
+        return model
 
+if 'XGBRFRegressor' in __optionals__:
+    def serialize_xgboost_rf_regressor(model):
+        serialized_model = {
+            'meta': 'xgboost-rf-regressor',
+            'params': model.get_params()
+        }
 
-def deserialize_lightgbm_regressor(model_dict):
-    params = model_dict['params']
-    params['_Booster'] = LGBMBooster(model_str=params['_Booster'])
+        filename = f'{str(uuid.uuid4())}.json'
+        model.save_model(filename)
+        with open(filename, 'r') as fh:
+            serialized_model['advanced-params'] = fh.read()
+        os.remove(filename)
 
-    if '_class_map' in params and params['_class_map'] is not None:
-        params['_class_map'] = {np.int32(key): np.int64(value) for key, value in model_dict['_class_map'].items()}
-    if '_classes' in params and params['_classes'] is not None:
-        params['_classes'] = np.array(model_dict['_classes'], dtype=np.int32)
-
-    model = LGBMRegressor().set_params(**params)
-    model._other_params = model_dict['_other_params']
-
-    return model
+        return serialized_model
 
 
-def serialize_lightgbm_ranker(model):
-    serialized_model = {
-        'meta': 'lightgbm-ranker',
-        'params': model.get_params(),
-        '_other_params': model._other_params
-    }
-    serialized_model['params'].update({
-        '_Booster': model.booster_.model_to_string(),
-        'fitted_': model.fitted_,
-        '_evals_result': model._evals_result,
-        '_best_score': model._best_score,
-        '_best_iteration': model._best_iteration,
-        '_objective': model._objective,
-        'class_weight': model.class_weight,
-        '_class_weight': model._class_weight,
-        '_n_features': model._n_features,
-        '_n_features_in': model._n_features_in,
-        '_n_classes': model._n_classes
-    })
+    def deserialize_xgboost_rf_regressor(model_dict):
+        model = XGBRFRegressor(**model_dict['params'])
 
-    if hasattr(model, '_class_map') and model._class_map is not None:
-        serialized_model['params']['_class_map'] = {int(key): int(value) for key, value in model._class_map.items()}
-    if hasattr(model, '_classes') and model._classes is not None:
-        serialized_model['params']['_classes'] = model._classes.astype(int).tolist()
+        filename = f'{str(uuid.uuid4())}.json'
+        with open(filename, 'w') as fh:
+            fh.write(model_dict['advanced-params'])
+        model.load_model(filename)
+        os.remove(filename)
 
-    return serialized_model
+        return model
 
 
-def deserialize_lightgbm_ranker(model_dict):
-    params = model_dict['params']
-    params['_Booster'] = LGBMBooster(model_str=params['_Booster'])
+if 'LGBMRegressor' in __optionals__:
+    def serialize_lightgbm_regressor(model):
+        serialized_model = {
+            'meta': 'lightgbm-regressor',
+            'params': model.get_params(),
+            '_other_params': model._other_params
+        }
+        serialized_model['params'].update({
+            '_Booster': model.booster_.model_to_string(),
+            'fitted_': model.fitted_,
+            '_evals_result': model._evals_result,
+            '_best_score': model._best_score,
+            '_best_iteration': model._best_iteration,
+            '_objective': model._objective,
+            'class_weight': model.class_weight,
+            '_class_weight': model._class_weight,
+            '_n_features': model._n_features,
+            '_n_features_in': model._n_features_in,
+            '_n_classes': model._n_classes
+        })
 
-    if '_class_map' in params:
-        params['_class_map'] = {np.int32(key): np.int64(value) for key, value in model_dict['_class_map'].items()}
-    if '_classes' in params:
-        params['_classes'] = np.array(model_dict['_classes'], dtype=np.int32)
+        if hasattr(model, '_class_map') and model._class_map is not None:
+            serialized_model['params']['_class_map'] = {int(key): int(value) for key, value in model._class_map.items()}
+        if hasattr(model, '_classes') and model._classes is not None:
+            serialized_model['params']['_classes'] = model._classes.astype(int).tolist()
 
-
-    model = LGBMRanker().set_params(**params)
-    model._other_params = model_dict['_other_params']
-
-    return model
-
-
-def serialize_catboost_regressor(model, catboost_data):
-    serialized_model = {
-        'meta': 'catboost-regressor',
-        'params': model.get_params()
-    }
-
-    filename = f'{str(uuid.uuid4())}.json'
-    model.save_model(filename, format='json', pool=catboost_data)
-    with open(filename, 'r') as fh:
-        serialized_model['advanced-params'] = fh.read()
-    os.remove(filename)
-
-    return serialized_model
+        return serialized_model
 
 
-def deserialize_catboost_regressor(model_dict):
-    model = CatBoostRegressor(**model_dict['params'])
+    def deserialize_lightgbm_regressor(model_dict):
+        params = model_dict['params']
+        params['_Booster'] = LGBMBooster(model_str=params['_Booster'])
 
-    filename = f'{str(uuid.uuid4())}.json'
-    with open(filename, 'w') as fh:
-        fh.write(model_dict['advanced-params'])
-    model.load_model(filename, format='json')
-    os.remove(filename)
+        if '_class_map' in params and params['_class_map'] is not None:
+            params['_class_map'] = {np.int32(key): np.int64(value) for key, value in model_dict['_class_map'].items()}
+        if '_classes' in params and params['_classes'] is not None:
+            params['_classes'] = np.array(model_dict['_classes'], dtype=np.int32)
 
-    return model
+        model = LGBMRegressor().set_params(**params)
+        model._other_params = model_dict['_other_params']
+
+        return model
+
+if 'LGBMRanker' in __optionals__:
+    def serialize_lightgbm_ranker(model):
+        serialized_model = {
+            'meta': 'lightgbm-ranker',
+            'params': model.get_params(),
+            '_other_params': model._other_params
+        }
+        serialized_model['params'].update({
+            '_Booster': model.booster_.model_to_string(),
+            'fitted_': model.fitted_,
+            '_evals_result': model._evals_result,
+            '_best_score': model._best_score,
+            '_best_iteration': model._best_iteration,
+            '_objective': model._objective,
+            'class_weight': model.class_weight,
+            '_class_weight': model._class_weight,
+            '_n_features': model._n_features,
+            '_n_features_in': model._n_features_in,
+            '_n_classes': model._n_classes
+        })
+
+        if hasattr(model, '_class_map') and model._class_map is not None:
+            serialized_model['params']['_class_map'] = {int(key): int(value) for key, value in model._class_map.items()}
+        if hasattr(model, '_classes') and model._classes is not None:
+            serialized_model['params']['_classes'] = model._classes.astype(int).tolist()
+
+        return serialized_model
 
 
-def serialize_catboost_ranker(model: CatBoostRanker, catboost_data):
-    serialized_model = {
-        'meta': 'catboost-ranker',
-        'params': model.get_params()
-    }
+    def deserialize_lightgbm_ranker(model_dict):
+        params = model_dict['params']
+        params['_Booster'] = LGBMBooster(model_str=params['_Booster'])
 
-    filename = f'{str(uuid.uuid4())}.json'
-    model.save_model(filename, format='json', pool=catboost_data)
-    with open(filename, 'r') as fh:
-        serialized_model['advanced-params'] = fh.read()
-    os.remove(filename)
-
-    return serialized_model
+        if '_class_map' in params:
+            params['_class_map'] = {np.int32(key): np.int64(value) for key, value in model_dict['_class_map'].items()}
+        if '_classes' in params:
+            params['_classes'] = np.array(model_dict['_classes'], dtype=np.int32)
 
 
-def deserialize_catboost_ranker(model_dict):
-    model = CatBoostRanker(**model_dict['params'])
+        model = LGBMRanker().set_params(**params)
+        model._other_params = model_dict['_other_params']
 
-    filename = f'{str(uuid.uuid4())}.json'
-    with open(filename, 'w') as fh:
-        fh.write(model_dict['advanced-params'])
-    model.load_model(filename, format='json')
-    os.remove(filename)
+        return model
 
-    return model
+
+if 'CatBoostRegressor' in __optionals__:
+    def serialize_catboost_regressor(model, catboost_data):
+        serialized_model = {
+            'meta': 'catboost-regressor',
+            'params': model.get_params()
+        }
+
+        filename = f'{str(uuid.uuid4())}.json'
+        model.save_model(filename, format='json', pool=catboost_data)
+        with open(filename, 'r') as fh:
+            serialized_model['advanced-params'] = fh.read()
+        os.remove(filename)
+
+        return serialized_model
+
+
+    def deserialize_catboost_regressor(model_dict):
+        model = CatBoostRegressor(**model_dict['params'])
+
+        filename = f'{str(uuid.uuid4())}.json'
+        with open(filename, 'w') as fh:
+            fh.write(model_dict['advanced-params'])
+        model.load_model(filename, format='json')
+        os.remove(filename)
+
+        return model
+
+
+if 'CatBoostRanker' in __optionals__:
+    def serialize_catboost_ranker(model: CatBoostRanker, catboost_data):
+        serialized_model = {
+            'meta': 'catboost-ranker',
+            'params': model.get_params()
+        }
+
+        filename = f'{str(uuid.uuid4())}.json'
+        model.save_model(filename, format='json', pool=catboost_data)
+        with open(filename, 'r') as fh:
+            serialized_model['advanced-params'] = fh.read()
+        os.remove(filename)
+
+        return serialized_model
+
+
+    def deserialize_catboost_ranker(model_dict):
+        model = CatBoostRanker(**model_dict['params'])
+
+        filename = f'{str(uuid.uuid4())}.json'
+        with open(filename, 'w') as fh:
+            fh.write(model_dict['advanced-params'])
+        model.load_model(filename, format='json')
+        os.remove(filename)
+
+        return model
 
 
 def serialize_adaboost_regressor(model):

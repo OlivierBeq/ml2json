@@ -17,9 +17,24 @@ from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesC
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
-from xgboost import XGBClassifier, XGBRFClassifier
-from lightgbm import LGBMClassifier
-from catboost import CatBoostClassifier, Pool
+
+# Allow testing of additional optional dependencies
+__optionals__ = []
+try:
+    from xgboost import XGBClassifier, XGBRFClassifier
+    __optionals__.extend(['XGBClassifier', 'XGBRFClassifier'])
+except:
+    pass
+try:
+    from lightgbm import LGBMClassifier
+    __optionals__.append('LGBMClassifier')
+except:
+    pass
+try:
+    from catboost import CatBoostClassifier, Pool
+    __optionals__.append('CatBoostClassifier')
+except:
+    pass
 
 from src import sklearn_json as skljson
 
@@ -147,13 +162,16 @@ class TestAPI(unittest.TestCase):
         self.check_sparse_model(MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1), 'mlp.json')
 
     def test_xgboost_classifier(self):
-        self.check_model(XGBClassifier(), 'xgb_classifier.json')
+        if 'XGBClassifier' in __optionals__:
+            self.check_model(XGBClassifier(), 'xgb_classifier.json')
 
     def test_xgboost_rf_classifier(self):
-        self.check_model(XGBRFClassifier(), 'xgb_rf_classifier.json')
+        if 'XGBRFClassifier' in __optionals__:
+            self.check_model(XGBRFClassifier(), 'xgb_rf_classifier.json')
 
     def test_lightgbm_classifier(self):
-        self.check_model(LGBMClassifier(), 'lightgbm_classifier.json')
+        if 'LGBMClassifier' in __optionals__:
+            self.check_model(LGBMClassifier(), 'lightgbm_classifier.json')
 
     def check_catboost_model(self, model, model_name, abs=False):
         # Given
@@ -183,7 +201,8 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_equal(expected_predictions, json_predictions)
 
     def test_catboost_classifier(self):
-        self.check_model(CatBoostClassifier(allow_writing_files=False, verbose=False), 'catboost-cls.json')
+        if 'CatBoostClassifier' in __optionals__:
+            self.check_model(CatBoostClassifier(allow_writing_files=False, verbose=False), 'catboost-cls.json')
 
     def test_adaboost_classifier(self):
         self.check_model(AdaBoostClassifier(n_estimators=25, learning_rate=1.0), 'adaboost-cls.json')

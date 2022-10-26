@@ -22,6 +22,12 @@ sklearn-json makes exporting model files to JSON simple.
 ```
 pip install https://github.com/OlivierBeq/sklearn-json/tarball/master
 ```
+
+To install other all dependencies (e.g. XGBoost, HDBSCAN), use:
+
+```
+pip install -e git+https://github.com/OlivierBeq/sklearn-json.git#egg=sklearn-json[full]
+```
 ## Example Usage
 
 ```python
