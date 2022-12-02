@@ -17,6 +17,7 @@ from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesC
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
 # Allow testing of additional optional dependencies
 __optionals__ = []
@@ -249,3 +250,36 @@ class TestAPI(unittest.TestCase):
 
     def test_random_trees_embedding(self):
         self.check_random_trees_embedding_model(RandomTreesEmbedding(n_estimators=100, random_state=1234), 'random-trees-embedding.json')
+
+    def check_nearest_neighbour_model(self, model, model_name):
+        model.fit(self.X, self.y)
+
+        # When
+        serialized_model = skljson.to_dict(model)
+        deserialized_model = skljson.from_dict(serialized_model)
+
+        # Then
+        expected_predictions = model.predict(self.X)
+        expected_neigh_dist, expected_neigh_ind  = model.kneighbors(self.X)
+        actual_predictions = deserialized_model.predict(self.X)
+        actual_neigh_dist, actual_neigh_ind = deserialized_model.kneighbors(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_neigh_dist, actual_neigh_dist)
+        np.testing.assert_array_equal(expected_neigh_ind, actual_neigh_ind)
+
+        # When
+        skljson.to_json(model, model_name)
+        deserialized_model = skljson.from_json(model_name)
+        os.remove(model_name)
+
+        # JSON
+        actual_predictions = deserialized_model.predict(self.X)
+        actual_neigh_dist, actual_neigh_ind = deserialized_model.kneighbors(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_neigh_dist, actual_neigh_dist)
+        np.testing.assert_array_equal(expected_neigh_ind, actual_neigh_ind)
+
+    def test_nearest_neighbour_classifier(self):
+        self.check_nearest_neighbour_model(KNeighborsClassifier(), 'knn-classifier.json')

@@ -30,7 +30,7 @@ from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAna
                                    MiniBatchNMF, SparsePCA, SparseCoder, TruncatedSVD)
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
-from sklearn.neighbors import NearestNeighbors, KDTree
+from sklearn.neighbors import NearestNeighbors, KDTree, KNeighborsClassifier, KNeighborsRegressor
 
 from . import classification as clf
 from . import regression as reg
@@ -114,6 +114,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return clf.serialize_isolation_forest(model)
     elif isinstance(model, RandomTreesEmbedding):
         return clf.serialize_random_trees_embedding(model)
+    elif isinstance(model, KNeighborsClassifier):
+        return clf.serialize_nearest_neighbour_classifier(model)
 
     # Regression
     elif isinstance(model, LinearRegression):
@@ -156,6 +158,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return reg.serialize_adaboost_regressor(model)
     elif isinstance(model, BaggingRegressor):
         return reg.serialize_bagging_regressor(model)
+    elif isinstance(model, KNeighborsRegressor):
+        return reg.serialize_nearest_neighbour_regressor(model)
 
     # Clustering
     elif isinstance(model, FeatureAgglomeration):
@@ -326,6 +330,8 @@ def deserialize_model(model_dict):
         return clf.deserialize_isolation_forest(model_dict)
     elif model_dict['meta'] == 'random-trees-embedding':
         return clf.deserialize_random_trees_embedding(model_dict)
+    elif model_dict['meta'] == 'nearest-neighbour-classifier':
+        return clf.deserialize_nearest_neighbour_classifier(model_dict)
 
     # Regression
     elif model_dict['meta'] == 'linear-regression':
@@ -368,6 +374,8 @@ def deserialize_model(model_dict):
         return reg.deserialize_extra_tree_regressor(model_dict)
     elif model_dict['meta'] == 'extratrees-regressor':
         return reg.deserialize_extratrees_regressor(model_dict)
+    elif model_dict['meta'] == 'nearest-neighbour-regressor':
+        return reg.deserialize_nearest_neighbour_regressor(model_dict)
 
     # Clustering
     elif model_dict['meta'] == 'affinity-propagation':

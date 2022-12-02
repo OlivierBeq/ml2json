@@ -18,6 +18,9 @@ from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesC
                               RandomTreesEmbedding)
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
+
+from .neighbors import serialize_kdtree, deserialize_kdtree
 
 # Allow additional dependencies to be optional
 __optionals__ = []
@@ -1139,6 +1142,58 @@ def deserialize_random_trees_embedding(model_dict):
     model.class_weight = model_dict['class_weight']
     model.one_hot_encoder_ = deserialize_onehot_encoder(model_dict['one_hot_encoder_'])
     model.estimator_params = tuple(model_dict['estimator_params'])
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_nearest_neighbour_classifier(model):
+    serialized_model = {
+        'meta': 'nearest-neighbour-classifier',
+        'radius': model.radius,
+        'n_features_in_': model.n_features_in_,
+        'outputs_2d_': model.outputs_2d_,
+        'classes_': model.classes_.tolist(),
+        '_y': model._y.tolist(),
+        'effective_metric_params_': model.effective_metric_params_,
+        'effective_metric_': model.effective_metric_,
+        '_fit_method': model._fit_method,
+        'n_samples_fit_': model.n_samples_fit_,
+        '_fit_X': model._fit_X.tolist(),
+        'params': model.get_params()
+    }
+
+    if '_tree' in model.__dict__ and model.__dict__['_tree'] is not None:
+        serialized_model['_tree'] = serialize_kdtree(model._tree)
+    else:
+        serialized_model['_tree'] = None
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_nearest_neighbour_classifier(model_dict):
+    model = KNeighborsClassifier(**model_dict['params'])
+
+    model.radius = model_dict['radius']
+    model.n_features_in_ = model_dict['n_features_in_']
+    model.outputs_2d_ = model_dict['outputs_2d_']
+    model.classes_ = np.array(model_dict['classes_'])
+    model._y = np.array(model_dict['_y'])
+    model.effective_metric_params_ = model_dict['effective_metric_params_']
+    model.effective_metric_ = model_dict['effective_metric_']
+    model._fit_method = model_dict['_fit_method']
+    model._fit_X = np.array(model_dict['_fit_X'])
+    model.n_samples_fit_ = model_dict['n_samples_fit_']
+
+    if model_dict['_tree'] is not None:
+        model._tree = deserialize_kdtree(model_dict['_tree'])
+    else:
+        model._tree = None
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
