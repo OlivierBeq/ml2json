@@ -295,3 +295,39 @@ class TestAPI(unittest.TestCase):
 
     def test_nearest_neighbour_regressor(self):
         self.check_nearest_neighbour_model(KNeighborsRegressor(), 'knn-regressor.json')
+
+    def check_stacking_regressor_model(self, model, model_name):
+        model.fit(self.X, self.y)
+
+        # When
+        serialized_model = skljson.to_dict(model)
+        deserialized_model = skljson.from_dict(serialized_model)
+
+        # Then
+        expected_predictions = model.predict(self.X)
+        actual_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+        # When
+        skljson.to_json(model, model_name)
+        deserialized_model = skljson.from_json(model_name)
+        os.remove(model_name)
+
+        # JSON
+        actual_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+    def test_stacking_regressor(self):
+        estimators = [
+            ('rf', RandomForestRegressor(n_estimators=10, random_state=42)),
+            ('ridge', Ridge(random_state=42)),
+            ('knn', KNeighborsRegressor()),
+            ('svm', SVR())
+        ]
+        model = StackingRegressor(
+            estimators=estimators, final_estimator=LinearRegression()
+        )
+        self.check_model(model, 'stacking-regressor.json')
+

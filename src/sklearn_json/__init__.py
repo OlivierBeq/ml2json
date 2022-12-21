@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import json
+import inspect
+import importlib
 
 from sklearn import svm, discriminant_analysis, dummy
 from sklearn.feature_extraction import DictVectorizer
@@ -41,6 +43,7 @@ from . import decomposition as dec
 from . import manifold as man
 from . import neighbors as nei
 from . import cross_decomposition as crdec
+from .utils import is_model_fitted
 
 # Make additional dependencies optional
 if 'XGBRegressor' in reg.__optionals__:
@@ -67,6 +70,10 @@ __version__ = '0.1.4'
 
 
 def serialize_model(model, catboost_data: Pool = None):
+    # Verify model is fit
+    if not is_model_fitted(model):
+        return serialize_unfitted_model(model)
+
     # Classification
     if isinstance(model, LogisticRegression):
         return clf.serialize_logistic_regression(model)
@@ -116,6 +123,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return clf.serialize_random_trees_embedding(model)
     elif isinstance(model, KNeighborsClassifier):
         return clf.serialize_nearest_neighbour_classifier(model)
+    elif isinstance(model, StackingClassifier):
+        return clf.serialize_stacking_classifier(model)
 
     # Regression
     elif isinstance(model, LinearRegression):
@@ -160,6 +169,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return reg.serialize_bagging_regressor(model)
     elif isinstance(model, KNeighborsRegressor):
         return reg.serialize_nearest_neighbour_regressor(model)
+    elif isinstance(model, StackingRegressor):
+        return reg.serialize_stacking_regressor(model)
 
     # Clustering
     elif isinstance(model, FeatureAgglomeration):
@@ -283,6 +294,10 @@ def serialize_model(model, catboost_data: Pool = None):
 
 
 def deserialize_model(model_dict):
+    # Verify model is fitted
+    if 'unfitted' in model_dict.keys() and model_dict['unfitted']:
+        return deserialize_unfitted_model(model_dict)
+
     # Classification
     if model_dict['meta'] == 'lr':
         return clf.deserialize_logistic_regression(model_dict)
@@ -332,6 +347,8 @@ def deserialize_model(model_dict):
         return clf.deserialize_random_trees_embedding(model_dict)
     elif model_dict['meta'] == 'nearest-neighbour-classifier':
         return clf.deserialize_nearest_neighbour_classifier(model_dict)
+    elif model_dict['meta'] == 'stacking-classifier':
+        return clf.deserialize_stacking_classifier(model_dict)
 
     # Regression
     elif model_dict['meta'] == 'linear-regression':
@@ -376,6 +393,8 @@ def deserialize_model(model_dict):
         return reg.deserialize_extratrees_regressor(model_dict)
     elif model_dict['meta'] == 'nearest-neighbour-regressor':
         return reg.deserialize_nearest_neighbour_regressor(model_dict)
+    elif model_dict['meta'] == 'stacking-regressor':
+        return reg.deserialize_stacking_regressor(model_dict)
 
     # Clustering
     elif model_dict['meta'] == 'affinity-propagation':
@@ -496,6 +515,21 @@ def deserialize_model(model_dict):
     # Otherwise
     else:
         raise ModellNotSupported('Model type not supported or corrupt JSON file.')
+
+
+def serialize_unfitted_model(model):
+    serialized_model = {
+        'unfitted': True,
+        'meta': (inspect.getmodule(model).__name__,
+                 type(model).__name__),
+        'params': model.get_params()
+    }
+    return serialized_model
+
+
+def deserialize_unfitted_model(model_dict):
+    model = getattr(importlib.import_module(model_dict['meta'][0]), model_dict['meta'][1])(**model_dict['params'])
+    return model
 
 
 def to_dict(model, catboost_data: Pool = None):

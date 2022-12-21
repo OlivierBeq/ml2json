@@ -283,3 +283,43 @@ class TestAPI(unittest.TestCase):
 
     def test_nearest_neighbour_classifier(self):
         self.check_nearest_neighbour_model(KNeighborsClassifier(), 'knn-classifier.json')
+
+    def check_stacking_classifier_model(self, model, model_name):
+        model.fit(self.X, self.y)
+
+        # When
+        serialized_model = skljson.to_dict(model)
+        deserialized_model = skljson.from_dict(serialized_model)
+
+        # Then
+        expected_predictions = model.predict(self.X)
+        expected_predictions_proba = model.predict_proba(self.X)
+        actual_predictions = deserialized_model.predict(self.X)
+        actual_predictions_proba = deserialized_model.predict_proba(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_predictions_proba, actual_predictions_proba)
+
+        # When
+        skljson.to_json(model, model_name)
+        deserialized_model = skljson.from_json(model_name)
+        os.remove(model_name)
+
+        # JSON
+        actual_predictions = deserialized_model.predict(self.X)
+        actual_predictions_proba = deserialized_model.predict_proba(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+        np.testing.assert_array_equal(expected_predictions_proba, actual_predictions_proba)
+
+    def test_stacking_classifier(self):
+        estimators = [
+            ('rf', RandomForestClassifier(n_estimators=10, random_state=42)),
+            ('nb', GaussianNB()),
+            ('knn', KNeighborsClassifier())
+        ]
+        model = StackingClassifier(
+            estimators=estimators, final_estimator=LogisticRegression()
+        )
+        self.check_model(model, 'stacking-classifier.json')
+

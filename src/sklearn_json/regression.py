@@ -912,3 +912,48 @@ def deserialize_nearest_neighbour_regressor(model_dict):
         model.feature_names_in = np.array(model_dict['feature_names_in'])
 
     return model
+
+
+def serialize_stacking_regressor(model):
+    # Import here to avoid circular imports
+    from . import serialize_model
+
+    serialized_model = {
+        'meta': 'stacking-regressor',
+        '_n_feature_outs': model._n_feature_outs,
+        'estimators_': [serialize_model(submodel) for submodel in model.estimators_],
+        'final_estimator_': serialize_model(model.final_estimator_),
+        'stack_method_': model.stack_method_,
+        'named_estimators_': {model_name: serialize_model(submodel) for model_name, submodel in model.named_estimators_.items()},
+        'params': {key:value for key, value in model.get_params().items() if key.split('__')[0] not in ['final_estimator'] + list(model.named_estimators_.keys())}
+    }
+
+    # Serialize the estimators in params
+    serialized_model['params']['estimators'] = [(name, serialize_model(model)) for name, model in
+                                                serialized_model['params']['estimators']]
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_stacking_regressor(model_dict):
+    # Import here to avoid circular imports
+    from . import deserialize_model
+
+    model_dict['params']['estimators'] = [(name, deserialize_model(model)) for name, model in
+                                          model_dict['params']['estimators']]
+
+    model = StackingRegressor(**model_dict['params'])
+
+    model._n_feature_outs = model_dict['_n_feature_outs']
+    model.estimators_ = [deserialize_model(submodel) for submodel in model_dict['estimators_']]
+    model.final_estimator_ = deserialize_model(model_dict['final_estimator_'])
+    model.stack_method_ = model_dict['stack_method_']
+    model.named_estimators_ = {model_name: deserialize_model(submodel) for model_name, submodel in model_dict['named_estimators_'].items()}
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model

@@ -20,7 +20,6 @@ from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, Compleme
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
 
-from .neighbors import serialize_kdtree, deserialize_kdtree
 
 # Allow additional dependencies to be optional
 __optionals__ = []
@@ -42,6 +41,7 @@ except:
 
 from . import regression
 from .utils import csr
+from .neighbors import serialize_kdtree, deserialize_kdtree
 from .preprocessing import (serialize_label_binarizer, deserialize_label_binarizer,
                             serialize_label_encoder, deserialize_label_encoder,
                             serialize_onehot_encoder, deserialize_onehot_encoder)
@@ -1194,6 +1194,54 @@ def deserialize_nearest_neighbour_classifier(model_dict):
         model._tree = deserialize_kdtree(model_dict['_tree'])
     else:
         model._tree = None
+
+    if 'feature_names_in' in model_dict.keys():
+        model.feature_names_in = np.array(model_dict['feature_names_in'])
+
+    return model
+
+
+def serialize_stacking_classifier(model):
+    # Import here to avoid circular imports
+    from . import serialize_model
+
+    serialized_model = {
+        'meta': 'stacking-classifier',
+        '_n_feature_outs': model._n_feature_outs,
+        'classes_': model.classes_.tolist(),
+        '_le': serialize_label_encoder(model._le),
+        'estimators_': [serialize_model(submodel) for submodel in model.estimators_],
+        'final_estimator_': serialize_model(model.final_estimator_),
+        'stack_method_': model.stack_method_,
+        'named_estimators_': {model_name: serialize_model(submodel) for model_name, submodel in model.named_estimators_.items()},
+        'params': {key:value for key, value in model.get_params().items() if key.split('__')[0] not in ['final_estimator'] + list(model.named_estimators_.keys())}
+    }
+
+    # Serialize the estimators in params
+    serialized_model['params']['estimators'] = [(name, serialize_model(model)) for name, model in
+                                                serialized_model['params']['estimators']]
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+def deserialize_stacking_classifier(model_dict):
+    # Import here to avoid circular imports
+    from . import deserialize_model
+
+    model_dict['params']['estimators'] = [(name, deserialize_model(model)) for name, model in
+                                          model_dict['params']['estimators']]
+
+    model = StackingClassifier(**model_dict['params'])
+
+    model._n_feature_outs = model_dict['_n_feature_outs']
+    model.classes_ = np.array(model_dict['classes_'])
+    model._le = deserialize_label_encoder(model_dict['_le'])
+    model.estimators_ = [deserialize_model(submodel) for submodel in model_dict['estimators_']]
+    model.final_estimator_ = deserialize_model(model_dict['final_estimator_'])
+    model.stack_method_ = model_dict['stack_method_']
+    model.named_estimators_ = {model_name: deserialize_model(submodel) for model_name, submodel in model_dict['named_estimators_'].items()}
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
