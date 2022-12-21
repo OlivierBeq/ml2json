@@ -125,6 +125,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return clf.serialize_nearest_neighbour_classifier(model)
     elif isinstance(model, StackingClassifier):
         return clf.serialize_stacking_classifier(model)
+    elif isinstance(model, VotingClassifier):
+        return clf.serialize_voting_classifier(model)
 
     # Regression
     elif isinstance(model, LinearRegression):
@@ -171,6 +173,8 @@ def serialize_model(model, catboost_data: Pool = None):
         return reg.serialize_nearest_neighbour_regressor(model)
     elif isinstance(model, StackingRegressor):
         return reg.serialize_stacking_regressor(model)
+    elif isinstance(model, VotingRegressor):
+        return reg.serialize_voting_regressor(model)
 
     # Clustering
     elif isinstance(model, FeatureAgglomeration):
@@ -349,6 +353,8 @@ def deserialize_model(model_dict):
         return clf.deserialize_nearest_neighbour_classifier(model_dict)
     elif model_dict['meta'] == 'stacking-classifier':
         return clf.deserialize_stacking_classifier(model_dict)
+    elif model_dict['meta'] == 'voting-classifier':
+        return clf.deserialize_voting_classifier(model_dict)
 
     # Regression
     elif model_dict['meta'] == 'linear-regression':
@@ -395,6 +401,8 @@ def deserialize_model(model_dict):
         return reg.deserialize_nearest_neighbour_regressor(model_dict)
     elif model_dict['meta'] == 'stacking-regressor':
         return reg.deserialize_stacking_regressor(model_dict)
+    elif model_dict['meta'] == 'voting-regressor':
+        return reg.deserialize_voting_regressor(model_dict)
 
     # Clustering
     elif model_dict['meta'] == 'affinity-propagation':

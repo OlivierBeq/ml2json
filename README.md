@@ -109,8 +109,8 @@ sklearn-json requires scikit-learn >= 0.21.3.
 | Scikit-Learn       | Ensemble Methods                          | ensemble.RandomTreesEmbedding                       |    Yes     |
 | Scikit-Learn       | Ensemble Methods                          | ensemble.StackingClassifier                         |    Yes     |
 | Scikit-Learn       | Ensemble Methods                          | ensemble.StackingRegressor                          |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.VotingClassifier                           |     No     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.VotingRegressor                            |     No     |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.VotingClassifier                           |    Yes     |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.VotingRegressor                            |    Yes     |
 | Scikit-Learn       | Ensemble Methods                          | ensemble.HistGradientBoostingRegressor              |     No     |
 | Scikit-Learn       | Ensemble Methods                          | ensemble.HistGradientBoostingClassifier             |     No     |
 | Scikit-Learn       | Feature Extraction                        | feature_extraction.DictVectorizer                   |    Yes     |
