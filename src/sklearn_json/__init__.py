@@ -549,14 +549,25 @@ def from_dict(model_dict):
 
 
 def to_json(model, model_name, catboost_data: Pool = None):
-    with open(model_name, 'w') as model_json:
-        json.dump(serialize_model(model, catboost_data), model_json)
+    model_dict = to_dict(model, catboost_data)
+    dict_to_json(model_dict, model_name)
 
 
 def from_json(model_name):
-    with open(model_name, 'r') as model_json:
+    model_dict = json_to_dict(model_name)
+    return deserialize_model(model_dict)
+
+
+def dict_to_json(model_dict, outfile):
+    with open(outfile, 'w') as model_json:
+        json.dump(model_dict, model_json)
+
+
+def json_to_dict(infile):
+    with open(infile, 'r') as model_json:
         model_dict = json.load(model_json)
-        return deserialize_model(model_dict)
+    return model_dict
+
 
 class ModellNotSupported(Exception):
     pass
