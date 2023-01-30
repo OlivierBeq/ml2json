@@ -7,6 +7,7 @@ import importlib
 
 import numpy as np
 import scipy as sp
+import sklearn
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.tree import DecisionTreeRegressor, ExtraTreeRegressor
 from sklearn.ensemble import (AdaBoostRegressor, BaggingRegressor, ExtraTreesRegressor,
@@ -174,13 +175,10 @@ def deserialize_ridge_regressor(model_dict):
 def serialize_svr(model):
     serialized_model = {
         'meta': 'svr',
-        'class_weight_': model.class_weight_.tolist(),
         'support_': model.support_.tolist(),
         '_n_support': model._n_support.tolist(),
-        'intercept_': model.intercept_.tolist(),
         '_probA': model._probA.tolist(),
         '_probB': model._probB.tolist(),
-        '_intercept_': model._intercept_.tolist(),
         'shape_fit_': model.shape_fit_,
         '_gamma': model._gamma,
         'params': model.get_params()
@@ -201,6 +199,14 @@ def serialize_svr(model):
     elif isinstance(model._dual_coef_, np.ndarray):
         serialized_model['_dual_coef_'] = model._dual_coef_.tolist()
 
+    if hasattr(model, 'class_weight_') and sklearn.__version__ < '1.2.0':
+            serialized_model['class_weight_'] = model.class_weight_.tolist(),
+
+    if hasattr(model, 'intercept_'):
+        serialized_model['intercept_'] = model.intercept_.tolist()
+    if hasattr(model, '_intercept'):
+        serialized_model['_intercept'] = model._intercept.tolist()
+
     return serialized_model
 
 
@@ -209,13 +215,11 @@ def deserialize_svr(model_dict):
     model.shape_fit_ = model_dict['shape_fit_']
     model._gamma = model_dict['_gamma']
 
-    model.class_weight_ = np.array(model_dict['class_weight_']).astype(np.float64)
+
     model.support_ = np.array(model_dict['support_']).astype(np.int32)
     model._n_support = np.array(model_dict['_n_support']).astype(np.int32)
-    model.intercept_ = np.array(model_dict['intercept_']).astype(np.float64)
     model._probA = np.array(model_dict['_probA']).astype(np.float64)
     model._probB = np.array(model_dict['_probB']).astype(np.float64)
-    model._intercept_ = np.array(model_dict['_intercept_']).astype(np.float64)
 
     if 'meta' in model_dict['support_vectors_'] and model_dict['support_vectors_']['meta'] == 'csr':
         model.support_vectors_ = csr.deserialize_csr_matrix(model_dict['support_vectors_'])
@@ -233,6 +237,15 @@ def deserialize_svr(model_dict):
         model._dual_coef_ = csr.deserialize_csr_matrix(model_dict['_dual_coef_'])
     else:
         model._dual_coef_ = np.array(model_dict['_dual_coef_']).astype(np.float64)
+
+    if 'class_weight_' in model_dict:
+        model.class_weight_ = np.array(model_dict['class_weight_']).astype(np.float64)
+    if '_intercept' in model_dict:
+        model._intercept = np.array(model_dict['_intercept']).astype(np.float64)
+        model._intercept_ = model._intercept.copy()
+    if 'intercept_' in model_dict:
+        model.intercept_ = np.array(model_dict['intercept_']).astype(np.float64)
+        model._intercept_ = model.intercept_.copy()
 
     return model
 
@@ -679,8 +692,14 @@ def serialize_adaboost_regressor(model):
         serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
                                                type(model.base_estimator_).__name__,
                                                model.base_estimator_.get_params())
-    else:
+    elif sklearn.__version__ < '1.2.0':
         serialized_model['base_estimator_'] = None
+    elif '_estimator' in model.__dict__ and model._estimator is not None:
+        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
+                                          type(model._estimator).__name__,
+                                          model._estimator.get_params())
+    else:
+        serialized_model['_estimator'] = None
 
     if 'feature_names_in' in model.__dict__:
         serialized_model['feature_names_in'] = model.feature_names_in.tolist()
@@ -689,16 +708,23 @@ def serialize_adaboost_regressor(model):
 
 
 def deserialize_adaboost_regressor(model_dict):
-
-    if model_dict['base_estimator_'] is not None:
+    if model_dict.get('base_estimator_') is not None:
         model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
                                                          model_dict['base_estimator_'][1])(
             **model_dict['base_estimator_'][2])
-    else:
+    elif sklearn.__version__ < '1.2.0':
         model_dict['params']['base_estimator'] = None
+    elif model_dict.get('_estimator') is not None:
+        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
+                                                    model_dict['_estimator'][1])(**model_dict['_estimator'][2])
+    else:
+        model_dict['params']['estimator'] = None
 
     model = AdaBoostRegressor(**model_dict['params'])
-    model.base_estimator_ = model_dict['params']['base_estimator']
+    if sklearn.__version__ < '1.2.0':
+        model.base_estimator_ = model_dict['params']['base_estimator']
+    else:
+        model._estimator = model_dict['params']['estimator']
     model.estimators_ = [deserialize_decision_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
     model.estimator_weights_ = np.array(model_dict['estimator_weights_'])
     model.estimator_errors_ = np.array(model_dict['estimator_errors_'])
@@ -729,8 +755,14 @@ def serialize_bagging_regressor(model):
         serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
                                                type(model.base_estimator_).__name__,
                                                model.base_estimator_.get_params())
-    else:
+    elif sklearn.__version__ < '1.2.0':
         serialized_model['base_estimator_'] = None
+    elif '_estimator' in model.__dict__ and model._estimator is not None:
+        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
+                                          type(model._estimator).__name__,
+                                          model._estimator.get_params())
+    else:
+        serialized_model['_estimator'] = None
 
     if 'oob_score_' in model.__dict__:
         serialized_model['oob_score_'] = model.oob_score_
@@ -744,17 +776,24 @@ def serialize_bagging_regressor(model):
 
 
 def deserialize_bagging_regressor(model_dict):
-
-    if model_dict['base_estimator_'] is not None:
+    if model_dict.get('base_estimator_') is not None:
         model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
                                                          model_dict['base_estimator_'][1])(
             **model_dict['base_estimator_'][2])
-    else:
+    elif sklearn.__version__ < '1.2.0':
         model_dict['params']['base_estimator'] = None
+    elif model_dict.get('_estimator') is not None:
+        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
+                                                     model_dict['_estimator'][1])(**model_dict['_estimator'][2])
+    else:
+        model_dict['params']['estimator'] = None
 
     model = BaggingRegressor(**model_dict['params'])
 
-    model.base_estimator_ = model_dict['params']['base_estimator']
+    if sklearn.__version__ < '1.2.0':
+        model.base_estimator_ = model_dict['params']['base_estimator']
+    else:
+        model._estimator = model_dict['params']['estimator']
     model.estimators_ = [deserialize_decision_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
     model._max_samples = model_dict['_max_samples']
     model._n_samples = model_dict['_n_samples']
@@ -827,8 +866,14 @@ def serialize_extratrees_regressor(model):
         serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
                                                type(model.base_estimator_).__name__,
                                                model.base_estimator_.get_params())
-    else:
+    elif sklearn.__version__ < '1.2.0':
         serialized_model['base_estimator_'] = None
+    elif '_estimator' in model.__dict__ and model._estimator is not None:
+        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
+                                          type(model._estimator).__name__,
+                                          model._estimator.get_params())
+    else:
+        serialized_model['_estimator'] = None
 
     if 'oob_score_' in model.__dict__:
         serialized_model['oob_score_'] = model.oob_score_
@@ -844,14 +889,22 @@ def serialize_extratrees_regressor(model):
 def deserialize_extratrees_regressor(model_dict):
     model = ExtraTreesRegressor(**model_dict['params'])
 
-    if model_dict['base_estimator_'] is not None:
-        model_dict['base_estimator_'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
-                                                model_dict['base_estimator_'][1])(
+    if model_dict.get('base_estimator_') is not None:
+        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                         model_dict['base_estimator_'][1])(
             **model_dict['base_estimator_'][2])
+    elif sklearn.__version__ < '1.2.0':
+        model_dict['params']['base_estimator'] = None
+    elif model_dict.get('_estimator') is not None:
+        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
+                                                    model_dict['_estimator'][1])(**model_dict['_estimator'][2])
     else:
-        model_dict['base_estimator_'] = None
+        model_dict['params']['estimator'] = None
 
-    model.base_estimator_ = model_dict['base_estimator_']
+    if sklearn.__version__ < '1.2.0':
+        model.base_estimator_ = model_dict['params']['base_estimator']
+    else:
+        model._estimator = model_dict['params']['estimator']
     model.estimators_ = [deserialize_extra_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
     model.n_features_in_ = model_dict['n_features_in_']
     model.n_outputs_ = model_dict['n_outputs_']

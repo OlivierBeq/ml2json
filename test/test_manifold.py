@@ -66,8 +66,8 @@ class TestAPI(unittest.TestCase):
         self.check_model(LocallyLinearEmbedding(neighbors_algorithm='ball_tree'), 'locally-linear-embedding.json', self.iris_data)
 
     def test_spectral_embedding(self):
-        self.check_model(SpectralEmbedding(affinity='nearest_neighbors', random_state=1234), 'spectral-embedding.json', self.digit_data)
-        self.check_model(SpectralEmbedding(affinity='rbf', random_state=1234), 'spectral-embedding.json', self.iris_data)
+        self.check_model(SpectralEmbedding(affinity='nearest_neighbors', random_state=1234, n_jobs=-1), 'spectral-embedding.json', self.digit_data)
+        self.check_model(SpectralEmbedding(affinity='rbf', random_state=1234, n_jobs=-1), 'spectral-embedding.json', self.iris_data)
 
     def test_umap(self):
         if 'UMAP' in __optionals__:

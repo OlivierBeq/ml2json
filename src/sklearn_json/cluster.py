@@ -4,6 +4,7 @@ import importlib
 import inspect
 
 import numpy as np
+import sklearn
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
@@ -178,6 +179,8 @@ def serialize_agglomerative_clustering(model):
         serialized_model['feature_names_in'] = model.feature_names_in.tolist()
     if 'distances_' in model.__dict__:
         serialized_model['distances_'] = model.distances_.tolist()
+    if '_metric' in model.__dict__:
+        serialized_model['_metric'] = model._metric
 
     return serialized_model
 
@@ -196,6 +199,8 @@ def deserialize_agglomerative_clustering(model_dict):
         model.feature_names_in = np.array(model_dict['feature_names_in'])
     if 'distances_' in model_dict.keys():
         model.distances_ = np.array(model_dict['distances_'])
+    if '_metric' in model_dict:
+        model._metric = model_dict['_metric']
 
     return model
 
@@ -220,15 +225,23 @@ def serialize_cfnode(model):
 
     if hasattr(model, 'centroids_'):
         serialized_model['centroids_'] = model.centroids_.tolist()
+    serialized_model['dtype'] = str(model.init_sq_norm_.dtype)
 
     return serialized_model
 
 
 def deserialize_cfnode(model_dict):
-    model = _CFNode(threshold=model_dict['threshold'],
-                    branching_factor=model_dict['branching_factor'],
-                    is_leaf=model_dict['is_leaf'],
-                    n_features=model_dict['n_features'])
+    if sklearn.__version__ < '1.2.0':
+        model = _CFNode(threshold=model_dict['threshold'],
+                        branching_factor=model_dict['branching_factor'],
+                        is_leaf=model_dict['is_leaf'],
+                        n_features=model_dict['n_features'])
+    else:
+        model = _CFNode(threshold=model_dict['threshold'],
+                        branching_factor=model_dict['branching_factor'],
+                        is_leaf=model_dict['is_leaf'],
+                        n_features=model_dict['n_features'],
+                        dtype=np.dtype(model_dict['dtype']))
 
     model.init_centroids_ = np.array(model_dict['init_centroids_'])
     model.init_sq_norm_ = np.array(model_dict['init_sq_norm_'])
@@ -299,8 +312,6 @@ def serialize_birch(model):
         'meta': 'birch',
         'root_': mem(model.root_),
         'dummy_leaf_': mem(model.dummy_leaf_),
-        '_deprecated_fit': model._deprecated_fit,
-        '_deprecated_partial_fit': model._deprecated_partial_fit,
         'subcluster_centers_': model.subcluster_centers_.tolist(),
         '_n_features_out': model._n_features_out,
         '_subcluster_norms': model._subcluster_norms.tolist(),
@@ -312,14 +323,16 @@ def serialize_birch(model):
         'subclusters': subclusters
     }
 
+    if '_deprecated_fit' in model.__dict__:
+        serialized_model['_deprecated_fit'] = model._deprecated_fit
+        serialized_model['_deprecated_partial_fit'] = model._deprecated_partial_fit
+
     return serialized_model
 
 
 def deserialize_birch(model_dict):
     model = Birch(**model_dict['params'])
 
-    model._deprecated_fit = model_dict['_deprecated_fit']
-    model._deprecated_partial_fit = model_dict['_deprecated_partial_fit']
     model.subcluster_centers_ = np.array(model_dict['subcluster_centers_'])
     model._n_features_out = model_dict['_n_features_out']
     model._subcluster_norms = np.array(model_dict['_subcluster_norms'])
@@ -353,6 +366,10 @@ def deserialize_birch(model_dict):
     # Link root_ and dummy_leaf_ _CFNodes
     model.dummy_leaf_ = nodes[model_dict['dummy_leaf_']]
     model.root_ = nodes[model_dict['root_']]
+
+    if '_deprecated_fit' in model_dict:
+        model._deprecated_fit = model_dict['_deprecated_fit']
+        model._deprecated_partial_fit = model_dict['_deprecated_partial_fit']
 
     return model
 
@@ -472,6 +489,8 @@ def serialize_feature_agglomeration(model):
         serialized_model['feature_names_in'] = model.feature_names_in.tolist()
     if 'distances_' in model.__dict__:
         serialized_model['distances_'] = model.feature_names_in.tolist()
+    if '_metric' in model.__dict__:
+        serialized_model['_metric'] = model._metric
 
     return serialized_model
 
@@ -492,6 +511,8 @@ def deserialize_feature_agglomeration(model_dict):
         model.feature_names_in = np.array(model_dict['feature_names_in'])
     if 'distances_' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['distances_'])
+    if '_metric' in model_dict:
+        model._metric = model_dict['_metric']
 
     return model
 

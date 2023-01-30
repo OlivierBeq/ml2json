@@ -31,13 +31,17 @@ def serialize_tsne(model):
         'kl_divergence_': model.kl_divergence_,
         'n_features_in_': model.n_features_in_,
         'n_iter_': model.n_iter_,
-        '_init': model._init,
-        '_learning_rate': model._learning_rate,
         'params': model.get_params()
     }
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+    if '_init' in model.__dict__:
+        serialized_model['_init'] = model._init.tolist()
+    if '_learning_rate' in model.__dict__:
+        serialized_model['_learning_rate'] = model._learning_rate.tolist()
+    if 'learning_rate_' in model.__dict__:
+        serialized_model['learning_rate_'] = model.learning_rate_.tolist()
 
     return serialized_model
 
@@ -49,11 +53,15 @@ def deserialize_tsne(model_dict):
     model.kl_divergence_ = model_dict['kl_divergence_']
     model.n_features_in_ = model_dict['n_features_in_']
     model.n_iter_ = model_dict['n_iter_']
-    model._init = model_dict['_init']
-    model._learning_rate = model_dict['_learning_rate']
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+    if '_init' in model_dict.keys():
+        model._init = np.array(model_dict['_init'])
+    if '_learning_rate' in model_dict.keys():
+        model._learning_rate = np.array(model_dict['_learning_rate'])
+    if 'learning_rate_' in model_dict.keys():
+        model.learning_rate_ = np.array(model_dict['learning_rate_'])
 
     return model
 

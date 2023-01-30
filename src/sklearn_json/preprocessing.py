@@ -74,6 +74,8 @@ def serialize_minmax_scaler(model):
 
 
 def deserialize_minmax_scaler(model_dict):
+    model_dict['params']['feature_range'] = tuple(model_dict['params']['feature_range'])
+
     model = MinMaxScaler(**model_dict['params'])
 
     model.min_ = np.array(model_dict['min_'])

@@ -7,6 +7,7 @@ import importlib
 
 import numpy as np
 import scipy as sp
+import sklearn
 from sklearn import svm, discriminant_analysis, dummy
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
@@ -812,8 +813,14 @@ def serialize_adaboost_classifier(model):
         serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
                                                type(model.base_estimator_).__name__,
                                                model.base_estimator_.get_params())
-    else:
+    elif sklearn.__version__ < '1.2.0':
         serialized_model['base_estimator_'] = None
+    elif '_estimator' in model.__dict__ and model._estimator is not None:
+        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
+                                          type(model._estimator).__name__,
+                                          model._estimator.get_params())
+    else:
+        serialized_model['_estimator'] = None
 
     if 'feature_names_in' in model.__dict__:
         serialized_model['feature_names_in'] = model.feature_names_in.tolist()
@@ -823,15 +830,23 @@ def serialize_adaboost_classifier(model):
 
 def deserialize_adaboost_classifier(model_dict):
 
-    if model_dict['base_estimator_'] is not None:
+    if model_dict.get('base_estimator_') is not None:
         model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
                                                          model_dict['base_estimator_'][1])(
             **model_dict['base_estimator_'][2])
-    else:
+    elif sklearn.__version__ < '1.2.0':
         model_dict['params']['base_estimator'] = None
+    elif model_dict.get('_estimator') is not None:
+        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
+                                                    model_dict['_estimator'][1])(**model_dict['_estimator'][2])
+    else:
+        model_dict['params']['estimator'] = None
 
     model = AdaBoostClassifier(**model_dict['params'])
-    model.base_estimator_ = model_dict['params']['base_estimator']
+    if sklearn.__version__ < '1.2.0':
+        model.base_estimator_ = model_dict['params']['base_estimator']
+    else:
+        model._estimator = model_dict['params']['estimator']
     model.estimators_ = [deserialize_decision_tree(decision_tree) for decision_tree in model_dict['estimators_']]
     model.classes_ = np.array(model_dict['classes_'])
     model.n_classes_ = model_dict['n_classes_']
@@ -864,8 +879,14 @@ def serialize_bagging_classifier(model):
         serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
                                                type(model.base_estimator_).__name__,
                                                model.base_estimator_.get_params())
-    else:
+    elif sklearn.__version__ < '1.2.0':
         serialized_model['base_estimator_'] = None
+    elif '_estimator' in model.__dict__ and model._estimator is not None:
+        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
+                                          type(model._estimator).__name__,
+                                          model._estimator.get_params())
+    else:
+        serialized_model['_estimator'] = None
 
     if 'oob_score_' in model.__dict__:
         serialized_model['oob_score_'] = model.oob_score_
@@ -886,16 +907,24 @@ def serialize_bagging_classifier(model):
 
 def deserialize_bagging_classifier(model_dict):
 
-    if model_dict['base_estimator_'] is not None:
+    if model_dict.get('base_estimator_') is not None:
         model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
                                                          model_dict['base_estimator_'][1])(
             **model_dict['base_estimator_'][2])
-    else:
+    elif sklearn.__version__ < '1.2.0':
         model_dict['params']['base_estimator'] = None
+    elif model_dict.get('_estimator') is not None:
+        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
+                                                    model_dict['_estimator'][1])(**model_dict['_estimator'][2])
+    else:
+        model_dict['params']['estimator'] = None
 
     model = BaggingClassifier(**model_dict['params'])
 
-    model.base_estimator_ = model_dict['params']['base_estimator']
+    if sklearn.__version__ < '1.2.0':
+        model.base_estimator_ = model_dict['params']['base_estimator']
+    else:
+        model._estimator = model_dict['params']['estimator']
     model.estimators_ = [deserialize_decision_tree(decision_tree) for decision_tree in model_dict['estimators_']]
     model._max_samples = model_dict['_max_samples']
     model._n_samples = model_dict['_n_samples']
@@ -979,8 +1008,14 @@ def serialize_extratrees_classifier(model):
         serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
                                                type(model.base_estimator_).__name__,
                                                model.base_estimator_.get_params())
-    else:
+    elif sklearn.__version__ < '1.2.0':
         serialized_model['base_estimator_'] = None
+    elif '_estimator' in model.__dict__ and model._estimator is not None:
+        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
+                                          type(model._estimator).__name__,
+                                          model._estimator.get_params())
+    else:
+        serialized_model['_estimator'] = None
 
     if 'oob_score_' in model.__dict__:
         serialized_model['oob_score_'] = model.oob_score_
@@ -1002,14 +1037,22 @@ def serialize_extratrees_classifier(model):
 def deserialize_extratrees_classifier(model_dict):
     model = ExtraTreesClassifier(**model_dict['params'])
 
-    if model_dict['base_estimator_'] is not None:
-        model_dict['base_estimator_'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
-                                                model_dict['base_estimator_'][1])(
+    if model_dict.get('base_estimator_') is not None:
+        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                         model_dict['base_estimator_'][1])(
             **model_dict['base_estimator_'][2])
+    elif sklearn.__version__ < '1.2.0':
+        model_dict['params']['base_estimator'] = None
+    elif model_dict.get('_estimator') is not None:
+        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
+                                                    model_dict['_estimator'][1])(**model_dict['_estimator'][2])
     else:
-        model_dict['base_estimator_'] = None
+        model_dict['params']['estimator'] = None
 
-    model.base_estimator_ = model_dict['base_estimator_']
+    if sklearn.__version__ < '1.2.0':
+        model.base_estimator_ = model_dict['params']['base_estimator']
+    else:
+        model._estimator = model_dict['params']['estimator']
     model.estimators_ = [deserialize_extra_tree_classifier(decision_tree) for decision_tree in model_dict['estimators_']]
     model.n_features_in_ = model_dict['n_features_in_']
     model.n_outputs_ = model_dict['n_outputs_']
@@ -1053,8 +1096,14 @@ def serialize_isolation_forest(model):
         serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
                                                type(model.base_estimator_).__name__,
                                                model.base_estimator_.get_params())
-    else:
+    elif sklearn.__version__ < '1.2.0':
         serialized_model['base_estimator_'] = None
+    elif '_estimator' in model.__dict__ and model._estimator is not None:
+        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
+                                          type(model._estimator).__name__,
+                                          model._estimator.get_params())
+    else:
+        serialized_model['_estimator'] = None
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
@@ -1065,14 +1114,22 @@ def serialize_isolation_forest(model):
 def deserialize_isolation_forest(model_dict):
     model = IsolationForest(**model_dict['params'])
 
-    if model_dict['base_estimator_'] is not None:
-        model_dict['base_estimator_'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
-                                                model_dict['base_estimator_'][1])(
+    if model_dict.get('base_estimator_') is not None:
+        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                         model_dict['base_estimator_'][1])(
             **model_dict['base_estimator_'][2])
+    elif sklearn.__version__ < '1.2.0':
+        model_dict['params']['base_estimator'] = None
+    elif model_dict.get('_estimator') is not None:
+        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
+                                                    model_dict['_estimator'][1])(**model_dict['_estimator'][2])
     else:
-        model_dict['base_estimator_'] = None
+        model_dict['params']['estimator'] = None
 
-    model.base_estimator_ = model_dict['base_estimator_']
+    if sklearn.__version__ < '1.2.0':
+        model.base_estimator_ = model_dict['params']['base_estimator']
+    else:
+        model._estimator = model_dict['params']['estimator']
     model.estimators_ = [regression.deserialize_extra_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
     model.n_features_in_ = model_dict['n_features_in_']
     model._max_features = model_dict['_max_features']
@@ -1112,8 +1169,14 @@ def serialize_random_trees_embedding(model):
         serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
                                                type(model.base_estimator_).__name__,
                                                model.base_estimator_.get_params())
-    else:
+    elif sklearn.__version__ < '1.2.0':
         serialized_model['base_estimator_'] = None
+    elif '_estimator' in model.__dict__ and model._estimator is not None:
+        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
+                                          type(model._estimator).__name__,
+                                          model._estimator.get_params())
+    else:
+        serialized_model['_estimator'] = None
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
@@ -1124,14 +1187,22 @@ def serialize_random_trees_embedding(model):
 def deserialize_random_trees_embedding(model_dict):
     model = RandomTreesEmbedding(**model_dict['params'])
 
-    if model_dict['base_estimator_'] is not None:
-        model_dict['base_estimator_'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
-                                                model_dict['base_estimator_'][1])(
+    if model_dict.get('base_estimator_') is not None:
+        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
+                                                         model_dict['base_estimator_'][1])(
             **model_dict['base_estimator_'][2])
+    elif sklearn.__version__ < '1.2.0':
+        model_dict['params']['base_estimator'] = None
+    elif model_dict.get('_estimator') is not None:
+        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
+                                                    model_dict['_estimator'][1])(**model_dict['_estimator'][2])
     else:
-        model_dict['base_estimator_'] = None
+        model_dict['params']['estimator'] = None
 
-    model.base_estimator_ = model_dict['base_estimator_']
+    if sklearn.__version__ < '1.2.0':
+        model.base_estimator_ = model_dict['params']['base_estimator']
+    else:
+        model._estimator = model_dict['params']['estimator']
     model.estimators_ = [regression.deserialize_extra_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
     model.n_features_in_ = model_dict['n_features_in_']
     model._n_features_out = model_dict['_n_features_out']
@@ -1209,7 +1280,6 @@ def serialize_stacking_classifier(model):
         'meta': 'stacking-classifier',
         '_n_feature_outs': model._n_feature_outs,
         'classes_': model.classes_.tolist(),
-        '_le': serialize_label_encoder(model._le),
         'estimators_': [serialize_model(submodel) for submodel in model.estimators_],
         'final_estimator_': serialize_model(model.final_estimator_),
         'stack_method_': model.stack_method_,
@@ -1223,6 +1293,10 @@ def serialize_stacking_classifier(model):
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+    if '_le' in model.__dict__:
+        serialized_model['_le'] = serialize_label_encoder(model._le)
+    else:
+        serialized_model['_label_encoder'] = serialize_label_encoder(model._label_encoder)
 
     return serialized_model
 
@@ -1237,7 +1311,6 @@ def deserialize_stacking_classifier(model_dict):
 
     model._n_feature_outs = model_dict['_n_feature_outs']
     model.classes_ = np.array(model_dict['classes_'])
-    model._le = deserialize_label_encoder(model_dict['_le'])
     model.estimators_ = [deserialize_model(submodel) for submodel in model_dict['estimators_']]
     model.final_estimator_ = deserialize_model(model_dict['final_estimator_'])
     model.stack_method_ = model_dict['stack_method_']
@@ -1245,6 +1318,10 @@ def deserialize_stacking_classifier(model_dict):
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if '_le' in model_dict.keys():
+        model._le = deserialize_label_encoder(model_dict['_le'])
+    else:
+        model._label_encoder = deserialize_label_encoder(model_dict['_label_encoder'])
 
     return model
 

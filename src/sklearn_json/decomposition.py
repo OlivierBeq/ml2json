@@ -18,7 +18,6 @@ def serialize_pca(model):
         'singular_values_': model.singular_values_.tolist(),
         'mean_': model.mean_.tolist(),
         'n_components_': model.n_components_,
-        'n_features_': model.n_features_,
         'n_samples_': model.n_samples_,
         'noise_variance_': model.noise_variance_,
         'n_features_in_': model.n_features_in_,
@@ -28,6 +27,8 @@ def serialize_pca(model):
 
     if 'feature_names_in' in model.__dict__:
         serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'n_features_' in model.__dict__:
+        serialized_model['n_features_'] = model.n_features_
 
     return serialized_model
 
@@ -41,7 +42,6 @@ def deserialize_pca(model_dict):
     model.singular_values_ = np.array(model_dict['singular_values_'])
     model.mean_ = np.array(model_dict['mean_'])
     model.n_components_ = model_dict['n_components_']
-    model.n_features_ = model_dict['n_features_']
     model.n_samples_ = model_dict['n_samples_']
     model.n_features_in_ = model_dict['n_features_in_']
     model.noise_variance_ = model_dict['noise_variance_']
@@ -49,6 +49,8 @@ def deserialize_pca(model_dict):
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'n_features_' in model_dict.keys():
+        model.n_features_ = model_dict['n_features_']
 
     return model
 
@@ -381,10 +383,6 @@ def serialize_minibatch_nmf(model):
         '_transform_max_iter': model._transform_max_iter,
         '_beta_loss': model._beta_loss,
         '_gamma': model._gamma,
-        '_l1_reg_W': model._l1_reg_W,
-        '_l1_reg_H': model._l1_reg_H,
-        '_l2_reg_W': model._l2_reg_W,
-        '_l2_reg_H': model._l2_reg_H,
         'n_steps_': model.n_steps_,
         'n_features_in_': model.n_features_in_,
         'params': model.get_params(),
@@ -392,6 +390,29 @@ def serialize_minibatch_nmf(model):
 
     if 'feature_names_in' in model.__dict__:
         serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if '_l1_reg_W' in model.__dict__:
+        serialized_model['_l1_reg_W'] = model._l1_reg_W
+    if '_l1_reg_H' in model.__dict__:
+        serialized_model['_l1_reg_H'] = model._l1_reg_H
+    if '_l2_reg_W' in model.__dict__:
+        serialized_model['_l2_reg_W'] = model._l2_reg_W
+    if '_l2_reg_H' in model.__dict__:
+        serialized_model['_l2_reg_H'] = model._l2_reg_H
+    if '_batch_size' in model.__dict__:
+        serialized_model['_batch_size'] = model._batch_size
+    if '_components_denominator' in model.__dict__:
+        serialized_model['_components_denominator'] = model._components_denominator.tolist()
+    if '_components_numerator' in model.__dict__:
+        serialized_model['_components_numerator'] = model._components_numerator.tolist()
+    if '_ewa_cost' in model.__dict__:
+        serialized_model['_ewa_cost'] = model._ewa_cost
+    if '_ewa_cost_min' in model.__dict__:
+        serialized_model['_ewa_cost_min'] = model._ewa_cost_min
+    if '_no_improvement' in model.__dict__:
+        serialized_model['_no_improvement'] = model._no_improvement
+    if '_rho' in model.__dict__:
+        serialized_model['_rho'] = model._rho
+
 
     return serialized_model
 
@@ -407,15 +428,34 @@ def deserialize_minibatch_nmf(model_dict):
     model._transform_max_iter = model_dict['_transform_max_iter']
     model._beta_loss = model_dict['_beta_loss']
     model._gamma = model_dict['_gamma']
-    model._l1_reg_W = model_dict['_l1_reg_W']
-    model._l1_reg_H = model_dict['_l1_reg_H']
-    model._l2_reg_W = model_dict['_l2_reg_W']
-    model._l2_reg_H = model_dict['_l2_reg_H']
-    model.n_steps_ = model_dict['n_steps_']
     model.n_features_in_ = model_dict['n_features_in_']
+    model.n_steps_ = model_dict['n_steps_']
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if '_l1_reg_W' in model_dict.keys():
+        model._l1_reg_W = model_dict['_l1_reg_W']
+    if '_l1_reg_H' in model_dict.keys():
+        model._l1_reg_H = model_dict['_l1_reg_H']
+    if '_l2_reg_W' in model_dict.keys():
+        model._l2_reg_W = model_dict['_l2_reg_W']
+    if '_l2_reg_H' in model_dict.keys():
+        model._l2_reg_H = model_dict['_l2_reg_H']
+
+    if '_batch_size' in model_dict.keys():
+        model._batch_size = model_dict['_batch_size']
+    if '_components_denominator' in model_dict.keys():
+        model._components_denominator = np.array(model_dict['_components_denominator'])
+    if '_components_numerator' in model_dict.keys():
+         model._components_numerator = np.array(model_dict['_components_numerator'])
+    if '_ewa_cost' in model_dict.keys():
+        model._ewa_cost = model_dict['_ewa_cost']
+    if '_ewa_cost_min' in model_dict.keys():
+        model._ewa_cost_min = model_dict['_ewa_cost_min']
+    if '_no_improvement' in model_dict.keys():
+        model._no_improvement = model_dict['_no_improvement']
+    if '_rho' in model_dict.keys():
+        model._rho = model_dict['_rho']
 
     return model
 
