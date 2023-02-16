@@ -5,6 +5,7 @@ import random
 import unittest
 
 import numpy as np
+import scipy as sp
 
 from sklearn.datasets import make_classification
 from sklearn.feature_extraction import FeatureHasher
@@ -18,6 +19,7 @@ from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, Compleme
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.utils import shuffle
 
 # Allow testing of additional optional dependencies
 __optionals__ = []
@@ -49,8 +51,10 @@ class TestAPI(unittest.TestCase):
         features = []
         for i in range(0, 100):
             features.append({'a': random.randint(0, 2), 'b': random.randint(3, 5), 'c': random.randint(6, 8)})
-        self.y_sparse = [random.randint(0, 2) for i in range(0, 100)]
+        self.y_sparse = [random.randint(0, 2) for _ in range(0, 100)]
         self.X_sparse = feature_hasher.transform(features)
+        self.y_multitask = np.vstack((shuffle(self.y, random_state=1), shuffle(self.y, random_state=2))).T
+        self.y_multitask_sparse = sp.sparse.csr_matrix(self.y_multitask)
 
     def check_model(self, model, model_name, abs=False):
         # Given
@@ -85,6 +89,60 @@ class TestAPI(unittest.TestCase):
             model.fit(np.absolute(self.X_sparse), self.y_sparse)
         else:
             model.fit(self.X_sparse, self.y_sparse)
+
+        # When
+        serialized_model = skljson.to_dict(model)
+        deserialized_model = skljson.from_dict(serialized_model)
+
+        # Then
+        expected_predictions = model.predict(self.X)
+        actual_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+        # JSON
+        skljson.to_json(model, model_name)
+        deserialized_model = skljson.from_json(model_name)
+        os.remove(model_name)
+
+        # Then
+        actual_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+    def check_multitask_model(self, model, model_name, abs=False):
+        # Given
+        if abs:
+            model.fit(np.absolute(self.X), self.y_multitask)
+        else:
+            model.fit(self.X, self.y_multitask)
+
+        # When
+        serialized_model = skljson.to_dict(model)
+        deserialized_model = skljson.from_dict(serialized_model)
+
+        # Then
+        expected_predictions = model.predict(self.X)
+        actual_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+        # When
+        skljson.to_json(model, model_name)
+        deserialized_model = skljson.from_json(model_name)
+        os.remove(model_name)
+
+        # JSON
+        actual_predictions = deserialized_model.predict(self.X)
+
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+    def check_multitask_sparse_model(self, model, model_name, abs=False):
+        # Given
+        if abs:
+            model.fit(np.absolute(self.X_sparse), self.y_multitask_sparse)
+        else:
+            model.fit(self.X_sparse, self.y_multitask_sparse)
 
         # When
         serialized_model = skljson.to_dict(model)
@@ -153,6 +211,7 @@ class TestAPI(unittest.TestCase):
     def test_random_forest(self):
         self.check_model(RandomForestClassifier(n_estimators=10, max_depth=5, random_state=0), 'rf.json')
         self.check_sparse_model(RandomForestClassifier(n_estimators=10, max_depth=5, random_state=0), 'rf.json')
+        self.check_multitask_model(RandomForestClassifier(n_estimators=10, max_depth=5, random_state=0), 'rf.json')
 
     def test_perceptron(self):
         self.check_model(Perceptron(), 'perceptron.json')
@@ -251,8 +310,8 @@ class TestAPI(unittest.TestCase):
     def test_random_trees_embedding(self):
         self.check_random_trees_embedding_model(RandomTreesEmbedding(n_estimators=100, random_state=1234), 'random-trees-embedding.json')
 
-    def check_nearest_neighbour_model(self, model, model_name):
-        model.fit(self.X, self.y)
+    def check_nearest_neighbour_model(self, model, model_name, multitask: bool = False):
+        model.fit(self.X, self.y if not multitask else self.y_multitask)
 
         # When
         serialized_model = skljson.to_dict(model)
@@ -282,7 +341,8 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_equal(expected_neigh_ind, actual_neigh_ind)
 
     def test_nearest_neighbour_classifier(self):
-        self.check_nearest_neighbour_model(KNeighborsClassifier(), 'knn-classifier.json')
+        self.check_nearest_neighbour_model(KNeighborsClassifier(), 'knn-classifier.json', multitask=False)
+        self.check_nearest_neighbour_model(KNeighborsClassifier(), 'knn-classifier.json', multitask=True)
 
     def test_stacking_classifier(self):
         estimators = [

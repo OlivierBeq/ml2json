@@ -66,7 +66,7 @@ if 'UMAP' in man.__optionals__:
     from umap import UMAP
 
 
-__version__ = '0.1.4'
+__version__ = '0.1.7'
 
 
 def serialize_model(model, catboost_data: Pool = None):

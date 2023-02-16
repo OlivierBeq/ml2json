@@ -387,7 +387,10 @@ def deserialize_tree(tree_dict, n_features, n_classes, n_outputs):
     tree_dict['nodes'] = np.array(tree_dict['nodes'], dtype=np.dtype({'names': names, 'formats': tree_dict['nodes_dtype']}))
     tree_dict['values'] = np.array(tree_dict['values'])
 
-    tree = Tree(n_features, np.array([n_classes], dtype=np.intp), n_outputs)
+    if isinstance(n_classes, list):
+        tree = Tree(n_features, np.array(n_classes, dtype=np.intp), n_outputs)
+    else:
+        tree = Tree(n_features, np.array([n_classes], dtype=np.intp), n_outputs)
     tree.__setstate__(tree_dict)
 
     return tree
@@ -399,13 +402,19 @@ def serialize_decision_tree(model):
         'meta': 'decision-tree',
         'feature_importances_': model.feature_importances_.tolist(),
         'max_features_': model.max_features_,
-        'n_classes_': int(model.n_classes_),
+        'n_classes_': model.n_classes_.tolist() if isinstance(model.n_classes_, np.ndarray) else int(model.n_classes_),
         'n_features_in_': model.n_features_in_,
         'n_outputs_': model.n_outputs_,
         'tree_': tree,
-        'classes_': model.classes_.tolist(),
         'params': model.get_params()
     }
+
+    if isinstance(model.classes_, list) and isinstance(model.classes_[0], np.ndarray):
+        serialized_model['classes_'] = [x.tolist() for x in model.classes_]
+    elif isinstance(model.classes_, np.ndarray):
+        serialized_model['classes_'] = model.classes_.tolist()
+    else:
+        serialized_model['classes_'] = model.classes_
 
     tree_dtypes = []
     for i in range(0, len(dtypes)):
@@ -422,7 +431,13 @@ def serialize_decision_tree(model):
 def deserialize_decision_tree(model_dict):
     deserialized_model = DecisionTreeClassifier(**model_dict['params'])
 
-    deserialized_model.classes_ = np.array(model_dict['classes_'])
+    if isinstance(model_dict['classes_'], list) and isinstance(model_dict['classes_'][0], list):
+        deserialized_model.classes_ = [np.array(x) for x in model_dict['classes_']]
+    elif isinstance(model_dict['classes_'], list):
+        deserialized_model.classes_ = np.array(model_dict['classes_'])
+    else:
+        deserialized_model.classes_ = model_dict['classes_']
+
     deserialized_model.max_features_ = model_dict['max_features_']
     deserialized_model.n_classes_ = model_dict['n_classes_']
     deserialized_model.n_features_in_ = model_dict['n_features_in_']
@@ -513,17 +528,21 @@ def serialize_random_forest(model):
         'min_impurity_decrease': model.min_impurity_decrease,
         'n_features_in_': model.n_features_in_,
         'n_outputs_': model.n_outputs_,
-        'classes_': model.classes_.tolist(),
         'estimators_': [serialize_decision_tree(decision_tree) for decision_tree in model.estimators_],
         'params': model.get_params()
     }
+
+    if isinstance(model.classes_, list) and isinstance(model.classes_[0], np.ndarray):
+        serialized_model['classes_'] = [x.tolist() for x in model.classes_]
+    elif isinstance(model.classes_, np.ndarray):
+        serialized_model['classes_'] = model.classes_.tolist()
 
     if 'oob_score_' in model.__dict__:
         serialized_model['oob_score_'] = model.oob_score_
     if 'oob_decision_function_' in model.__dict__:
         serialized_model['oob_decision_function_'] = model.oob_decision_function_.tolist()
 
-    if isinstance(model.n_classes_, int):
+    if isinstance(model.n_classes_, (int, list)):
         serialized_model['n_classes_'] = model.n_classes_
     else:
         serialized_model['n_classes_'] = model.n_classes_.tolist()
@@ -539,7 +558,14 @@ def deserialize_random_forest(model_dict):
     estimators = [deserialize_decision_tree(decision_tree) for decision_tree in model_dict['estimators_']]
     model.estimators_ = np.array(estimators)
 
-    model.classes_ = np.array(model_dict['classes_'])
+    if isinstance(model_dict['classes_'], list) and isinstance(model_dict['classes_'][0], list):
+        model.classes_ = [np.array(x) for x in model_dict['classes_']]
+    elif isinstance(model_dict['classes_'], list):
+        model.classes_ = np.array(model_dict['classes_'])
+    else:
+        model.classes_ = model_dict['classes_']
+
+    model.n_classes_ = model_dict['n_classes_']
     model.n_features_in_ = model_dict['n_features_in_']
     model.n_outputs_ = model_dict['n_outputs_']
     model.max_depth = model_dict['max_depth']
@@ -554,11 +580,6 @@ def deserialize_random_forest(model_dict):
         model.oob_score_ = model_dict['oob_score_']
     if 'oob_decision_function_' in model_dict:
         model.oob_decision_function_ = model_dict['oob_decision_function_']
-
-    if isinstance(model_dict['n_classes_'], list):
-        model.n_classes_ = np.array(model_dict['n_classes_'])
-    else:
-        model.n_classes_ = model_dict['n_classes_']
 
     if 'feature_names_in' in model_dict.keys():
         model.feature_names_in = np.array(model_dict['feature_names_in'])
@@ -1226,7 +1247,6 @@ def serialize_nearest_neighbour_classifier(model):
         'radius': model.radius,
         'n_features_in_': model.n_features_in_,
         'outputs_2d_': model.outputs_2d_,
-        'classes_': model.classes_.tolist(),
         '_y': model._y.tolist(),
         'effective_metric_params_': model.effective_metric_params_,
         'effective_metric_': model.effective_metric_,
@@ -1235,6 +1255,11 @@ def serialize_nearest_neighbour_classifier(model):
         '_fit_X': model._fit_X.tolist(),
         'params': model.get_params()
     }
+
+    if isinstance(model.classes_, list) and isinstance(model.classes_[0], np.ndarray):
+        serialized_model['classes_'] = [x.tolist() for x in model.classes_]
+    elif isinstance(model.classes_, np.ndarray):
+        serialized_model['classes_'] = model.classes_.tolist()
 
     if '_tree' in model.__dict__ and model.__dict__['_tree'] is not None:
         serialized_model['_tree'] = serialize_kdtree(model._tree)
@@ -1253,13 +1278,19 @@ def deserialize_nearest_neighbour_classifier(model_dict):
     model.radius = model_dict['radius']
     model.n_features_in_ = model_dict['n_features_in_']
     model.outputs_2d_ = model_dict['outputs_2d_']
-    model.classes_ = np.array(model_dict['classes_'])
     model._y = np.array(model_dict['_y'])
     model.effective_metric_params_ = model_dict['effective_metric_params_']
     model.effective_metric_ = model_dict['effective_metric_']
     model._fit_method = model_dict['_fit_method']
     model._fit_X = np.array(model_dict['_fit_X'])
     model.n_samples_fit_ = model_dict['n_samples_fit_']
+
+    if isinstance(model_dict['classes_'], list) and isinstance(model_dict['classes_'][0], list):
+        model.classes_ = [np.array(x) for x in model_dict['classes_']]
+    elif isinstance(model_dict['classes_'], list):
+        model.classes_ = np.array(model_dict['classes_'])
+    else:
+        model.classes_ = model_dict['classes_']
 
     if model_dict['_tree'] is not None:
         model._tree = deserialize_kdtree(model_dict['_tree'])
