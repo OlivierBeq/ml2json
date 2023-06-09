@@ -34,7 +34,7 @@ try:
 except:
     pass
 
-from src import sklearn_json as skljson
+from src import ml2json
 
 
 class TestAPI(unittest.TestCase):
@@ -55,8 +55,8 @@ class TestAPI(unittest.TestCase):
         model.fit(self.X, self.y)
 
         # When
-        serialized_model = skljson.to_dict(model)
-        deserialized_model = skljson.from_dict(serialized_model)
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
 
         # Then
         expected_predictions = model.predict(self.X)
@@ -65,8 +65,8 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
         # JSON
-        skljson.to_json(model, model_name)
-        deserialized_model = skljson.from_json(model_name)
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         # Then
@@ -79,8 +79,8 @@ class TestAPI(unittest.TestCase):
         model.fit(self.X_sparse, self.y_sparse)
 
         # When
-        serialized_model = skljson.to_dict(model)
-        deserialized_model = skljson.from_dict(serialized_model)
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
 
         # Then
         expected_predictions = model.predict(self.X_sparse)
@@ -89,8 +89,8 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
         # JSON
-        skljson.to_json(model, model_name)
-        deserialized_model = skljson.from_json(model_name)
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         # Then
@@ -144,8 +144,8 @@ class TestAPI(unittest.TestCase):
         model.fit(self.X, self.y_rank, group=[10, len(self.y) - 10])
 
         # When
-        serialized_model = skljson.to_dict(model)
-        deserialized_model = skljson.from_dict(serialized_model)
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
 
         # Then
         expected_predictions = model.predict(self.X)
@@ -154,8 +154,8 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_equal(expected_predictions, actual_predictions)
 
         # JSON
-        skljson.to_json(model, model_name)
-        deserialized_model = skljson.from_json(model_name)
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         # Then
@@ -193,8 +193,8 @@ class TestAPI(unittest.TestCase):
         pool = Pool(data=self.X, label=self.y, feature_names=list(range(self.X.shape[1])))
 
         # When
-        serialized_model = skljson.to_dict(model, pool)
-        deserialized_model = skljson.from_dict(serialized_model)
+        serialized_model = ml2json.to_dict(model, pool)
+        deserialized_model = ml2json.from_dict(serialized_model)
 
         # Then
         expected_predictions = model.predict(self.X)
@@ -203,8 +203,8 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
 
         # JSON
-        skljson.to_json(model, model_name)
-        deserialized_model = skljson.from_json(model_name)
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         # Then
@@ -222,8 +222,8 @@ class TestAPI(unittest.TestCase):
         pool = Pool(data=self.X, label=self.y, feature_names=list(range(self.X.shape[1])))
 
         # When
-        serialized_model = skljson.to_dict(model, pool)
-        deserialized_model = skljson.from_dict(serialized_model)
+        serialized_model = ml2json.to_dict(model, pool)
+        deserialized_model = ml2json.from_dict(serialized_model)
 
         # Then
         expected_predictions = model.predict(self.X)
@@ -232,8 +232,8 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
 
         # JSON
-        skljson.to_json(model, model_name)
-        deserialized_model = skljson.from_json(model_name)
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         # Then
@@ -267,8 +267,8 @@ class TestAPI(unittest.TestCase):
         model.fit(self.X, self.y)
 
         # When
-        serialized_model = skljson.to_dict(model)
-        deserialized_model = skljson.from_dict(serialized_model)
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
 
         # Then
         expected_predictions = model.predict(self.X)
@@ -281,8 +281,8 @@ class TestAPI(unittest.TestCase):
         np.testing.assert_array_equal(expected_neigh_ind, actual_neigh_ind)
 
         # When
-        skljson.to_json(model, model_name)
-        deserialized_model = skljson.from_json(model_name)
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         # JSON

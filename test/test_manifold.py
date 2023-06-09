@@ -17,7 +17,7 @@ try:
 except:
     pass
 
-from src import sklearn_json as skljson
+from src import ml2json
 
 
 class TestAPI(unittest.TestCase):
@@ -31,11 +31,11 @@ class TestAPI(unittest.TestCase):
     def check_model(self, model, model_name, data):
         expected_ft = model.fit_transform(data)
 
-        serialized_dict_model = skljson.to_dict(model)
-        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
+        serialized_dict_model = ml2json.to_dict(model)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
 
-        skljson.to_json(model, model_name)
-        deserialized_json_model = skljson.from_json(model_name)
+        ml2json.to_json(model, model_name)
+        deserialized_json_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:

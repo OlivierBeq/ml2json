@@ -9,7 +9,7 @@ import numpy as np
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction import DictVectorizer
 
-from src import sklearn_json as skljson
+from src import ml2json
 
 
 class TestAPI(unittest.TestCase):
@@ -25,8 +25,8 @@ class TestAPI(unittest.TestCase):
     def check_model(self, model, model_name):
         expected_vectors = model.fit_transform(self.X)
 
-        serialized_model = skljson.to_dict(model)
-        deserialized_model = skljson.from_dict(serialized_model)
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
 
         actual_vectors = deserialized_model.fit_transform(self.X)
 
@@ -38,8 +38,8 @@ class TestAPI(unittest.TestCase):
             np.testing.assert_array_equal(expected_vectors, actual_vectors)
 
         # JSON
-        skljson.to_json(model, model_name)
-        deserialized_model = skljson.from_json(model_name)
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
         os.remove(model_name)
         json_predictions = deserialized_model.transform(self.X)
 

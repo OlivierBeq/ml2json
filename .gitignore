@@ -41,5 +41,5 @@ __pycache__/
 .idea
 build/
 dist/
-sklearn_json.egg-info/
+ml2json.egg-info/
 .xlsx

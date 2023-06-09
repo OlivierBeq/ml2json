@@ -10,7 +10,7 @@ from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinar
                                    OneHotEncoder)
 from sklearn.metrics.pairwise import pairwise_kernels
 
-from src import sklearn_json as skljson
+from src import ml2json
 
 
 class TestAPI(unittest.TestCase):
@@ -45,11 +45,11 @@ class TestAPI(unittest.TestCase):
         expected_t = model.transform(data)
         expected_it = model.inverse_transform(labels)
 
-        serialized_dict_model = skljson.to_dict(model)
-        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
+        serialized_dict_model = ml2json.to_dict(model)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
 
-        skljson.to_json(model, model_name)
-        deserialized_json_model = skljson.from_json(model_name)
+        ml2json.to_json(model, model_name)
+        deserialized_json_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
@@ -92,11 +92,11 @@ class TestAPI(unittest.TestCase):
         expected_t = scaler.transform(self.X)
         expected_it = scaler.inverse_transform(expected_t)
 
-        serialized_dict_model = skljson.to_dict(scaler)
-        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
+        serialized_dict_model = ml2json.to_dict(scaler)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
 
-        skljson.to_json(scaler, model_name)
-        deserialized_json_model = skljson.from_json(model_name)
+        ml2json.to_json(scaler, model_name)
+        deserialized_json_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
@@ -123,11 +123,11 @@ class TestAPI(unittest.TestCase):
         expected_ft = centerer.fit_transform(self.kernel_X)
         expected_t = centerer.transform(self.kernel_X)
 
-        serialized_dict_model = skljson.to_dict(centerer)
-        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
+        serialized_dict_model = ml2json.to_dict(centerer)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
 
-        skljson.to_json(centerer, model_name)
-        deserialized_json_model = skljson.from_json(model_name)
+        ml2json.to_json(centerer, model_name)
+        deserialized_json_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
@@ -146,12 +146,12 @@ class TestAPI(unittest.TestCase):
         expected_t = model.transform([['Female', 1], ['Male', 4]]).toarray()
         expected_it = model.inverse_transform(expected_t)
 
-        serialized_dict_model = skljson.to_dict(model)
-        deserialized_dict_model = skljson.from_dict(serialized_dict_model)
+        serialized_dict_model = ml2json.to_dict(model)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
 
         model_name = 'onehot-encoder.json'
-        skljson.to_json(model, model_name)
-        deserialized_json_model = skljson.from_json(model_name)
+        ml2json.to_json(model, model_name)
+        deserialized_json_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:

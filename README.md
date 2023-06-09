@@ -1,12 +1,14 @@
-# sklearn-json
+# ml2json
 Export scikit-learn model files to JSON for sharing or deploying predictive models with peace of mind.
 
-# Why sklearn-json?
+This is the continuation of the work hosted at [OlivierBeq/sklearn-json](https://github.com/OlivierBeq/sklearn-json).
+
+# Why ml2json?
 Other methods for exporting scikit-learn models require Pickle or Joblib (based on Pickle).
 - Serializing model files with Pickle provides a simple attack vector for malicious users - they give an attacker the ability to execute arbitrary code wherever the file is deserialized. For an example see: https://www.smartfile.com/blog/python-pickle-security-problems-and-solutions/.
 - Internal designs of Pickle and Joblib files make the binary files not mandatorily supported across Python versions.  
 
-sklearn-json is a safe and transparent solution for exporting scikit-learn model files to text files both machine and human readeable.
+ml2json is a safe and transparent solution for exporting scikit-learn model files to text files both machine and human readeable.
 
 ### Safe
 Export model files to 100% JSON which cannot execute code on deserialization.
@@ -16,35 +18,35 @@ Model files are serialized in JSON (i.e., not binary), so you have the ability t
 
 # Getting Started
 
-sklearn-json makes exporting model files to JSON simple.
+ml2json makes exporting model files to JSON simple.
 
 ## Install
 ```
-pip install https://github.com/OlivierBeq/sklearn-json/tarball/master
+pip install ml2json
 ```
 
 To install other all dependencies (e.g. XGBoost, HDBSCAN), use:
 
 ```
-pip install -e git+https://github.com/OlivierBeq/sklearn-json.git#egg=sklearn-json[full]
+pip install ml2json[full]
 ```
 ## Example Usage
 
 ```python
-import sklearn_json as skljson
+import ml2json
 from sklearn.ensemble import RandomForestClassifier
 
 model = RandomForestClassifier(n_estimators=10, max_depth=5, random_state=0).fit(X, y)
 
-skljson.to_json(model, file_name)
-deserialized_model = skljson.from_json(file_name)
+ml2json.to_json(model, file_name)
+deserialized_model = ml2json.from_json(file_name)
 
 deserialized_model.predict(X)
 ```
 
 # Features
 The list of supported models is rapidly growing.
-In addition of the support for scikit-learn models, sklearn-json supports the following librairies:
+In addition of the support for scikit-learn models, ml2json supports the following libraries:
 - scikit-learn-extra
 - XGBoost
 - LightGBM
@@ -56,275 +58,275 @@ In addition of the support for scikit-learn models, sklearn-json supports the fo
 - PyNNDescent
 - Prince
 
-sklearn-json requires scikit-learn >= 0.21.3.
+ml2json requires scikit-learn >= 0.21.3.
 
 ## Supported scikit-learn Models
 
-|       Library      |                  Category                 |                        Class                        | Supported? |
-|:------------------:|:-----------------------------------------:|:---------------------------------------------------:|:----------:|
-| Scikit-Learn       | Clustering                                | cluster.AffinityPropagation                         |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.AgglomerativeClustering                     |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.Birch                                       |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.DBSCAN                                      |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.FeatureAgglomeration                        |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.KMeans                                      |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.BisectingKMeans                             |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.MiniBatchKMeans                             |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.MeanShift                                   |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.OPTICS                                      |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.SpectralClustering                          |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.SpectralBiclustering                        |    Yes     |
-| Scikit-Learn       | Clustering                                | cluster.SpectralCoclustering                        |    Yes     |
-| Scikit-Learn       | Cross decomposition                       | cross_decomposition.CCA                             |    Yes     |
-| Scikit-Learn       | Cross decomposition                       | cross_decomposition.PLSCanonical                    |    Yes     |
-| Scikit-Learn       | Cross decomposition                       | cross_decomposition.PLSRegression                   |    Yes     |
-| Scikit-Learn       | Cross decomposition                       | cross_decomposition.PLSSVD                          |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.DictionaryLearning                    |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.FactorAnalysis                        |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.FastICA                               |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.IncrementalPCA                        |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.KernelPCA                             |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.LatentDirichletAllocation             |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.MiniBatchDictionaryLearning           |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.MiniBatchSparsePCA                    |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.NMF                                   |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.MiniBatchNMF                          |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.PCA                                   |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.SparsePCA                             |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.SparseCoder                           |    Yes     |
-| Scikit-Learn       | Decomposition                             | decomposition.TruncatedSVD                          |    Yes     |
-| Scikit-Learn       | Discriminant Analysis                     | discriminant_analysis.LinearDiscriminantAnalysis    |    Yes     |
-| Scikit-Learn       | Discriminant Analysis                     | discriminant_analysis.QuadraticDiscriminantAnalysis |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.AdaBoostClassifier                         |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.AdaBoostRegressor                          |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.BaggingClassifier                          |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.BaggingRegressor                           |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.ExtraTreesClassifier                       |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.ExtraTreesRegressor                        |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.GradientBoostingClassifier                 |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.GradientBoostingRegressor                  |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.IsolationForest                            |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.RandomForestClassifier                     |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.RandomForestRegressor                      |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.RandomTreesEmbedding                       |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.StackingClassifier                         |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.StackingRegressor                          |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.VotingClassifier                           |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.VotingRegressor                            |    Yes     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.HistGradientBoostingRegressor              |     No     |
-| Scikit-Learn       | Ensemble Methods                          | ensemble.HistGradientBoostingClassifier             |     No     |
-| Scikit-Learn       | Feature Extraction                        | feature_extraction.DictVectorizer                   |    Yes     |
-| Scikit-Learn       | Feature Extraction                        | feature_extraction.FeatureHasher                    |     No     |
-| Scikit-Learn       | Feature Extraction                        | feature_extraction.image.PatchExtractor             |     No     |
-| Scikit-Learn       | Feature Extraction                        | feature_extraction.text.CountVectorizer             |     No     |
-| Scikit-Learn       | Feature Extraction                        | feature_extraction.text.HashingVectorizer           |     No     |
-| Scikit-Learn       | Feature Extraction                        | feature_extraction.text.TfidfTransformer            |     No     |
-| Scikit-Learn       | Feature Extraction                        | feature_extraction.text.TfidfVectorizer             |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.GenericUnivariateSelect           |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.SelectPercentile                  |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.SelectKBest                       |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.SelectFpr                         |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.SelectFdr                         |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.SelectFromModel                   |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.SelectFwe                         |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.SequentialFeatureSelector         |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.RFE                               |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.RFECV                             |     No     |
-| Scikit-Learn       | Feature Selection                         | feature_selection.VarianceThreshold                 |     No     |
-| Scikit-Learn       | Gaussian Processes                        | gaussian_process.GaussianProcessClassifier          |     No     |
-| Scikit-Learn       | Gaussian Processes                        | gaussian_process.GaussianProcessRegressor           |     No     |
-| Scikit-Learn       | Impute                                    | impute.SimpleImputer                                |     No     |
-| Scikit-Learn       | Impute                                    | impute.IterativeImputer                             |     No     |
-| Scikit-Learn       | Impute                                    | impute.MissingIndicator                             |     No     |
-| Scikit-Learn       | Impute                                    | impute.KNNImputer                                   |     No     |
-| Scikit-Learn       | Isotonic regression                       | isotonic.IsotonicRegression                         |     No     |
-| Scikit-Learn       | Kernel Approximation                      | kernel_approximation.AdditiveChi2Sampler            |     No     |
-| Scikit-Learn       | Kernel Approximation                      | kernel_approximation.Nystroem                       |     No     |
-| Scikit-Learn       | Kernel Approximation                      | kernel_approximation.PolynomialCountSketch          |     No     |
-| Scikit-Learn       | Kernel Approximation                      | kernel_approximation.RBFSampler                     |     No     |
-| Scikit-Learn       | Kernel Approximation                      | kernel_approximation.SkewedChi2Sampler              |     No     |
-| Scikit-Learn       | Kernel Ridge Regression                   | kernel_ridge.KernelRidge                            |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.LogisticRegression                     |    Yes     |
-| Scikit-Learn       | Linear Models                             | linear_model.LogisticRegressionCV                   |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.PassiveAggressiveClassifier            |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.Perceptron                             |    Yes     |
-| Scikit-Learn       | Linear Models                             | linear_model.RidgeClassifier                        |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.RidgeClassifierCV                      |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.SGDClassifier                          |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.SGDOneClassSVM                         |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.LinearRegression                       |    Yes     |
-| Scikit-Learn       | Linear Models                             | linear_model.Ridge                                  |    Yes     |
-| Scikit-Learn       | Linear Models                             | linear_model.RidgeCV                                |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.SGDRegressor                           |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.ElasticNet                             |    Yes     |
-| Scikit-Learn       | Linear Models                             | linear_model.ElasticNetCV                           |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.Lars                                   |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.LarsCV                                 |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.Lasso                                  |    Yes     |
-| Scikit-Learn       | Linear Models                             | linear_model.LassoCV                                |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.LassoLars                              |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.LassoLarsCV                            |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.LassoLarsIC                            |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.OrthogonalMatchingPursuit              |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.OrthogonalMatchingPursuitCV            |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.ARDRegression                          |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.BayesianRidge                          |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.MultiTaskElasticNet                    |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.MultiTaskElasticNetCV                  |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.MultiTaskLasso                         |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.MultiTaskLassoCV                       |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.HuberRegressor                         |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.QuantileRegressor                      |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.RANSACRegressor                        |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.TheilSenRegressor                      |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.PoissonRegressor                       |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.TweedieRegressor                       |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.GammaRegressor                         |     No     |
-| Scikit-Learn       | Linear Models                             | linear_model.PassiveAggressiveRegressor             |     No     |
-| Scikit-Learn       | Manifold Learning                         | manifold.Isomap                                     |    Yes     |
-| Scikit-Learn       | Manifold Learning                         | manifold.LocallyLinearEmbedding                     |    Yes     |
-| Scikit-Learn       | Manifold Learning                         | manifold.MDS                                        |    Yes     |
-| Scikit-Learn       | Manifold Learning                         | manifold.SpectralEmbedding                          |    Yes     |
-| Scikit-Learn       | Manifold Learning                         | manifold.TSNE                                       |    Yes     |
-| Scikit-Learn       | Gaussian Mixture Models                   | mixture.BayesianGaussianMixture                     |     No     |
-| Scikit-Learn       | Gaussian Mixture Models                   | mixture.GaussianMixture                             |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.GroupKFold                          |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.GroupShuffleSplit                   |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.KFold                               |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.LeaveOneGroupOut                    |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.LeavePGroupsOut                     |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.LeaveOneOut                         |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.LeavePOut                           |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.PredefinedSplit                     |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.RepeatedKFold                       |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.RepeatedStratifiedKFold             |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.ShuffleSplit                        |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.StratifiedKFold                     |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.StratifiedShuffleSplit              |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.StratifiedGroupKFold                |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.TimeSeriesSplit                     |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.GridSearchCV                        |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.HalvingGridSearchCV                 |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.ParameterGrid                       |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.ParameterSampler                    |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.RandomizedSearchCV                  |     No     |
-| Scikit-Learn       | Model Selection                           | model_selection.HalvingRandomSearchCV               |     No     |
-| Scikit-Learn       | Multiclass classification                 | multiclass.OneVsRestClassifier                      |     No     |
-| Scikit-Learn       | Multiclass classification                 | multiclass.OneVsOneClassifier                       |     No     |
-| Scikit-Learn       | Multiclass classification                 | multiclass.OutputCodeClassifier                     |     No     |
-| Scikit-Learn       | Multioutput regression and classification | multioutput.ClassifierChain                         |     No     |
-| Scikit-Learn       | Multioutput regression and classification | multioutput.MultiOutputRegressor                    |     No     |
-| Scikit-Learn       | Multioutput regression and classification | multioutput.MultiOutputClassifier                   |     No     |
-| Scikit-Learn       | Multioutput regression and classification | multioutput.RegressorChain                          |     No     |
-| Scikit-Learn       | Naive Bayes                               | naive_bayes.BernoulliNB                             |    Yes     |
-| Scikit-Learn       | Naive Bayes                               | naive_bayes.CategoricalNB                           |     No     |
-| Scikit-Learn       | Naive Bayes                               | naive_bayes.ComplementNB                            |    Yes     |
-| Scikit-Learn       | Naive Bayes                               | naive_bayes.GaussianNB                              |    Yes     |
-| Scikit-Learn       | Naive Bayes                               | naive_bayes.MultinomialNB                           |    Yes     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.BallTree                                  |     No     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.KDTree                                    |    Yes     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.KernelDensity                             |     No     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsClassifier                      |     No     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsRegressor                       |     No     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsTransformer                     |     No     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.LocalOutlierFactor                        |     No     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.RadiusNeighborsClassifier                 |     No     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.RadiusNeighborsRegressor                  |     No     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.RadiusNeighborsTransformer                |     No     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.NearestCentroid                           |     No     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.NearestNeighbors                          |    Yes     |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.NeighborhoodComponentsAnalysis            |     No     |
-| Scikit-Learn       | Neural network models                     | neural_network.BernoulliRBM                         |     No     |
-| Scikit-Learn       | Neural network models                     | neural_network.MLPClassifier                        |    Yes     |
-| Scikit-Learn       | Neural network models                     | neural_network.MLPRegressor                         |    Yes     |
-| Scikit-Learn       | Pipeline                                  | pipeline.FeatureUnion                               |     No     |
-| Scikit-Learn       | Pipeline                                  | pipeline.Pipeline                                   |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.Binarizer                             |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.FunctionTransformer                   |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.KBinsDiscretizer                      |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.KernelCenterer                        |    Yes     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.LabelBinarizer                        |    Yes     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.LabelEncoder                          |    Yes     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MultiLabelBinarizer                   |    Yes     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MaxAbsScaler                          |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MinMaxScaler                          |    Yes     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.Normalizer                            |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.OneHotEncoder                         |    Yes     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.OrdinalEncoder                        |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.PolynomialFeatures                    |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.PowerTransformer                      |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.QuantileTransformer                   |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.RobustScaler                          |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.SplineTransformer                     |     No     |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.StandardScaler                        |    Yes     |
-| Scikit-Learn       | Random projection                         | random_projection.GaussianRandomProjection          |     No     |
-| Scikit-Learn       | Random projection                         | random_projection.SparseRandomProjection            |     No     |
-| Scikit-Learn       | Semi-Supervised Learning                  | semi_supervised.LabelPropagation                    |     No     |
-| Scikit-Learn       | Semi-Supervised Learning                  | semi_supervised.LabelSpreading                      |     No     |
-| Scikit-Learn       | Semi-Supervised Learning                  | semi_supervised.SelfTrainingClassifier              |     No     |
-| Scikit-Learn       | Support Vector Machines                   | svm.LinearSVC                                       |     No     |
-| Scikit-Learn       | Support Vector Machines                   | svm.LinearSVR                                       |     No     |
-| Scikit-Learn       | Support Vector Machines                   | svm.NuSVC                                           |     No     |
-| Scikit-Learn       | Support Vector Machines                   | svm.NuSVR                                           |     No     |
-| Scikit-Learn       | Support Vector Machines                   | svm.OneClassSVM                                     |     No     |
-| Scikit-Learn       | Support Vector Machines                   | svm.SVC                                             |    Yes     |
-| Scikit-Learn       | Support Vector Machines                   | svm.SVR                                             |    Yes     |
-| Scikit-Learn       | Decision Trees                            | tree.DecisionTreeClassifier                         |    Yes     |
-| Scikit-Learn       | Decision Trees                            | tree.DecisionTreeRegressor                          |    Yes     |
-| Scikit-Learn       | Decision Trees                            | tree.ExtraTreeClassifier                            |    Yes     |
-| Scikit-Learn       | Decision Trees                            | tree.ExtraTreeRegressor                             |    Yes     |
-| Imbalanced-Learn   | Under-sampling                            | ClusterCentroids                                    |     No     |
-| Imbalanced-Learn   | Under-sampling                            | CondensedNearestNeighbour                           |     No     |
-| Imbalanced-Learn   | Under-sampling                            | EditedNearestNeighbours                             |     No     |
-| Imbalanced-Learn   | Under-sampling                            | RepeatedEditedNearestNeighbours                     |     No     |
-| Imbalanced-Learn   | Under-sampling                            | AllKNN                                              |     No     |
-| Imbalanced-Learn   | Under-sampling                            | InstanceHardnessThreshold                           |     No     |
-| Imbalanced-Learn   | Under-sampling                            | NearMiss                                            |     No     |
-| Imbalanced-Learn   | Under-sampling                            | NeighbourhoodCleaningRule                           |     No     |
-| Imbalanced-Learn   | Under-sampling                            | OneSidedSelection                                   |     No     |
-| Imbalanced-Learn   | Under-sampling                            | RandomUnderSampler                                  |     No     |
-| Imbalanced-Learn   | Under-sampling                            | TomekLinks                                          |     No     |
-| Imbalanced-Learn   | Over-sampling                             | RandomOverSampler                                   |     No     |
-| Imbalanced-Learn   | Over-sampling                             | SMOTE                                               |     No     |
-| Imbalanced-Learn   | Over-sampling                             | SMOTENC                                             |     No     |
-| Imbalanced-Learn   | Over-sampling                             | SMOTEN                                              |     No     |
-| Imbalanced-Learn   | Over-sampling                             | ADASYN                                              |     No     |
-| Imbalanced-Learn   | Over-sampling                             | BorderlineSMOTE                                     |     No     |
-| Imbalanced-Learn   | Over-sampling                             | KMeansSMOTE                                         |     No     |
-| Imbalanced-Learn   | Over-sampling                             | SVMSMOTE                                            |     No     |
-| Imbalanced-Learn   | Combined over & under sampling            | SMOTEENN                                            |     No     |
-| Imbalanced-Learn   | Combined over & under sampling            | SMOTETomek                                          |     No     |
-| Imbalanced-Learn   | Ensemble Methods                          | EasyEnsembleClassifier                              |     No     |
-| Imbalanced-Learn   | Ensemble Methods                          | RUSBoostClassifier                                  |     No     |
-| Imbalanced-Learn   | Ensemble Methods                          | BalancedBaggingClassifier                           |     No     |
-| Imbalanced-Learn   | Ensemble Methods                          | BalancedRandomForestClassifier                      |     No     |
-| XGBoost            | Ensemble Methods                          | XGBRegressor                                        |    Yes     |
-| XGBoost            | Ensemble Methods                          | XGBClassifier                                       |    Yes     |
-| XGBoost            | Ensemble Methods                          | XGBRanker                                           |    Yes     |
-| XGBoost            | Ensemble Methods                          | XGBRFRegressor                                      |    Yes     |
-| XGBoost            | Ensemble Methods                          | XGBRFClassifier                                     |    Yes     |
-| LightGBM           | Ensemble Methods                          | LGBMClassifier                                      |    Yes     |
-| LightGBM           | Ensemble Methods                          | LGBMRegressor                                       |    Yes     |
-| LightGBM           | Ensemble Methods                          | LGBMRanker                                          |    Yes     |
-| CatBoost           | Ensemble Methods                          | CatBoostClassifier                                  |    Yes     |
-| CatBoost           | Ensemble Methods                          | CatBoostRanker                                      |    Yes     |
-| CatBoost           | Ensemble Methods                          | CatBoostRegressor                                   |    Yes     |
-| kmodes             | Clustering                                | KModes                                              |    Yes     |
-| kmodes             | Clustering                                | KPrototypes                                         |    Yes     |
-| Scikit-Learn-extra | Clustering                                | cluster.KMedoids                                    |     No     |
-| Scikit-Learn-extra | Clustering                                | cluster.CommonNNClustering                          |     No     |
-| Scikit-Learn-extra | Kernel approximation                      | kernel_approximation.Fastfood                       |     No     |
-| Scikit-Learn-extra | EigenPro                                  | kernel_methods.EigenProRegressor                    |     No     |
-| Scikit-Learn-extra | Robust                                    | kernel_methods.EigenProClassifier                   |     No     |
-| Scikit-Learn-extra | Robust                                    | robust.RobustWeightedClassifier                     |     No     |
-| Scikit-Learn-extra | Robust                                    | robust.RobustWeightedRegressor                      |     No     |
-| Scikit-Learn-extra | Robust                                    | robust.RobustWeightedKMeans                         |     No     |
-| HDBSCAN            | Clustering                                | HDBSCAN                                             |    Yes     |
-| UMAP               | Manifold Learning                         | UMAP                                                |    Yes     |
-| PyNNDescent        | Nearest Neighbors                         | NNDescent                                           |    Yes     |
-| Prince             | Decomposition                             | PCA                                                 |     No     |
-| Prince             | Decomposition                             | CA                                                  |     No     |
-| Prince             | Decomposition                             | MCA                                                 |     No     |
-| Prince             | Decomposition                             | MFA                                                 |     No     |
-| Prince             | Decomposition                             | FAMD                                                |     No     |
-| Prince             | Decomposition                             | GPA                                                 |     No     |
+|       Library      |                  Category                 |                        Class                        |     Supported?     |
+|:------------------:|:-----------------------------------------:|:---------------------------------------------------:|:------------------:|
+| Scikit-Learn       | Clustering                                | cluster.AffinityPropagation                         | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.AgglomerativeClustering                     | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.Birch                                       | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.DBSCAN                                      | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.FeatureAgglomeration                        | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.KMeans                                      | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.BisectingKMeans                             | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.MiniBatchKMeans                             | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.MeanShift                                   | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.OPTICS                                      | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.SpectralClustering                          | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.SpectralBiclustering                        | :heavy_check_mark: |
+| Scikit-Learn       | Clustering                                | cluster.SpectralCoclustering                        | :heavy_check_mark: |
+| Scikit-Learn       | Cross decomposition                       | cross_decomposition.CCA                             | :heavy_check_mark: |
+| Scikit-Learn       | Cross decomposition                       | cross_decomposition.PLSCanonical                    | :heavy_check_mark: |
+| Scikit-Learn       | Cross decomposition                       | cross_decomposition.PLSRegression                   | :heavy_check_mark: |
+| Scikit-Learn       | Cross decomposition                       | cross_decomposition.PLSSVD                          | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.DictionaryLearning                    | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.FactorAnalysis                        | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.FastICA                               | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.IncrementalPCA                        | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.KernelPCA                             | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.LatentDirichletAllocation             | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.MiniBatchDictionaryLearning           | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.MiniBatchSparsePCA                    | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.NMF                                   | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.MiniBatchNMF                          | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.PCA                                   | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.SparsePCA                             | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.SparseCoder                           | :heavy_check_mark: |
+| Scikit-Learn       | Decomposition                             | decomposition.TruncatedSVD                          | :heavy_check_mark: |
+| Scikit-Learn       | Discriminant Analysis                     | discriminant_analysis.LinearDiscriminantAnalysis    | :heavy_check_mark: |
+| Scikit-Learn       | Discriminant Analysis                     | discriminant_analysis.QuadraticDiscriminantAnalysis | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.AdaBoostClassifier                         | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.AdaBoostRegressor                          | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.BaggingClassifier                          | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.BaggingRegressor                           | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.ExtraTreesClassifier                       | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.ExtraTreesRegressor                        | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.GradientBoostingClassifier                 | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.GradientBoostingRegressor                  | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.IsolationForest                            | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.RandomForestClassifier                     | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.RandomForestRegressor                      | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.RandomTreesEmbedding                       | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.StackingClassifier                         | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.StackingRegressor                          | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.VotingClassifier                           | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.VotingRegressor                            | :heavy_check_mark: |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.HistGradientBoostingRegressor              |        :x:         |
+| Scikit-Learn       | Ensemble Methods                          | ensemble.HistGradientBoostingClassifier             |        :x:         |
+| Scikit-Learn       | Feature Extraction                        | feature_extraction.DictVectorizer                   | :heavy_check_mark: |
+| Scikit-Learn       | Feature Extraction                        | feature_extraction.FeatureHasher                    |        :x:         |
+| Scikit-Learn       | Feature Extraction                        | feature_extraction.image.PatchExtractor             |        :x:         |
+| Scikit-Learn       | Feature Extraction                        | feature_extraction.text.CountVectorizer             |        :x:         |
+| Scikit-Learn       | Feature Extraction                        | feature_extraction.text.HashingVectorizer           |        :x:         |
+| Scikit-Learn       | Feature Extraction                        | feature_extraction.text.TfidfTransformer            |        :x:         |
+| Scikit-Learn       | Feature Extraction                        | feature_extraction.text.TfidfVectorizer             |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.GenericUnivariateSelect           |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.SelectPercentile                  |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.SelectKBest                       |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.SelectFpr                         |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.SelectFdr                         |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.SelectFromModel                   |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.SelectFwe                         |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.SequentialFeatureSelector         |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.RFE                               |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.RFECV                             |        :x:         |
+| Scikit-Learn       | Feature Selection                         | feature_selection.VarianceThreshold                 |        :x:         |
+| Scikit-Learn       | Gaussian Processes                        | gaussian_process.GaussianProcessClassifier          |        :x:         |
+| Scikit-Learn       | Gaussian Processes                        | gaussian_process.GaussianProcessRegressor           |        :x:         |
+| Scikit-Learn       | Impute                                    | impute.SimpleImputer                                |        :x:         |
+| Scikit-Learn       | Impute                                    | impute.IterativeImputer                             |        :x:         |
+| Scikit-Learn       | Impute                                    | impute.MissingIndicator                             |        :x:         |
+| Scikit-Learn       | Impute                                    | impute.KNNImputer                                   |        :x:         |
+| Scikit-Learn       | Isotonic regression                       | isotonic.IsotonicRegression                         |        :x:         |
+| Scikit-Learn       | Kernel Approximation                      | kernel_approximation.AdditiveChi2Sampler            |        :x:         |
+| Scikit-Learn       | Kernel Approximation                      | kernel_approximation.Nystroem                       |        :x:         |
+| Scikit-Learn       | Kernel Approximation                      | kernel_approximation.PolynomialCountSketch          |        :x:         |
+| Scikit-Learn       | Kernel Approximation                      | kernel_approximation.RBFSampler                     |        :x:         |
+| Scikit-Learn       | Kernel Approximation                      | kernel_approximation.SkewedChi2Sampler              |        :x:         |
+| Scikit-Learn       | Kernel Ridge Regression                   | kernel_ridge.KernelRidge                            |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.LogisticRegression                     | :heavy_check_mark: |
+| Scikit-Learn       | Linear Models                             | linear_model.LogisticRegressionCV                   |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.PassiveAggressiveClassifier            |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.Perceptron                             | :heavy_check_mark: |
+| Scikit-Learn       | Linear Models                             | linear_model.RidgeClassifier                        |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.RidgeClassifierCV                      |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.SGDClassifier                          |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.SGDOneClassSVM                         |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.LinearRegression                       | :heavy_check_mark: |
+| Scikit-Learn       | Linear Models                             | linear_model.Ridge                                  | :heavy_check_mark: |
+| Scikit-Learn       | Linear Models                             | linear_model.RidgeCV                                |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.SGDRegressor                           |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.ElasticNet                             | :heavy_check_mark: |
+| Scikit-Learn       | Linear Models                             | linear_model.ElasticNetCV                           |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.Lars                                   |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.LarsCV                                 |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.Lasso                                  | :heavy_check_mark: |
+| Scikit-Learn       | Linear Models                             | linear_model.LassoCV                                |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.LassoLars                              |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.LassoLarsCV                            |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.LassoLarsIC                            |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.OrthogonalMatchingPursuit              |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.OrthogonalMatchingPursuitCV            |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.ARDRegression                          |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.BayesianRidge                          |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.MultiTaskElasticNet                    |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.MultiTaskElasticNetCV                  |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.MultiTaskLasso                         |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.MultiTaskLassoCV                       |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.HuberRegressor                         |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.QuantileRegressor                      |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.RANSACRegressor                        |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.TheilSenRegressor                      |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.PoissonRegressor                       |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.TweedieRegressor                       |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.GammaRegressor                         |        :x:         |
+| Scikit-Learn       | Linear Models                             | linear_model.PassiveAggressiveRegressor             |        :x:         |
+| Scikit-Learn       | Manifold Learning                         | manifold.Isomap                                     | :heavy_check_mark: |
+| Scikit-Learn       | Manifold Learning                         | manifold.LocallyLinearEmbedding                     | :heavy_check_mark: |
+| Scikit-Learn       | Manifold Learning                         | manifold.MDS                                        | :heavy_check_mark: |
+| Scikit-Learn       | Manifold Learning                         | manifold.SpectralEmbedding                          | :heavy_check_mark: |
+| Scikit-Learn       | Manifold Learning                         | manifold.TSNE                                       | :heavy_check_mark: |
+| Scikit-Learn       | Gaussian Mixture Models                   | mixture.BayesianGaussianMixture                     |        :x:         |
+| Scikit-Learn       | Gaussian Mixture Models                   | mixture.GaussianMixture                             |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.GroupKFold                          |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.GroupShuffleSplit                   |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.KFold                               |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.LeaveOneGroupOut                    |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.LeavePGroupsOut                     |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.LeaveOneOut                         |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.LeavePOut                           |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.PredefinedSplit                     |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.RepeatedKFold                       |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.RepeatedStratifiedKFold             |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.ShuffleSplit                        |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.StratifiedKFold                     |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.StratifiedShuffleSplit              |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.StratifiedGroupKFold                |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.TimeSeriesSplit                     |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.GridSearchCV                        |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.HalvingGridSearchCV                 |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.ParameterGrid                       |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.ParameterSampler                    |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.RandomizedSearchCV                  |        :x:         |
+| Scikit-Learn       | Model Selection                           | model_selection.HalvingRandomSearchCV               |        :x:         |
+| Scikit-Learn       | Multiclass classification                 | multiclass.OneVsRestClassifier                      |        :x:         |
+| Scikit-Learn       | Multiclass classification                 | multiclass.OneVsOneClassifier                       |        :x:         |
+| Scikit-Learn       | Multiclass classification                 | multiclass.OutputCodeClassifier                     |        :x:         |
+| Scikit-Learn       | Multioutput regression and classification | multioutput.ClassifierChain                         |        :x:         |
+| Scikit-Learn       | Multioutput regression and classification | multioutput.MultiOutputRegressor                    |        :x:         |
+| Scikit-Learn       | Multioutput regression and classification | multioutput.MultiOutputClassifier                   |        :x:         |
+| Scikit-Learn       | Multioutput regression and classification | multioutput.RegressorChain                          |        :x:         |
+| Scikit-Learn       | Naive Bayes                               | naive_bayes.BernoulliNB                             | :heavy_check_mark: |
+| Scikit-Learn       | Naive Bayes                               | naive_bayes.CategoricalNB                           |        :x:         |
+| Scikit-Learn       | Naive Bayes                               | naive_bayes.ComplementNB                            | :heavy_check_mark: |
+| Scikit-Learn       | Naive Bayes                               | naive_bayes.GaussianNB                              | :heavy_check_mark: |
+| Scikit-Learn       | Naive Bayes                               | naive_bayes.MultinomialNB                           | :heavy_check_mark: |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.BallTree                                  |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.KDTree                                    | :heavy_check_mark: |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.KernelDensity                             |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsClassifier                      |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsRegressor                       |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsTransformer                     |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.LocalOutlierFactor                        |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.RadiusNeighborsClassifier                 |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.RadiusNeighborsRegressor                  |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.RadiusNeighborsTransformer                |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.NearestCentroid                           |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.NearestNeighbors                          | :heavy_check_mark: |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.NeighborhoodComponentsAnalysis            |        :x:         |
+| Scikit-Learn       | Neural network models                     | neural_network.BernoulliRBM                         |        :x:         |
+| Scikit-Learn       | Neural network models                     | neural_network.MLPClassifier                        | :heavy_check_mark: |
+| Scikit-Learn       | Neural network models                     | neural_network.MLPRegressor                         | :heavy_check_mark: |
+| Scikit-Learn       | Pipeline                                  | pipeline.FeatureUnion                               |        :x:         |
+| Scikit-Learn       | Pipeline                                  | pipeline.Pipeline                                   |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.Binarizer                             |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.FunctionTransformer                   |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.KBinsDiscretizer                      |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.KernelCenterer                        | :heavy_check_mark: |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.LabelBinarizer                        | :heavy_check_mark: |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.LabelEncoder                          | :heavy_check_mark: |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MultiLabelBinarizer                   | :heavy_check_mark: |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MaxAbsScaler                          |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MinMaxScaler                          | :heavy_check_mark: |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.Normalizer                            |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.OneHotEncoder                         | :heavy_check_mark: |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.OrdinalEncoder                        |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.PolynomialFeatures                    |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.PowerTransformer                      |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.QuantileTransformer                   |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.RobustScaler                          |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.SplineTransformer                     |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.StandardScaler                        | :heavy_check_mark: |
+| Scikit-Learn       | Random projection                         | random_projection.GaussianRandomProjection          |        :x:         |
+| Scikit-Learn       | Random projection                         | random_projection.SparseRandomProjection            |        :x:         |
+| Scikit-Learn       | Semi-Supervised Learning                  | semi_supervised.LabelPropagation                    |        :x:         |
+| Scikit-Learn       | Semi-Supervised Learning                  | semi_supervised.LabelSpreading                      |        :x:         |
+| Scikit-Learn       | Semi-Supervised Learning                  | semi_supervised.SelfTrainingClassifier              |        :x:         |
+| Scikit-Learn       | Support Vector Machines                   | svm.LinearSVC                                       |        :x:         |
+| Scikit-Learn       | Support Vector Machines                   | svm.LinearSVR                                       |        :x:         |
+| Scikit-Learn       | Support Vector Machines                   | svm.NuSVC                                           |        :x:         |
+| Scikit-Learn       | Support Vector Machines                   | svm.NuSVR                                           |        :x:         |
+| Scikit-Learn       | Support Vector Machines                   | svm.OneClassSVM                                     |        :x:         |
+| Scikit-Learn       | Support Vector Machines                   | svm.SVC                                             | :heavy_check_mark: |
+| Scikit-Learn       | Support Vector Machines                   | svm.SVR                                             | :heavy_check_mark: |
+| Scikit-Learn       | Decision Trees                            | tree.DecisionTreeClassifier                         | :heavy_check_mark: |
+| Scikit-Learn       | Decision Trees                            | tree.DecisionTreeRegressor                          | :heavy_check_mark: |
+| Scikit-Learn       | Decision Trees                            | tree.ExtraTreeClassifier                            | :heavy_check_mark: |
+| Scikit-Learn       | Decision Trees                            | tree.ExtraTreeRegressor                             | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | ClusterCentroids                                    |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | CondensedNearestNeighbour                           |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | EditedNearestNeighbours                             |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | RepeatedEditedNearestNeighbours                     |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | AllKNN                                              |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | InstanceHardnessThreshold                           |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | NearMiss                                            |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | NeighbourhoodCleaningRule                           |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | OneSidedSelection                                   |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | RandomUnderSampler                                  |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | TomekLinks                                          |        :x:         |
+| Imbalanced-Learn   | Over-sampling                             | RandomOverSampler                                   |        :x:         |
+| Imbalanced-Learn   | Over-sampling                             | SMOTE                                               |        :x:         |
+| Imbalanced-Learn   | Over-sampling                             | SMOTENC                                             |        :x:         |
+| Imbalanced-Learn   | Over-sampling                             | SMOTEN                                              |        :x:         |
+| Imbalanced-Learn   | Over-sampling                             | ADASYN                                              |        :x:         |
+| Imbalanced-Learn   | Over-sampling                             | BorderlineSMOTE                                     |        :x:         |
+| Imbalanced-Learn   | Over-sampling                             | KMeansSMOTE                                         |        :x:         |
+| Imbalanced-Learn   | Over-sampling                             | SVMSMOTE                                            |        :x:         |
+| Imbalanced-Learn   | Combined over & under sampling            | SMOTEENN                                            |        :x:         |
+| Imbalanced-Learn   | Combined over & under sampling            | SMOTETomek                                          |        :x:         |
+| Imbalanced-Learn   | Ensemble Methods                          | EasyEnsembleClassifier                              |        :x:         |
+| Imbalanced-Learn   | Ensemble Methods                          | RUSBoostClassifier                                  |        :x:         |
+| Imbalanced-Learn   | Ensemble Methods                          | BalancedBaggingClassifier                           |        :x:         |
+| Imbalanced-Learn   | Ensemble Methods                          | BalancedRandomForestClassifier                      |        :x:         |
+| XGBoost            | Ensemble Methods                          | XGBRegressor                                        | :heavy_check_mark: |
+| XGBoost            | Ensemble Methods                          | XGBClassifier                                       | :heavy_check_mark: |
+| XGBoost            | Ensemble Methods                          | XGBRanker                                           | :heavy_check_mark: |
+| XGBoost            | Ensemble Methods                          | XGBRFRegressor                                      | :heavy_check_mark: |
+| XGBoost            | Ensemble Methods                          | XGBRFClassifier                                     | :heavy_check_mark: |
+| LightGBM           | Ensemble Methods                          | LGBMClassifier                                      | :heavy_check_mark: |
+| LightGBM           | Ensemble Methods                          | LGBMRegressor                                       | :heavy_check_mark: |
+| LightGBM           | Ensemble Methods                          | LGBMRanker                                          | :heavy_check_mark: |
+| CatBoost           | Ensemble Methods                          | CatBoostClassifier                                  | :heavy_check_mark: |
+| CatBoost           | Ensemble Methods                          | CatBoostRanker                                      | :heavy_check_mark: |
+| CatBoost           | Ensemble Methods                          | CatBoostRegressor                                   | :heavy_check_mark: |
+| kmodes             | Clustering                                | KModes                                              | :heavy_check_mark: |
+| kmodes             | Clustering                                | KPrototypes                                         | :heavy_check_mark: |
+| Scikit-Learn-extra | Clustering                                | cluster.KMedoids                                    |        :x:         |
+| Scikit-Learn-extra | Clustering                                | cluster.CommonNNClustering                          |        :x:         |
+| Scikit-Learn-extra | Kernel approximation                      | kernel_approximation.Fastfood                       |        :x:         |
+| Scikit-Learn-extra | EigenPro                                  | kernel_methods.EigenProRegressor                    |        :x:         |
+| Scikit-Learn-extra | Robust                                    | kernel_methods.EigenProClassifier                   |        :x:         |
+| Scikit-Learn-extra | Robust                                    | robust.RobustWeightedClassifier                     |        :x:         |
+| Scikit-Learn-extra | Robust                                    | robust.RobustWeightedRegressor                      |        :x:         |
+| Scikit-Learn-extra | Robust                                    | robust.RobustWeightedKMeans                         |        :x:         |
+| HDBSCAN            | Clustering                                | HDBSCAN                                             | :heavy_check_mark: |
+| UMAP               | Manifold Learning                         | UMAP                                                | :heavy_check_mark: |
+| PyNNDescent        | Nearest Neighbors                         | NNDescent                                           | :heavy_check_mark: |
+| Prince             | Decomposition                             | PCA                                                 |        :x:         |
+| Prince             | Decomposition                             | CA                                                  |        :x:         |
+| Prince             | Decomposition                             | MCA                                                 |        :x:         |
+| Prince             | Decomposition                             | MFA                                                 |        :x:         |
+| Prince             | Decomposition                             | FAMD                                                |        :x:         |
+| Prince             | Decomposition                             | GPA                                                 |        :x:         |
