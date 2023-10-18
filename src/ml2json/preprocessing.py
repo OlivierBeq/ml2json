@@ -67,8 +67,8 @@ def serialize_minmax_scaler(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist(),
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
 
     return serialized_model
 
@@ -86,8 +86,8 @@ def deserialize_minmax_scaler(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
     model.n_samples_seen_ = model_dict['n_samples_seen_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -115,8 +115,8 @@ def serialize_standard_scaler(model):
     else:
         serialized_model['n_samples_seen_'] = model.n_samples_seen_.tolist()
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist(),
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
 
     return serialized_model
 
@@ -142,8 +142,8 @@ def deserialize_standard_scaler(model_dict):
     else:
         model.n_samples_seen_ = model_dict['n_samples_seen_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -171,8 +171,8 @@ def serialize_kernel_centerer(model):
         'n_features_in_': model.n_features_in_,
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist(),
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
 
     return serialized_model
 
@@ -184,8 +184,8 @@ def deserialize_kernel_centerer(model_dict):
     model.K_fit_rows_ = np.array(model_dict['K_fit_rows_'])
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
