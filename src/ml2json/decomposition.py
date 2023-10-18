@@ -25,8 +25,8 @@ def serialize_pca(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
     if 'n_features_' in model.__dict__:
         serialized_model['n_features_'] = model.n_features_
 
@@ -47,8 +47,8 @@ def deserialize_pca(model_dict):
     model.noise_variance_ = model_dict['noise_variance_']
     model._fit_svd_solver = model_dict['_fit_svd_solver']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
     if 'n_features_' in model_dict.keys():
         model.n_features_ = model_dict['n_features_']
 
@@ -66,8 +66,8 @@ def serialize_kernel_pca(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -81,8 +81,8 @@ def deserialize_kernel_pca(model_dict):
     model.X_fit_ = np.array(model_dict['X_fit_'])
     model._centerer = deserialize_kernel_centerer(model_dict['_centerer'])
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -97,8 +97,8 @@ def serialize_dictionary_learning(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -111,8 +111,8 @@ def deserialize_dictionary_learning(model_dict):
     model.error_ = model_dict['error_']
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -129,8 +129,8 @@ def serialize_factor_analysis(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -145,8 +145,8 @@ def deserialize_factor_analysis(model_dict):
     model.n_iter_ = model_dict['n_iter_']
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -164,8 +164,8 @@ def serialize_fast_ica(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -181,8 +181,8 @@ def deserialize_fast_ica(model_dict):
     model._whiten = model_dict['_whiten']
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -204,8 +204,8 @@ def serialize_incremental_pca(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -225,8 +225,8 @@ def deserialize_incremental_pca(model_dict):
     model.batch_size_ = model_dict['batch_size_']
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -242,8 +242,8 @@ def serialize_minibatch_sparse_pca(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -257,8 +257,8 @@ def deserialize_minibatch_sparse_pca(model_dict):
     model.n_iter_ = np.int32(model_dict['n_iter_'])
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -278,8 +278,8 @@ def serialize_sparse_pca(model):
         serialized_model['error_'] = [float(x) for x in model.error_]
     else:
         serialized_model['error_'] = model.error_.tolist()
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -294,8 +294,8 @@ def deserialize_sparse_pca(model_dict):
     model.n_iter_ = np.int32(model_dict['n_iter_'])
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -315,8 +315,8 @@ def serialize_latent_dirichlet_allocation(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -334,8 +334,8 @@ def deserialize_latent_dirichlet_allocation(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
     model.random_state_ = deserialize_random_state(model_dict['random_state_'])
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -351,8 +351,8 @@ def serialize_nmf(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -366,8 +366,8 @@ def deserialize_nmf(model_dict):
     model.n_iter_ = model_dict['n_iter_']
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -388,8 +388,8 @@ def serialize_minibatch_nmf(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
     if '_l1_reg_W' in model.__dict__:
         serialized_model['_l1_reg_W'] = model._l1_reg_W
     if '_l1_reg_H' in model.__dict__:
@@ -431,8 +431,8 @@ def deserialize_minibatch_nmf(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
     model.n_steps_ = model_dict['n_steps_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
     if '_l1_reg_W' in model_dict.keys():
         model._l1_reg_W = model_dict['_l1_reg_W']
     if '_l1_reg_H' in model_dict.keys():
@@ -470,8 +470,8 @@ def serialize_minibatch_dictionary_learning(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -484,8 +484,8 @@ def deserialize_minibatch_dictionary_learning(model_dict):
     model.n_steps_ = model_dict['n_steps_']
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -498,8 +498,8 @@ def serialize_sparse_coder(model):
 
     serialized_model['params']['dictionary'] = serialized_model['params']['dictionary'].tolist()
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -510,8 +510,8 @@ def deserialize_sparse_coder(model_dict):
 
     model = SparseCoder(**model_dict['params'])
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -527,8 +527,8 @@ def serialize_truncated_svd(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -542,7 +542,7 @@ def deserialize_truncated_svd(model_dict):
     model.singular_values_ = np.array(model_dict['singular_values_'])
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model

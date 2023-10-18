@@ -29,8 +29,8 @@ def serialize_nearest_neighbors(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
     if model._tree is not None:
         serialized_model['_tree'] = serialize_kdtree(model._tree)
     else:
@@ -49,8 +49,8 @@ def deserialize_nearest_neighbors(model_dict):
     model.effective_metric_ = model_dict['effective_metric_']
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
     if model_dict['_tree'] is not None:
         model._tree = deserialize_kdtree(model_dict['_tree'])
     else:

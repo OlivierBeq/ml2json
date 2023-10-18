@@ -47,8 +47,8 @@ def serialize_kmeans(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist(),
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
 
     return serialized_model
 
@@ -67,8 +67,8 @@ def deserialize_kmeans(model_dict):
     model._n_features_out = model_dict['_n_features_out']
     model._algorithm = model_dict['_algorithm']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -96,8 +96,8 @@ def serialize_minibatch_kmeans(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist(),
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
 
     return serialized_model
 
@@ -123,8 +123,8 @@ def deserialize_minibatch_kmeans(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
     model._n_features_out = model_dict['_n_features_out']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -141,8 +141,8 @@ def serialize_affinity_propagation(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist(),
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
 
     return serialized_model
 
@@ -157,8 +157,8 @@ def deserialize_affinity_propagation(model_dict):
     model.n_iter_ = model_dict['n_iter_']
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -175,8 +175,8 @@ def serialize_agglomerative_clustering(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
     if 'distances_' in model.__dict__:
         serialized_model['distances_'] = model.distances_.tolist()
     if '_metric' in model.__dict__:
@@ -195,8 +195,8 @@ def deserialize_agglomerative_clustering(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
     model.children_ = np.array(model_dict['children_'])
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
     if 'distances_' in model_dict.keys():
         model.distances_ = np.array(model_dict['distances_'])
     if '_metric' in model_dict:
@@ -385,8 +385,8 @@ def serialize_dbscan(model):
         'params': model.get_params()
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -400,8 +400,8 @@ def deserialize_dbscan(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
     model._estimator_type = model_dict['_estimator_type']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -419,8 +419,8 @@ def serialize_optics(model):
         'params': model.get_params()
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -436,8 +436,8 @@ def deserialize_optics(model_dict):
     model.cluster_hierarchy_ = np.array(model_dict['cluster_hierarchy_'])
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -451,8 +451,8 @@ def serialize_spectral_clustering(model):
         'params': model.get_params()
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -464,8 +464,8 @@ def deserialize_spectral_clustering(model_dict):
     model.labels_ = np.array(model_dict['labels_'])
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -485,10 +485,10 @@ def serialize_feature_agglomeration(model):
         'params': {key: value for key, value in params.items() if key != 'pooling_func'}
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
     if 'distances_' in model.__dict__:
-        serialized_model['distances_'] = model.feature_names_in.tolist()
+        serialized_model['distances_'] = model.feature_names_in_.tolist()
     if '_metric' in model.__dict__:
         serialized_model['_metric'] = model._metric
 
@@ -507,10 +507,10 @@ def deserialize_feature_agglomeration(model_dict):
     model._n_features_out = model_dict['_n_features_out']
     model.n_connected_components_ = model_dict['n_connected_components_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
     if 'distances_' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['distances_'])
+        model.feature_names_in_ = np.array(model_dict['distances_'])
     if '_metric' in model_dict:
         model._metric = model_dict['_metric']
 
@@ -527,8 +527,8 @@ def serialize_meanshift(model):
         'params': model.get_params()
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -541,8 +541,8 @@ def deserialize_meanshift(model_dict):
     model.n_iter_ = model_dict['n_iter_']
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -557,8 +557,8 @@ def serialize_spectral_biclustering(model):
         'params': model.get_params()
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
     if 'columns_labels_' in model.__dict__:
         serialized_model['columns_labels_'] = model.columns_labels_.tolist()
 
@@ -573,8 +573,8 @@ def deserialize_spectral_biclustering(model_dict):
     model.row_labels_ = np.array(model_dict['row_labels_'])
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
     if 'columns_labels_' in model_dict.keys():
         model.columns_labels_ = np.array(model_dict['columns_labels_'])
 
@@ -591,8 +591,8 @@ def serialize_spectral_coclustering(model):
         'params': model.get_params()
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
     if 'columns_labels_' in model.__dict__:
         serialized_model['columns_labels_'] = model.columns_labels_.tolist()
 
@@ -607,8 +607,8 @@ def deserialize_spectral_coclustering(model_dict):
     model.row_labels_ = np.array(model_dict['row_labels_'])
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
     if 'columns_labels_' in model_dict.keys():
         model.columns_labels_ = np.array(model_dict['columns_labels_'])
 
@@ -752,8 +752,8 @@ def serialize_bisecting_kmeans(model):
         'params': model.get_params(),
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -774,8 +774,8 @@ def deserialize_bisecting_kmeans(model_dict):
                                    model_dict['_kmeans_single'][1])
     model._random_state = deserialize_random_state(model_dict['_random_state'])
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -796,8 +796,8 @@ if 'HDBSCAN' in __optionals__:
             'params': model.get_params()
         }
 
-        if 'feature_names_in' in model.__dict__:
-            serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+        if 'feature_names_in_' in model.__dict__:
+            serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
         if '_min_spanning_tree' in model.__dict__ and model._min_spanning_tree is not None:
             serialized_model['_min_spanning_tree'] = model._min_spanning_tree.tolist()
         else:
@@ -832,8 +832,8 @@ if 'HDBSCAN' in __optionals__:
         model.probabilities_ = np.array(model_dict['probabilities_'])
         model.cluster_persistence_ = np.array(model_dict['cluster_persistence_'])
 
-        if 'feature_names_in' in model_dict.keys():
-            model.feature_names_in = np.array(model_dict['feature_names_in'])
+        if 'feature_names_in_' in model_dict.keys():
+            model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
         if '_min_spanning_tree' in model_dict:
             model._min_spanning_tree = np.array(model_dict['_min_spanning_tree'])
         if '_outlier_scores' in model_dict:

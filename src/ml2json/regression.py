@@ -399,8 +399,8 @@ def serialize_random_forest_regressor(model):
         serialized_model['oob_score_'] = model.oob_score_
     if 'oob_decision_function_' in model.__dict__:
         serialized_model['oob_prediction_'] = model.oob_prediction_.tolist()
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist(),
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
 
     return serialized_model
 
@@ -701,8 +701,8 @@ def serialize_adaboost_regressor(model):
     else:
         serialized_model['_estimator'] = None
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -731,8 +731,8 @@ def deserialize_adaboost_regressor(model_dict):
     model.estimator_params = tuple(model_dict['estimator_params'])
     model.n_features_in_ = model_dict['n_features_in_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -769,8 +769,8 @@ def serialize_bagging_regressor(model):
     if 'oob_decision_function_' in model.__dict__:
         serialized_model['oob_decision_function_'] = model.oob_decision_function_.tolist()
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -808,8 +808,8 @@ def deserialize_bagging_regressor(model_dict):
     if 'oob_decision_function_' in model_dict:
         model.oob_decision_function_ = model_dict['oob_decision_function_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -847,8 +847,8 @@ def deserialize_extra_tree_regressor(model_dict):
     tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_in_'], model_dict['n_outputs_'])
     deserialized_model.tree_ = tree
 
-    if 'feature_names_in' in model_dict.keys():
-        deserialized_model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        deserialized_model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return deserialized_model
 
@@ -914,8 +914,8 @@ def deserialize_extratrees_regressor(model_dict):
     if 'oob_prediction_' in model_dict:
         model.oob_prediction_ = model_dict['oob_prediction_']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -961,8 +961,8 @@ def deserialize_nearest_neighbour_regressor(model_dict):
     else:
         model._tree = None
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -1006,8 +1006,8 @@ def deserialize_stacking_regressor(model_dict):
     model.stack_method_ = model_dict['stack_method_']
     model.named_estimators_ = {model_name: deserialize_model(submodel) for model_name, submodel in model_dict['named_estimators_'].items()}
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -1048,7 +1048,7 @@ def deserialize_voting_regressor(model_dict):
     model.named_estimators_ = {model_name: deserialize_model(submodel) for model_name, submodel in
                                model_dict['named_estimators_'].items()}
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model

@@ -32,8 +32,8 @@ def serialize_cca(model):
         'params': model.get_params()
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -64,8 +64,8 @@ def deserialize_cca(model_dict):
     model.mode = model_dict['mode']
     model.algorithm = model_dict['algorithm']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -96,8 +96,8 @@ def serialize_pls_canonical(model):
         'params': model.get_params()
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -127,8 +127,8 @@ def deserialize_pls_canonical(model_dict):
     model.deflation_mode = model_dict['deflation_mode']
     model.mode = model_dict['mode']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -161,8 +161,8 @@ def serialize_pls_regression(model):
         'params': model.get_params()
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -194,8 +194,8 @@ def deserialize_pls_regression(model_dict):
     model.deflation_mode = model_dict['deflation_mode']
     model.mode = model_dict['mode']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -214,8 +214,8 @@ def serialize_pls_svd(model):
         'params': model.get_params()
     }
 
-    if 'feature_names_in' in model.__dict__:
-        serialized_model['feature_names_in'] = model.feature_names_in.tolist()
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -232,7 +232,7 @@ def deserialize_pls_svd(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
     model._n_features_out = model_dict['_n_features_out']
 
-    if 'feature_names_in' in model_dict.keys():
-        model.feature_names_in = np.array(model_dict['feature_names_in'])
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
