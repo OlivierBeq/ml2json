@@ -50,7 +50,7 @@ def deserialize_nearest_neighbors(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if model_dict['_tree'] is not None:
         model._tree = deserialize_kdtree(model_dict['_tree'])
     else:

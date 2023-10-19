@@ -55,7 +55,7 @@ def deserialize_tsne(model_dict):
     model.n_iter_ = model_dict['n_iter_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if '_init' in model_dict.keys():
         model._init = np.array(model_dict['_init'])
     if '_learning_rate' in model_dict.keys():
@@ -93,7 +93,7 @@ def deserialize_mds(model_dict):
     model.stress_ = np.float64(model_dict['stress_'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -127,7 +127,7 @@ def deserialize_isomap(model_dict):
     model.nbrs_ = deserialize_nearest_neighbors(model_dict['nbrs_'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -159,7 +159,7 @@ def deserialize_locally_linear_embedding(model_dict):
     model.nbrs_ = deserialize_nearest_neighbors(model_dict['nbrs_'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -199,7 +199,7 @@ def deserialize_spectral_embedding(model_dict):
     if 'n_neighbors_' in model_dict.keys():
         model.n_neighbors_ = model_dict['n_neighbors_']
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -309,6 +309,6 @@ if 'UMAP' in __optionals__ and 'NNDescent' in __neig_optionals__:
         if 'rad_orig_' in model_dict.keys():
             model.rad_orig_ = np.array(model_dict['rad_orig_'], dtype=np.float32)
         if 'feature_names_in_' in model_dict.keys():
-            model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+            model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
         return model

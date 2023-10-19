@@ -68,7 +68,7 @@ def deserialize_kmeans(model_dict):
     model._algorithm = model_dict['_algorithm']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -124,7 +124,7 @@ def deserialize_minibatch_kmeans(model_dict):
     model._n_features_out = model_dict['_n_features_out']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -158,7 +158,7 @@ def deserialize_affinity_propagation(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -196,7 +196,7 @@ def deserialize_agglomerative_clustering(model_dict):
     model.children_ = np.array(model_dict['children_'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if 'distances_' in model_dict.keys():
         model.distances_ = np.array(model_dict['distances_'])
     if '_metric' in model_dict:
@@ -401,7 +401,7 @@ def deserialize_dbscan(model_dict):
     model._estimator_type = model_dict['_estimator_type']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -437,7 +437,7 @@ def deserialize_optics(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -465,7 +465,7 @@ def deserialize_spectral_clustering(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -508,7 +508,7 @@ def deserialize_feature_agglomeration(model_dict):
     model.n_connected_components_ = model_dict['n_connected_components_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if 'distances_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['distances_'])
     if '_metric' in model_dict:
@@ -542,7 +542,7 @@ def deserialize_meanshift(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -574,7 +574,7 @@ def deserialize_spectral_biclustering(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if 'columns_labels_' in model_dict.keys():
         model.columns_labels_ = np.array(model_dict['columns_labels_'])
 
@@ -608,7 +608,7 @@ def deserialize_spectral_coclustering(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if 'columns_labels_' in model_dict.keys():
         model.columns_labels_ = np.array(model_dict['columns_labels_'])
 
@@ -775,7 +775,7 @@ def deserialize_bisecting_kmeans(model_dict):
     model._random_state = deserialize_random_state(model_dict['_random_state'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -833,7 +833,7 @@ if 'HDBSCAN' in __optionals__:
         model.cluster_persistence_ = np.array(model_dict['cluster_persistence_'])
 
         if 'feature_names_in_' in model_dict.keys():
-            model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+            model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
         if '_min_spanning_tree' in model_dict:
             model._min_spanning_tree = np.array(model_dict['_min_spanning_tree'])
         if '_outlier_scores' in model_dict:
