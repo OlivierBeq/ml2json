@@ -87,7 +87,7 @@ def deserialize_minmax_scaler(model_dict):
     model.n_samples_seen_ = model_dict['n_samples_seen_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -143,7 +143,7 @@ def deserialize_standard_scaler(model_dict):
         model.n_samples_seen_ = model_dict['n_samples_seen_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -185,7 +185,7 @@ def deserialize_kernel_centerer(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 

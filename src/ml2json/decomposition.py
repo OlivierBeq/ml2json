@@ -48,7 +48,7 @@ def deserialize_pca(model_dict):
     model._fit_svd_solver = model_dict['_fit_svd_solver']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if 'n_features_' in model_dict.keys():
         model.n_features_ = model_dict['n_features_']
 
@@ -82,7 +82,7 @@ def deserialize_kernel_pca(model_dict):
     model._centerer = deserialize_kernel_centerer(model_dict['_centerer'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -112,7 +112,7 @@ def deserialize_dictionary_learning(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -146,7 +146,7 @@ def deserialize_factor_analysis(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -182,7 +182,7 @@ def deserialize_fast_ica(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -226,7 +226,7 @@ def deserialize_incremental_pca(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -258,7 +258,7 @@ def deserialize_minibatch_sparse_pca(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -295,7 +295,7 @@ def deserialize_sparse_pca(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -335,7 +335,7 @@ def deserialize_latent_dirichlet_allocation(model_dict):
     model.random_state_ = deserialize_random_state(model_dict['random_state_'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -367,7 +367,7 @@ def deserialize_nmf(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -432,7 +432,7 @@ def deserialize_minibatch_nmf(model_dict):
     model.n_steps_ = model_dict['n_steps_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if '_l1_reg_W' in model_dict.keys():
         model._l1_reg_W = model_dict['_l1_reg_W']
     if '_l1_reg_H' in model_dict.keys():
@@ -485,7 +485,7 @@ def deserialize_minibatch_dictionary_learning(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -511,7 +511,7 @@ def deserialize_sparse_coder(model_dict):
     model = SparseCoder(**model_dict['params'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -543,6 +543,6 @@ def deserialize_truncated_svd(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model

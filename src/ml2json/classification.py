@@ -73,7 +73,7 @@ def deserialize_logistic_regression(model_dict):
     model.n_iter_ = np.array(model_dict['intercept_'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -105,7 +105,7 @@ def deserialize_bernoulli_nb(model_dict):
     model.feature_log_prob_ = np.array(model_dict['feature_log_prob_'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -139,7 +139,7 @@ def deserialize_gaussian_nb(model_dict):
     model.epsilon_ = model_dict['epsilon_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -171,7 +171,7 @@ def deserialize_multinomial_nb(model_dict):
     model.feature_log_prob_ = np.array(model_dict['feature_log_prob_'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -205,7 +205,7 @@ def deserialize_complement_nb(model_dict):
     model.feature_all_ = np.array(model_dict['feature_all_'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -245,7 +245,7 @@ def deserialize_lda(model_dict):
     model.classes_ = np.array(model_dict['classes_']).astype(np.int64)
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -279,7 +279,7 @@ def deserialize_qda(model_dict):
     model.classes_ = np.array(model_dict['classes_']).astype(np.int64)
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -353,7 +353,7 @@ def deserialize_svm(model_dict):
         model._dual_coef_ = np.array(model_dict['_dual_coef_']).astype(np.float64)
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -511,7 +511,7 @@ def deserialize_gradient_boosting(model_dict):
         model.init_.priors = np.array(model_dict['priors'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -582,7 +582,7 @@ def deserialize_random_forest(model_dict):
         model.oob_decision_function_ = model_dict['oob_decision_function_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -614,7 +614,7 @@ def deserialize_perceptron(model_dict):
     model.classes_ = np.array(model_dict['classes_']).astype(np.int64)
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -659,7 +659,7 @@ def deserialize_mlp(model_dict):
     model.classes_ = np.array(model_dict['classes_'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -693,7 +693,7 @@ if 'XGBClassifier' in __optionals__:
         os.remove(filename)
 
         if 'feature_names_in_' in model_dict.keys():
-            model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+            model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
         return model
 
@@ -727,7 +727,7 @@ if 'XGBRFClassifier' in __optionals__:
         os.remove(filename)
 
         if 'feature_names_in_' in model_dict.keys():
-            model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+            model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
         return model
 
@@ -779,7 +779,7 @@ if 'LGBMClassifier' in __optionals__:
         model._other_params = model_dict['_other_params']
 
         if 'feature_names_in_' in model_dict.keys():
-            model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+            model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
         return model
 
@@ -813,7 +813,7 @@ if 'CatBoostClassifier' in __optionals__:
         os.remove(filename)
 
         if 'feature_names_in_' in model_dict.keys():
-            model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+            model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
         return model
 
@@ -876,7 +876,7 @@ def deserialize_adaboost_classifier(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -967,7 +967,7 @@ def deserialize_bagging_classifier(model_dict):
         model.n_classes_ = model_dict['n_classes_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -1010,7 +1010,7 @@ def deserialize_extra_tree_classifier(model_dict):
     deserialized_model.tree_ = tree
 
     if 'feature_names_in_' in model_dict.keys():
-        deserialized_model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        deserialized_model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return deserialized_model
 
@@ -1090,7 +1090,7 @@ def deserialize_extratrees_classifier(model_dict):
         model.n_classes_ = model_dict['n_classes_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -1165,7 +1165,7 @@ def deserialize_isolation_forest(model_dict):
     model.estimator_params = tuple(model_dict['estimator_params'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -1236,7 +1236,7 @@ def deserialize_random_trees_embedding(model_dict):
     model.estimator_params = tuple(model_dict['estimator_params'])
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -1298,7 +1298,7 @@ def deserialize_nearest_neighbour_classifier(model_dict):
         model._tree = None
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -1348,7 +1348,7 @@ def deserialize_stacking_classifier(model_dict):
     model.named_estimators_ = {model_name: deserialize_model(submodel) for model_name, submodel in model_dict['named_estimators_'].items()}
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if '_le' in model_dict.keys():
         model._le = deserialize_label_encoder(model_dict['_le'])
     else:
@@ -1396,6 +1396,6 @@ def deserialize_voting_classifier(model_dict):
     model.named_estimators_ = {model_name: deserialize_model(submodel) for model_name, submodel in model_dict['named_estimators_'].items()}
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model

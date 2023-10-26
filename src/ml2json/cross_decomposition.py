@@ -65,7 +65,7 @@ def deserialize_cca(model_dict):
     model.algorithm = model_dict['algorithm']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -128,7 +128,7 @@ def deserialize_pls_canonical(model_dict):
     model.mode = model_dict['mode']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -195,7 +195,7 @@ def deserialize_pls_regression(model_dict):
     model.mode = model_dict['mode']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
 
@@ -233,6 +233,6 @@ def deserialize_pls_svd(model_dict):
     model._n_features_out = model_dict['_n_features_out']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
