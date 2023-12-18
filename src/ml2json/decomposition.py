@@ -69,6 +69,9 @@ def serialize_kernel_pca(model):
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
+    if 'gamma_' in model.__dict__:
+        serialized_model['gamma_'] = model.gamma_
+
     return serialized_model
 
 
@@ -83,6 +86,9 @@ def deserialize_kernel_pca(model_dict):
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+
+    if 'gamma_' in model_dict.keys():
+        model.gamma_ = model_dict['gamma_']
 
     return model
 
