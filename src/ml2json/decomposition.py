@@ -159,13 +159,17 @@ def serialize_fast_ica(model):
         'whitening_': model.whitening_.tolist(),
         'mean_': model.mean_.tolist(),
         'n_iter_': model.n_iter_,
-        '_whiten': model._whiten,
         'n_features_in_': model.n_features_in_,
         'params': model.get_params(),
     }
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+        
+    if '_whiten' in model.__dict__:
+        serialized_model['_whiten'] = model._whiten
+    else:
+        serialized_model['whiten'] = model.whiten
 
     return serialized_model
 
@@ -178,11 +182,15 @@ def deserialize_fast_ica(model_dict):
     model.whitening_ = np.array(model_dict['whitening_'])
     model.mean_ = np.array(model_dict['mean_'])
     model.n_iter_ = model_dict['n_iter_']
-    model._whiten = model_dict['_whiten']
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+
+    if '_whiten' in model_dict.keys():
+        model._whiten = model_dict['_whiten']
+    else:
+        model.whithen = model_dict['whiten']
 
     return model
 
