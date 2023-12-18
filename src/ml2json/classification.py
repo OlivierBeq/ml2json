@@ -1114,7 +1114,7 @@ def serialize_isolation_forest(model):
         'estimator_params': list(model.estimator_params),
         'params': model.get_params()
     }
-
+    
     if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
         serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
                                                type(model.base_estimator_).__name__,
@@ -1130,6 +1130,12 @@ def serialize_isolation_forest(model):
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    if '_decision_path_lengths' in model.__dict__:
+        serialized_model['_decision_path_lengths'] = [array.tolist() for array in model._decision_path_lengths]
+        
+    if '_average_path_length_per_tree' in model.__dict__:
+        serialized_model['_average_path_length_per_tree'] = [array.tolist() for array in model._average_path_length_per_tree]
 
     return serialized_model
 
@@ -1168,6 +1174,12 @@ def deserialize_isolation_forest(model_dict):
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+        
+    if '_decision_path_lengths' in model_dict.keys():
+        model._decision_path_lengths = tuple([np.array(array) for array in model_dict['_decision_path_lengths']])
+    
+    if '_average_path_length_per_tree' in model_dict.keys():
+        model._average_path_length_per_tree = tuple([np.array(array) for array in model_dict['_average_path_length_per_tree']])
 
     return model
 
