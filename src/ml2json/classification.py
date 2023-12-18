@@ -384,6 +384,8 @@ def deserialize_tree(tree_dict, n_features, n_classes, n_outputs):
     tree_dict['nodes'] = [tuple(lst) for lst in tree_dict['nodes']]
 
     names = ['left_child', 'right_child', 'feature', 'threshold', 'impurity', 'n_node_samples', 'weighted_n_node_samples']
+    if sklearn.__version__ >= '1.3':
+        names.append('missing_go_to_left')
     tree_dict['nodes'] = np.array(tree_dict['nodes'], dtype=np.dtype({'names': names, 'formats': tree_dict['nodes_dtype']}))
     tree_dict['values'] = np.array(tree_dict['values'])
 
