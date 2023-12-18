@@ -203,6 +203,9 @@ def serialize_onehot_encoder(model):
 
     serialized_model['params']['dtype'] = (inspect.getmodule(serialized_model['params']['dtype']).__name__,
                                            serialized_model['params']['dtype'].__name__)
+    
+    if '_drop_idx_after_grouping' in model.__dict__: 
+        serialized_model['_drop_idx_after_grouping'] = model._drop_idx_after_grouping.tolist() if model._drop_idx_after_grouping is not None else None
 
     return serialized_model
 
@@ -219,5 +222,8 @@ def deserialize_onehot_encoder(model_dict):
     model._infrequent_enabled = model_dict['_infrequent_enabled']
     model.n_features_in_ = model_dict['n_features_in_']
     model._n_features_outs = model_dict['_n_features_outs']
+    
+    if '_drop_idx_after_grouping' in model_dict.keys():
+        model._drop_idx_after_grouping = np.array(model_dict['_drop_idx_after_grouping']) if model_dict['_drop_idx_after_grouping'] is not None else None
 
     return model
