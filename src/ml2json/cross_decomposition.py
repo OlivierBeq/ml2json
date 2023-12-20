@@ -14,7 +14,6 @@ def serialize_cca(model):
         'y_loadings_': model.y_loadings_.tolist(),
         'x_rotations_': model.x_rotations_.tolist(),
         'y_rotations_': model.y_rotations_.tolist(),
-        '_coef_': model._coef_.tolist(),
         'intercept_': model.intercept_.tolist(),
         'n_iter_': model.n_iter_,
         'n_features_in_': model.n_features_in_,
@@ -34,6 +33,14 @@ def serialize_cca(model):
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+    
+    if '_coef_' in model.__dict__:
+        serialized_model['_coef_'] = model._coef_.tolist()
+    else:
+        serialized_model['coef_'] = model.coef_.tolist()
+        
+    if "_predict_1d" in model.__dict__:
+        serialized_model["_predict_1d"] = model._predict_1d
 
     return serialized_model
 
@@ -47,7 +54,6 @@ def deserialize_cca(model_dict):
     model.y_loadings_ = np.array(model_dict['y_loadings_'])
     model.x_rotations_ = np.array(model_dict['x_rotations_'])
     model.y_rotations_ = np.array(model_dict['y_rotations_'])
-    model._coef_ = np.array(model_dict['_coef_'])
     model.intercept_ = np.array(model_dict['intercept_'])
     model.n_iter_ = model_dict['n_iter_']
     model.n_features_in_ = model_dict['n_features_in_']
@@ -67,6 +73,14 @@ def deserialize_cca(model_dict):
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
+    if '_coef_' in model_dict.keys():
+        model._coef_ = np.array(model_dict['_coef_'])
+    else:
+        model.coef_ = np.array(model_dict['coef_'])
+       
+    if "_predict_1d" in model_dict.keys():
+        model._predict_1d = model_dict["_predict_1d"]
+
     return model
 
 
@@ -79,7 +93,6 @@ def serialize_pls_canonical(model):
         'y_loadings_': model.y_loadings_.tolist(),
         'x_rotations_': model.x_rotations_.tolist(),
         'y_rotations_': model.y_rotations_.tolist(),
-        '_coef_': model._coef_.tolist(),
         'intercept_': model.intercept_.tolist(),
         'n_iter_': model.n_iter_,
         'n_features_in_': model.n_features_in_,
@@ -98,6 +111,14 @@ def serialize_pls_canonical(model):
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+    
+    if '_coef_' in model.__dict__:
+        serialized_model['_coef_'] = model._coef_.tolist()
+    else:
+        serialized_model['coef_'] = model.coef_.tolist()
+        
+    if "_predict_1d" in model.__dict__:
+        serialized_model["_predict_1d"] = model._predict_1d
 
     return serialized_model
 
@@ -111,7 +132,6 @@ def deserialize_pls_canonical(model_dict):
     model.y_loadings_ = np.array(model_dict['y_loadings_'])
     model.x_rotations_ = np.array(model_dict['x_rotations_'])
     model.y_rotations_ = np.array(model_dict['y_rotations_'])
-    model._coef_ = np.array(model_dict['_coef_'])
     model.intercept_ = np.array(model_dict['intercept_'])
     model.n_iter_ = model_dict['n_iter_']
     model.n_features_in_ = model_dict['n_features_in_']
@@ -129,6 +149,14 @@ def deserialize_pls_canonical(model_dict):
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+    
+    if '_coef_' in model_dict.keys():
+        model._coef_ = np.array(model_dict['_coef_'])
+    else:
+        model.coef_ = np.array(model_dict['coef_'])
+        
+    if "_predict_1d" in model_dict.keys():
+        model._predict_1d = model_dict["_predict_1d"]
 
     return model
 
@@ -142,7 +170,6 @@ def serialize_pls_regression(model):
         'y_loadings_': model.y_loadings_.tolist(),
         'x_rotations_': model.x_rotations_.tolist(),
         'y_rotations_': model.y_rotations_.tolist(),
-        '_coef_': model._coef_.tolist(),
         'intercept_': model.intercept_.tolist(),
         'n_iter_': model.n_iter_,
         'n_features_in_': model.n_features_in_,
@@ -164,6 +191,14 @@ def serialize_pls_regression(model):
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
+    if '_coef_' in model.__dict__:
+        serialized_model['_coef_'] = model._coef_.tolist()
+    else:
+        serialized_model['coef_'] = model.coef_.tolist()
+        
+    if "_predict_1d" in model.__dict__:
+        serialized_model["_predict_1d"] = model._predict_1d
+
     return serialized_model
 
 
@@ -176,7 +211,6 @@ def deserialize_pls_regression(model_dict):
     model.y_loadings_ = np.array(model_dict['y_loadings_'])
     model.x_rotations_ = np.array(model_dict['x_rotations_'])
     model.y_rotations_ = np.array(model_dict['y_rotations_'])
-    model._coef_ = np.array(model_dict['_coef_'])
     model.intercept_ = np.array(model_dict['intercept_'])
     model.n_iter_ = model_dict['n_iter_']
     model.n_features_in_ = model_dict['n_features_in_']
@@ -196,6 +230,14 @@ def deserialize_pls_regression(model_dict):
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+        
+    if '_coef_' in model_dict.keys():
+        model._coef_ = np.array(model_dict['_coef_'])
+    else:
+        model.coef_ = np.array(model_dict['coef_'])
+    
+    if "_predict_1d" in model_dict.keys():
+        model._predict_1d = model_dict["_predict_1d"]
 
     return model
 
