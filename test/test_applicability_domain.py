@@ -12,8 +12,7 @@ from mlchemad.applicability_domains import (BoundingBoxApplicabilityDomain,
                                             KernelDensityApplicabilityDomain,
                                             IsolationForestApplicabilityDomain,
                                             CentroidDistanceApplicabilityDomain,
-                                            KNNApplicabilityDomain,
-                                            StandardizationApproachApplicabilityDomain)
+                                            KNNApplicabilityDomain)
 
 from src import ml2json
 
@@ -23,7 +22,9 @@ class TestAPI(unittest.TestCase):
         self.X = fetch_california_housing()['data']
         
     def check_applicability_domain(self, applicability_domain, model_name):
-        applicability_domain.fit(self.X)
+        for fit in [True, False]:
+            if fit:
+                applicability_domain.fit(self.X)
         expected_c = applicability_domain.contains(self.X)
 
         serialized_dict_model = ml2json.to_dict(applicability_domain)
@@ -33,11 +34,22 @@ class TestAPI(unittest.TestCase):
         deserialized_json_model = ml2json.from_json(model_name)
         os.remove(model_name)
 
-        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
-            actual_c = deserialized_model.contains(self.X)
+        if fit:
+            for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+                actual_c = deserialized_model.contains(self.X)
 
-            np.testing.assert_array_equal(expected_c, actual_c)
+                np.testing.assert_array_equal(expected_c, actual_c)
             
     def test_bounding_box_applicability_domain(self):
         model = BoundingBoxApplicabilityDomain()
+        self.check_applicability_domain(model, 'bounding-box-ad.json')
+        
+        # check with extremum values per feature
+        model = BoundingBoxApplicabilityDomain(
+            range_=(list(self.X.min(axis=0)),
+                    list(self.X.max(axis=0))))
+        self.check_applicability_domain(model, 'bounding-box-ad.json')
+        
+        # check with percentiles is None
+        model = BoundingBoxApplicabilityDomain(percentiles=None)
         self.check_applicability_domain(model, 'bounding-box-ad.json')
