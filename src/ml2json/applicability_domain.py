@@ -2,6 +2,7 @@
 
 import inspect
 import importlib
+import ml2json
 
 import numpy as np
 
@@ -83,18 +84,39 @@ def deserialize_convex_hull_applicability_domain(model_dict):
     return model
 
 def serialize_pca_bounding_box_applicability_domain(model):
-    # serialized_model = {
-    #     'meta': 'pca-bounding-box-ad',
-    # }
+    serialized_model = {
+        'meta': 'pca-bounding-box-ad',
+        'fitted_': model.fitted_,
+        'scaler': ml2json.to_dict(model.scaler),
+        'min_explained_var': model.min_explained_var,
+        'pca': ml2json.to_dict(model.pca),
+    }
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            'min_': model.min_.tolist(),
+            'max_': model.max_.tolist(),
+            }
+        )
     
-    # return serialized_model
-    return NotImplementedError
+    return serialized_model
 
 def deserialize_pca_bounding_box_applicability_domain(model_dict):
-    # model = PCABoundingBoxApplicabilityDomain()
+    model = PCABoundingBoxApplicabilityDomain()
+    model.fitted_ = model_dict['fitted_']
+    model.scaler = ml2json.from_dict(model_dict['scaler'])
+    model.min_explained_var = model_dict['min_explained_var']
+    model.pca = ml2json.from_dict(model_dict['pca'])
+    
+    if model.fitted_:
+        model.num_points = model_dict['num_points']
+        model.num_dims = model_dict['num_dims']
+        model.min_ = np.array(model_dict['min_'])
+        model.max_ = np.array(model_dict['max_'])
 
-    # return model
-    return NotImplementedError
+    return model
 
 def serialize_topkat_applicability_domain(model):
     # serialized_model = {
