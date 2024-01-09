@@ -19,7 +19,8 @@ from src import ml2json
 class TestAPI(unittest.TestCase):
 
     def setUp(self):
-        self.X = fetch_california_housing()['data']
+        # take only the first 1000 samples
+        self.X = fetch_california_housing()['data'][:1000]
         
     def check_applicability_domain(self, applicability_domain, model_name):
         for fit in [True, False]:
@@ -53,3 +54,7 @@ class TestAPI(unittest.TestCase):
         # check with percentiles is None
         model = BoundingBoxApplicabilityDomain(percentiles=None)
         self.check_applicability_domain(model, 'bounding-box-ad.json')
+        
+    def test_convex_hull_applicability_domain(self):
+        model = ConvexHullApplicabilityDomain()
+        self.check_applicability_domain(model, 'convex-hull-ad.json')

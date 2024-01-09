@@ -56,18 +56,31 @@ def deserialize_bounding_box_applicability_domain(model_dict):
     return model
 
 def serialize_convex_hull_applicability_domain(model):
-    # serialized_model = {
-    #     'meta': 'convex-hull-ad',
-    # }
+    serialized_model = {
+        'meta': 'convex-hull-ad',
+        'fitted_': model.fitted_,
+    }
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            'points': model.points.tolist(),
+            }
+        )
     
-    # return serialized_model
-    return NotImplementedError
+    return serialized_model
 
 def deserialize_convex_hull_applicability_domain(model_dict):
-    # model = ConvexHullApplicabilityDomain()
+    model = ConvexHullApplicabilityDomain()
+    model.fitted_ = model_dict['fitted_']
+    
+    if model.fitted_:
+        model.num_points = model_dict['num_points']
+        model.num_dims = model_dict['num_dims']
+        model.points = np.array(model_dict['points'])
 
-    # return model
-    return NotImplementedError
+    return model
 
 def serialize_pca_bounding_box_applicability_domain(model):
     # serialized_model = {
