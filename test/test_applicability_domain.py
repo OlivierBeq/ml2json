@@ -60,5 +60,6 @@ class TestAPI(unittest.TestCase):
         self.check_applicability_domain(model, 'convex-hull-ad.json')
         
     def test_pca_bounding_box_applicability_domain(self):
+        # TODO add robust scaler and maxabsscaler to ml2json
         model = PCABoundingBoxApplicabilityDomain(scaling='standard')
         self.check_applicability_domain(model, 'pca-bounding-box-ad.json')
