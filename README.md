@@ -225,9 +225,9 @@ ml2json requires scikit-learn >= 0.21.3.
 | Scikit-Learn       | Naive Bayes                               | naive_bayes.MultinomialNB                           | :heavy_check_mark: |
 | Scikit-Learn       | Nearest Neighbors                         | neighbors.BallTree                                  |        :x:         |
 | Scikit-Learn       | Nearest Neighbors                         | neighbors.KDTree                                    | :heavy_check_mark: |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.KernelDensity                             |        :x:         |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsClassifier                      |        :x:         |
-| Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsRegressor                       |        :x:         |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.KernelDensity                             | :heavy_check_mark: |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsClassifier                      | :heavy_check_mark: |
+| Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsRegressor                       | :heavy_check_mark: |
 | Scikit-Learn       | Nearest Neighbors                         | neighbors.KNeighborsTransformer                     |        :x:         |
 | Scikit-Learn       | Nearest Neighbors                         | neighbors.LocalOutlierFactor                        |        :x:         |
 | Scikit-Learn       | Nearest Neighbors                         | neighbors.RadiusNeighborsClassifier                 |        :x:         |
@@ -248,7 +248,7 @@ ml2json requires scikit-learn >= 0.21.3.
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.LabelBinarizer                        | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.LabelEncoder                          | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MultiLabelBinarizer                   | :heavy_check_mark: |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MaxAbsScaler                          |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MaxAbsScaler                          | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MinMaxScaler                          | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.Normalizer                            |        :x:         |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.OneHotEncoder                         | :heavy_check_mark: |
@@ -256,7 +256,7 @@ ml2json requires scikit-learn >= 0.21.3.
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.PolynomialFeatures                    |        :x:         |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.PowerTransformer                      |        :x:         |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.QuantileTransformer                   |        :x:         |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.RobustScaler                          |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.RobustScaler                          | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.SplineTransformer                     |        :x:         |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.StandardScaler                        | :heavy_check_mark: |
 | Scikit-Learn       | Random projection                         | random_projection.GaussianRandomProjection          |        :x:         |
@@ -330,3 +330,14 @@ ml2json requires scikit-learn >= 0.21.3.
 | Prince             | Decomposition                             | MFA                                                 |        :x:         |
 | Prince             | Decomposition                             | FAMD                                                |        :x:         |
 | Prince             | Decomposition                             | GPA                                                 |        :x:         |
+| MLChemAD           | Applicability Domain                      | BoundingBoxApplicabilityDomain                      | :heavy_check_mark: |
+| MLChemAD           | Applicability Domain                      | ConvexHullApplicabilityDomain                       | :heavy_check_mark: |
+| MLChemAD           | Applicability Domain                      | PCABoundingBoxApplicabilityDomain                   | :heavy_check_mark: |
+| MLChemAD           | Applicability Domain                      | TopKatApplicabilityDomain                           | :heavy_check_mark: |
+| MLChemAD           | Applicability Domain                      | LeverageApplicabilityDomain                         | :heavy_check_mark: |
+| MLChemAD           | Applicability Domain                      | HotellingT2ApplicabilityDomain                      | :heavy_check_mark: |
+| MLChemAD           | Applicability Domain                      | KernelDensityApplicabilityDomain                    | :heavy_check_mark: |
+| MLChemAD           | Applicability Domain                      | IsolationForestApplicabilityDomain                  | :heavy_check_mark: |
+| MLChemAD           | Applicability Domain                      | CentroidDistanceApplicabilityDomain                 | :heavy_check_mark: |
+| MLChemAD           | Applicability Domain                      | KNNApplicabilityDomain                              | :heavy_check_mark: |
+| MLChemAD           | Applicability Domain                      | StandardizationApproachApplicabilityDomain          | :heavy_check_mark: |
