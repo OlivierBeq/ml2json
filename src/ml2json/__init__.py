@@ -23,7 +23,7 @@ from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
                                    MinMaxScaler, StandardScaler, KernelCenterer,
-                                   OneHotEncoder)
+                                   OneHotEncoder, RobustScaler, MaxAbsScaler)
 from sklearn.svm import SVR
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
@@ -409,6 +409,12 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
     elif isinstance(model, StandardScaler):
         model_dict = pre.serialize_standard_scaler(model)
         return serialize_version(model, model_dict)
+    elif isinstance(model, RobustScaler):
+        model_dict = pre.serialize_robust_scaler(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, MaxAbsScaler):
+        model_dict = pre.serialize_maxabs_scaler(model)
+        return serialize_version(model, model_dict)
     elif isinstance(model, KernelCenterer):
         model_dict = pre.serialize_kernel_centerer(model)
         return serialize_version(model, model_dict)
@@ -780,6 +786,12 @@ def deserialize_model(model_dict: Dict):
     elif model_dict['meta'] == 'standard-scaler':
         check_version(model_dict)
         return pre.deserialize_standard_scaler(model_dict)
+    elif model_dict['meta'] == 'robust-scaler':
+        check_version(model_dict)
+        return pre.deserialize_robust_scaler(model_dict)
+    elif model_dict['meta'] == 'maxabs-scaler':
+        check_version(model_dict)
+        return pre.deserialize_maxabs_scaler(model_dict)
     elif model_dict['meta'] == 'kernel-centerer':
         check_version(model_dict)
         return pre.deserialize_kernel_centerer(model_dict)
