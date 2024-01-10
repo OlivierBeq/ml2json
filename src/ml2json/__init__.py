@@ -37,17 +37,6 @@ from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAna
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
 from sklearn.neighbors import NearestNeighbors, KDTree, KNeighborsClassifier, KNeighborsRegressor, KernelDensity
-from mlchemad.applicability_domains import (BoundingBoxApplicabilityDomain,
-                                            ConvexHullApplicabilityDomain,
-                                            PCABoundingBoxApplicabilityDomain,
-                                            TopKatApplicabilityDomain,
-                                            LeverageApplicabilityDomain,
-                                            HotellingT2ApplicabilityDomain,
-                                            KernelDensityApplicabilityDomain,
-                                            IsolationForestApplicabilityDomain,
-                                            CentroidDistanceApplicabilityDomain,
-                                            KNNApplicabilityDomain,
-                                            StandardizationApproachApplicabilityDomain)
 
 from . import classification as clf
 from . import regression as reg
@@ -80,6 +69,18 @@ if 'NNDescent' in nei.__optionals__:
     from pynndescent import NNDescent
 if 'UMAP' in man.__optionals__:
     from umap import UMAP
+if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
+    from mlchemad.applicability_domains import (BoundingBoxApplicabilityDomain,
+                                                ConvexHullApplicabilityDomain,
+                                                PCABoundingBoxApplicabilityDomain,
+                                                TopKatApplicabilityDomain,
+                                                LeverageApplicabilityDomain,
+                                                HotellingT2ApplicabilityDomain,
+                                                KernelDensityApplicabilityDomain,
+                                                IsolationForestApplicabilityDomain,
+                                                CentroidDistanceApplicabilityDomain,
+                                                KNNApplicabilityDomain,
+                                                StandardizationApproachApplicabilityDomain)
 
 
 __version__ = '0.2.2'
