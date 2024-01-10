@@ -250,18 +250,32 @@ def deserialize_kernel_density_applicability_domain(model_dict):
     return model
 
 def serialize_isolation_forest_applicability_domain(model):
-    # serialized_model = {
-    #     'meta': 'isolation-forest-ad',
-    # }
+    serialized_model = {
+        'meta': 'isolation-forest-ad',
+        'fitted_': model.fitted_,
+        'isol': ml2json.to_dict(model.isol),
+    }
     
-    # return serialized_model
-    return NotImplementedError
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            }
+        )
+    
+    return serialized_model
 
 def deserialize_isolation_forest_applicability_domain(model_dict):
-    # model = IsolationForestApplicabilityDomain()
+    model = IsolationForestApplicabilityDomain()
+    model.fitted_ = model_dict['fitted_']
+    model.isol = ml2json.from_dict(model_dict['isol'])
+    
+    if model.fitted_:
+        model.num_points = model_dict['num_points']
+        model.num_dims = model_dict['num_dims']
 
-    # return model
-    return NotImplementedError
+    return model
 
 def serialize_centroid_distance_applicability_domain(model):
     # serialized_model = {

@@ -80,3 +80,7 @@ class TestAPI(unittest.TestCase):
     # def test_kernel_density_applicability_domain(self):
     #     model = KernelDensityApplicabilityDomain()
     #     self.check_applicability_domain(model, 'kernel-density-ad.json')
+    
+    def test_isolation_forest_applicability_domain(self):
+        model = IsolationForestApplicabilityDomain()
+        self.check_applicability_domain(model, 'isolation-forest-ad.json')
