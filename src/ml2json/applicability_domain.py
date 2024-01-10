@@ -218,18 +218,36 @@ def deserialize_hotelling_t2_applicability_domain(model_dict):
     return model
 
 def serialize_kernel_density_applicability_domain(model):
-    # serialized_model = {
-    #     'meta': 'kernel-density-ad',
-    # }
+    serialized_model = {
+        'meta': 'kernel-density-ad',
+        'fitted_': model.fitted_,
+        'kde': ml2json.to_dict(model.kde), # TODO: add ml2json.to_dict(model.kde)
+        'threshold': model.threshold,
+    }
     
-    # return serialized_model
-    return NotImplementedError
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            'cutoff': model.cutoff,
+            }
+        )
+    
+    return serialized_model
 
 def deserialize_kernel_density_applicability_domain(model_dict):
-    # model = KernelDensityApplicabilityDomain()
+    model = KernelDensityApplicabilityDomain()
+    model.fitted_ = model_dict['fitted_']
+    model.kde = ml2json.from_dict(model_dict['kde'])
+    model.threshold = model_dict['threshold']
+    
+    if model.fitted_:
+        model.num_points = model_dict['num_points']
+        model.num_dims = model_dict['num_dims']
+        model.cutoff = model_dict['cutoff']
 
-    # return model
-    return NotImplementedError
+    return model
 
 def serialize_isolation_forest_applicability_domain(model):
     # serialized_model = {
