@@ -12,7 +12,8 @@ from mlchemad.applicability_domains import (BoundingBoxApplicabilityDomain,
                                             KernelDensityApplicabilityDomain,
                                             IsolationForestApplicabilityDomain,
                                             CentroidDistanceApplicabilityDomain,
-                                            KNNApplicabilityDomain)
+                                            KNNApplicabilityDomain,
+                                            StandardizationApproachApplicabilityDomain)
 
 from src import ml2json
 
@@ -92,3 +93,7 @@ class TestAPI(unittest.TestCase):
     def test_knn_applicability_domain(self):
         model = KNNApplicabilityDomain(scaling='standard')
         self.check_applicability_domain(model, 'knn-ad.json')
+        
+    def test_standardization_approach_applicability_domain(self):
+        model = StandardizationApproachApplicabilityDomain()
+        self.check_applicability_domain(model, 'standardization-approach-ad.json')

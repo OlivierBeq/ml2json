@@ -46,7 +46,8 @@ from mlchemad.applicability_domains import (BoundingBoxApplicabilityDomain,
                                             KernelDensityApplicabilityDomain,
                                             IsolationForestApplicabilityDomain,
                                             CentroidDistanceApplicabilityDomain,
-                                            KNNApplicabilityDomain)
+                                            KNNApplicabilityDomain,
+                                            StandardizationApproachApplicabilityDomain)
 
 from . import classification as clf
 from . import regression as reg
@@ -443,9 +444,9 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
     elif isinstance(model, KNNApplicabilityDomain):
         model_dict = ad.serialize_knn_applicability_domain(model)
         return serialize_version(model, model_dict)
-    # elif isinstance(model, StandardizationApproachApplicabilityDomain):
-    #     model_dict = ad.serialize_standardization_approach_applicability_domain(model)
-    #     return serialize_version(model, model_dict)
+    elif isinstance(model, StandardizationApproachApplicabilityDomain):
+        model_dict = ad.serialize_standardization_approach_applicability_domain(model)
+        return serialize_version(model, model_dict)
 
     # Otherwise
     else:
@@ -811,9 +812,9 @@ def deserialize_model(model_dict: Dict):
     elif model_dict['meta'] == 'knn-ad':
         check_version(model_dict)
         return ad.deserialize_knn_applicability_domain(model_dict)
-    # elif model_dict['meta'] == 'standardization-approach-ad':
-    #     check_version(model_dict)
-    #     return ad.deserialize_standardization_approach_applicability_domain(model_dict)   
+    elif model_dict['meta'] == 'standardization-approach-ad':
+        check_version(model_dict)
+        return ad.deserialize_standardization_approach_applicability_domain(model_dict)   
 
     # Otherwise
     else:

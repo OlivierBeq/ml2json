@@ -15,7 +15,8 @@ from mlchemad.applicability_domains import (BoundingBoxApplicabilityDomain,
                                             KernelDensityApplicabilityDomain,
                                             IsolationForestApplicabilityDomain,
                                             CentroidDistanceApplicabilityDomain,
-                                            KNNApplicabilityDomain)
+                                            KNNApplicabilityDomain,
+                                            StandardizationApproachApplicabilityDomain)
 
 
 def serialize_bounding_box_applicability_domain(model):
@@ -354,15 +355,29 @@ def deserialize_knn_applicability_domain(model_dict):
     return model
 
 def serialize_standardization_approach_applicability_domain(model):
-    # serialized_model = {
-    #     'meta': 'standardization-approach-ad',
-    # }
+    serialized_model = {
+        'meta': 'standardization-approach-ad',
+        'fitted_': model.fitted_,
+        'scaler': ml2json.to_dict(model.scaler),
+    }
     
-    # return serialized_model
-    return NotImplementedError
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            }
+        )
+    
+    return serialized_model
 
 def deserialize_standardization_approach_applicability_domain(model_dict):
-    # model = StandardizationApproachApplicabilityDomain()
+    model = StandardizationApproachApplicabilityDomain()
+    model.fitted_ = model_dict['fitted_']
+    model.scaler = ml2json.from_dict(model_dict['scaler'])
+    
+    if model.fitted_:
+        model.num_points = model_dict['num_points']
+        model.num_dims = model_dict['num_dims']
 
-    # return model
-    return NotImplementedError
+    return model
