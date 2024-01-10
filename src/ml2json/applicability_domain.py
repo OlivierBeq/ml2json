@@ -278,18 +278,38 @@ def deserialize_isolation_forest_applicability_domain(model_dict):
     return model
 
 def serialize_centroid_distance_applicability_domain(model):
-    # serialized_model = {
-    #     'meta': 'centroid-distance-ad',
-    # }
+    serialized_model = {
+        'meta': 'centroid-distance-ad',
+        'fitted_': model.fitted_,
+        'dist': model.dist,
+        'scaler': ml2json.to_dict(model.scaler),
+        'threshold': model.threshold if model.threshold is not None else None,
+    }
     
-    # return serialized_model
-    return NotImplementedError
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            'centroid': model.centroid.tolist(),
+            }
+        )
+    
+    return serialized_model
 
 def deserialize_centroid_distance_applicability_domain(model_dict):
-    # model = CentroidDistanceApplicabilityDomain()
+    model = CentroidDistanceApplicabilityDomain()
+    model.fitted_ = model_dict['fitted_']
+    model.dist = model_dict['dist']
+    model.scaler = ml2json.from_dict(model_dict['scaler'])
+    model.threshold = model_dict['threshold']
+    
+    if model.fitted_:
+        model.num_points = model_dict['num_points']
+        model.num_dims = model_dict['num_dims']
+        model.centroid = np.array(model_dict['centroid'])
 
-    # return model
-    return NotImplementedError
+    return model
 
 def serialize_knn_applicability_domain(model):
     # serialized_model = {

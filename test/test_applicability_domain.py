@@ -84,3 +84,7 @@ class TestAPI(unittest.TestCase):
     def test_isolation_forest_applicability_domain(self):
         model = IsolationForestApplicabilityDomain()
         self.check_applicability_domain(model, 'isolation-forest-ad.json')
+        
+    def test_centroid_distance_applicability_domain(self):
+        model = CentroidDistanceApplicabilityDomain()
+        self.check_applicability_domain(model, 'centroid-distance-ad.json')
