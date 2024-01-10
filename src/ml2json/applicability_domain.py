@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import inspect
-import importlib
 import ml2json
-
 import numpy as np
 
 from mlchemad.applicability_domains import (BoundingBoxApplicabilityDomain,
@@ -316,7 +313,7 @@ def serialize_knn_applicability_domain(model):
     serialized_model = {
         'meta': 'knn-ad',
         'fitted_': model.fitted_,
-        'scaler': ml2json.to_dict(model.scaler),
+        'scaler': ml2json.to_dict(model.scaler) if model.scaler is not None else None,
         'dist': model.dist,
         'k': model.k,
         'alpha': model.alpha,
@@ -339,7 +336,9 @@ def serialize_knn_applicability_domain(model):
 def deserialize_knn_applicability_domain(model_dict):
     model = KNNApplicabilityDomain()
     model.fitted_ = model_dict['fitted_']
-    model.scaler = ml2json.from_dict(model_dict['scaler'])
+    model.scaler = (ml2json.from_dict(model_dict['scaler'])
+                    if model_dict['scaler'] is not None
+                    else None)
     model.dist = model_dict['dist']
     model.k = model_dict['k']
     model.alpha = model_dict['alpha']

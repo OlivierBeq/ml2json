@@ -89,7 +89,10 @@ class TestAPI(unittest.TestCase):
         self.check_applicability_domain(model, 'centroid-distance-ad.json')
         
     def test_knn_applicability_domain(self):
-        model = KNNApplicabilityDomain(scaling='standard')
+        model = KNNApplicabilityDomain()
+        self.check_applicability_domain(model, 'knn-ad.json')
+        
+        model = KNNApplicabilityDomain(scaling=None)
         self.check_applicability_domain(model, 'knn-ad.json')
         
     def test_standardization_approach_applicability_domain(self):
