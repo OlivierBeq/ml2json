@@ -67,3 +67,11 @@ class TestAPI(unittest.TestCase):
     def test_topkat_applicability_domain(self):
         model = TopKatApplicabilityDomain()
         self.check_applicability_domain(model, 'topkat-ad.json')
+        
+    def test_leverage_applicability_domain(self):
+        model = LeverageApplicabilityDomain()
+        self.check_applicability_domain(model, 'leverage-ad.json')
+        
+    def test_hotelling_t2_applicability_domain(self):
+        model = HotellingT2ApplicabilityDomain()
+        self.check_applicability_domain(model, 'hotelling-t2-ad.json')

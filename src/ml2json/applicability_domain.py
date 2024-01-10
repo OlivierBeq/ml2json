@@ -156,32 +156,66 @@ def deserialize_topkat_applicability_domain(model_dict):
     return model
 
 def serialize_leverage_applicability_domain(model):
-    # serialized_model = {
-    #     'meta': 'leverage-ad',
-    # }
+    serialized_model = {
+        'meta': 'leverage-ad',
+        'fitted_': model.fitted_,
+        'scaler': ml2json.to_dict(model.scaler),
+    }
     
-    # return serialized_model
-    return NotImplementedError
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            'var_covar': model.var_covar.tolist(),
+            'threshold': model.threshold,
+            }
+        )
+    
+    return serialized_model
 
 def deserialize_leverage_applicability_domain(model_dict):
-    # model = LeverageApplicabilityDomain()
+    model = LeverageApplicabilityDomain()
+    model.fitted_ = model_dict['fitted_']
+    model.scaler = ml2json.from_dict(model_dict['scaler'])
+    
+    if model.fitted_:
+        model.num_points = model_dict['num_points']
+        model.num_dims = model_dict['num_dims']
+        model.var_covar = np.array(model_dict['var_covar'])
+        model.threshold = model_dict['threshold']
 
-    # return model
-    return NotImplementedError
+    return model
 
 def serialize_hotelling_t2_applicability_domain(model):
-    # serialized_model = {
-    #     'meta': 'hotelling-t2-ad',
-    # }
+    serialized_model = {
+        'meta': 'hotelling-t2-ad',
+        'fitted_': model.fitted_,
+        'alpha': model.alpha,
+    }
     
-    # return serialized_model
-    return NotImplementedError
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            't2': model.t2.tolist(),
+            }
+        )
+    
+    return serialized_model
 
 def deserialize_hotelling_t2_applicability_domain(model_dict):
-    # model = HotellingT2ApplicabilityDomain()
+    model = HotellingT2ApplicabilityDomain()
+    model.fitted_ = model_dict['fitted_']
+    model.alpha = model_dict['alpha']
+    
+    if model.fitted_:
+        model.num_points = model_dict['num_points']
+        model.num_dims = model_dict['num_dims']
+        model.t2 = np.array(model_dict['t2'])
 
-    # return model
-    return NotImplementedError
+    return model
 
 def serialize_kernel_density_applicability_domain(model):
     # serialized_model = {
