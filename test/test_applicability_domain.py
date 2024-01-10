@@ -63,3 +63,7 @@ class TestAPI(unittest.TestCase):
         # TODO add robust scaler and maxabsscaler to ml2json
         model = PCABoundingBoxApplicabilityDomain(scaling='standard')
         self.check_applicability_domain(model, 'pca-bounding-box-ad.json')
+        
+    def test_topkat_applicability_domain(self):
+        model = TopKatApplicabilityDomain()
+        self.check_applicability_domain(model, 'topkat-ad.json')

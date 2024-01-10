@@ -119,18 +119,41 @@ def deserialize_pca_bounding_box_applicability_domain(model_dict):
     return model
 
 def serialize_topkat_applicability_domain(model):
-    # serialized_model = {
-    #     'meta': 'topkat-ad',
-    # }
+    serialized_model = {
+        'meta': 'topkat-ad',
+        'fitted_': model.fitted_,
+    }
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            'X_min_' : model.X_min_.tolist(),
+            'X_max_' : model.X_max_.tolist(),
+            'eigen_val': model.eigen_val.tolist(),
+            'eigen_vec': model.eigen_vec.tolist(),
+            'OPS_min_': model.OPS_min_.tolist(),
+            'OPS_max_': model.OPS_max_.tolist(),
+            }
+        )
     
-    # return serialized_model
-    return NotImplementedError
+    return serialized_model
 
 def deserialize_topkat_applicability_domain(model_dict):
-    # model = TopKatApplicabilityDomain()
+    model = TopKatApplicabilityDomain()
+    model.fitted_ = model_dict['fitted_']
+    
+    if model.fitted_:
+        model.num_points = model_dict['num_points']
+        model.num_dims = model_dict['num_dims']
+        model.X_min_ = np.array(model_dict['X_min_'])
+        model.X_max_ = np.array(model_dict['X_max_'])
+        model.eigen_val = np.array(model_dict['eigen_val'])
+        model.eigen_vec = np.array(model_dict['eigen_vec'])
+        model.OPS_min_ = np.array(model_dict['OPS_min_'])
+        model.OPS_max_ = np.array(model_dict['OPS_max_'])
 
-    # return model
-    return NotImplementedError
+    return model
 
 def serialize_leverage_applicability_domain(model):
     # serialized_model = {
