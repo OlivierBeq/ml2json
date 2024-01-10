@@ -36,7 +36,7 @@ from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAna
                                    MiniBatchNMF, SparsePCA, SparseCoder, TruncatedSVD)
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
-from sklearn.neighbors import NearestNeighbors, KDTree, KNeighborsClassifier, KNeighborsRegressor
+from sklearn.neighbors import NearestNeighbors, KDTree, KNeighborsClassifier, KNeighborsRegressor, KernelDensity
 from mlchemad.applicability_domains import (BoundingBoxApplicabilityDomain,
                                             ConvexHullApplicabilityDomain,
                                             PCABoundingBoxApplicabilityDomain,
@@ -380,6 +380,9 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
         return serialize_version(model, model_dict)
     elif isinstance(model, KDTree):
         model_dict = nei.serialize_kdtree(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, KernelDensity):
+        model_dict = nei.serialize_kernel_density(model)
         return serialize_version(model, model_dict)
     elif 'NNDescent' in nei.__optionals__ and isinstance(model, NNDescent):
         model_dict = nei.serialize_nndescent(model)
@@ -749,6 +752,9 @@ def deserialize_model(model_dict: Dict):
     elif model_dict['meta'] == 'kdtree':
         check_version(model_dict)
         return  nei.deserialize_kdtree(model_dict)
+    elif model_dict['meta'] == 'kernel-density':
+        check_version(model_dict)
+        return  nei.deserialize_kernel_density(model_dict)
     elif model_dict['meta'] == 'nn-descent':
         check_version(model_dict)
         return  nei.deserialize_nndescent(model_dict)

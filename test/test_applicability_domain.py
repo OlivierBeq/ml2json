@@ -76,11 +76,10 @@ class TestAPI(unittest.TestCase):
     def test_hotelling_t2_applicability_domain(self):
         model = HotellingT2ApplicabilityDomain()
         self.check_applicability_domain(model, 'hotelling-t2-ad.json')
-        
-    # TODO add kde to ml2json
-    # def test_kernel_density_applicability_domain(self):
-    #     model = KernelDensityApplicabilityDomain()
-    #     self.check_applicability_domain(model, 'kernel-density-ad.json')
+
+    def test_kernel_density_applicability_domain(self):
+        model = KernelDensityApplicabilityDomain()
+        self.check_applicability_domain(model, 'kernel-density-ad.json')
     
     def test_isolation_forest_applicability_domain(self):
         model = IsolationForestApplicabilityDomain()

@@ -4,7 +4,7 @@ import inspect
 import importlib
 
 import numpy as np
-from sklearn.neighbors import NearestNeighbors, KDTree
+from sklearn.neighbors import NearestNeighbors, KDTree, KernelDensity
 
 # Allow additional dependencies to be optional
 __optionals__ = []
@@ -58,6 +58,39 @@ def deserialize_nearest_neighbors(model_dict):
 
     return model
 
+
+def serialize_kernel_density(model):
+    serialized_model = {
+        'meta': 'kernel-density',
+        'bandwidth_': model.bandwidth_,
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params(),
+    }
+    
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+    if model.tree_ is not None:
+        serialized_model['tree_'] = serialize_kdtree(model.tree_)
+    else:
+        serialized_model['tree_'] = model.tree_
+
+    return serialized_model
+
+def deserialize_kernel_density(model_dict):
+    model = KernelDensity(**model_dict['params'])
+
+    model.bandwidth_ = model_dict['bandwidth_']
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+    if model_dict['tree_'] is not None:
+        model.tree_ = deserialize_kdtree(model_dict['tree_'])
+    else:
+        model.tree_ = model_dict['tree_']
+
+    return model
+    
 
 def serialize_kdtree(model):
     state = model.__getstate__()
