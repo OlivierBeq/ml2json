@@ -88,3 +88,7 @@ class TestAPI(unittest.TestCase):
     def test_centroid_distance_applicability_domain(self):
         model = CentroidDistanceApplicabilityDomain()
         self.check_applicability_domain(model, 'centroid-distance-ad.json')
+        
+    def test_knn_applicability_domain(self):
+        model = KNNApplicabilityDomain(scaling='standard')
+        self.check_applicability_domain(model, 'knn-ad.json')

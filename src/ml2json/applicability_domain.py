@@ -312,18 +312,46 @@ def deserialize_centroid_distance_applicability_domain(model_dict):
     return model
 
 def serialize_knn_applicability_domain(model):
-    # serialized_model = {
-    #     'meta': 'knn-ad',
-    # }
+    serialized_model = {
+        'meta': 'knn-ad',
+        'fitted_': model.fitted_,
+        'scaler': ml2json.to_dict(model.scaler),
+        'dist': model.dist,
+        'k': model.k,
+        'alpha': model.alpha,
+        'hard_threshold': model.hard_threshold,
+    }
     
-    # return serialized_model
-    return NotImplementedError
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            'X_norm': model.X_norm.tolist(),
+            'kNN_dist': model.kNN_dist.tolist(),
+            'threshold_': model.threshold_,
+            }
+        )
+    
+    return serialized_model
 
 def deserialize_knn_applicability_domain(model_dict):
-    # model = KNNApplicabilityDomain()
+    model = KNNApplicabilityDomain()
+    model.fitted_ = model_dict['fitted_']
+    model.scaler = ml2json.from_dict(model_dict['scaler'])
+    model.dist = model_dict['dist']
+    model.k = model_dict['k']
+    model.alpha = model_dict['alpha']
+    model.hard_threshold = model_dict['hard_threshold']
+    
+    if model.fitted_:
+        model.num_points = model_dict['num_points']
+        model.num_dims = model_dict['num_dims']
+        model.X_norm = np.array(model_dict['X_norm'])
+        model.kNN_dist = np.array(model_dict['kNN_dist'])
+        model.threshold_ = model_dict['threshold_']
 
-    # return model
-    return NotImplementedError
+    return model
 
 def serialize_standardization_approach_applicability_domain(model):
     # serialized_model = {
