@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.datasets import fetch_california_housing
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
                                    MinMaxScaler, StandardScaler, KernelCenterer,
-                                   OneHotEncoder)
+                                   OneHotEncoder, RobustScaler, MaxAbsScaler)
 from sklearn.metrics.pairwise import pairwise_kernels
 
 from src import ml2json
@@ -118,6 +118,15 @@ class TestAPI(unittest.TestCase):
         self.check_scaler(StandardScaler(with_mean=False), 'standard-scaler.json')
         self.check_scaler(StandardScaler(with_std=False), 'standard-scaler.json')
         self.check_scaler(StandardScaler(with_mean=False, with_std=False), 'standard-scaler.json')
+
+    def test_robust_scaler(self):
+        self.check_scaler(RobustScaler(), 'robust-scaler.json')
+        self.check_scaler(RobustScaler(with_centering=False), 'robust-scaler.json')
+        self.check_scaler(RobustScaler(with_scaling=False), 'robust-scaler.json')
+        self.check_scaler(RobustScaler(with_centering=False, with_scaling=False), 'robust-scaler.json')
+        
+    def test_maxabs_scaler(self):
+        self.check_scaler(MaxAbsScaler(), 'maxabs-scaler.json')
 
     def check_centerer(self, centerer, model_name):
         expected_ft = centerer.fit_transform(self.kernel_X)

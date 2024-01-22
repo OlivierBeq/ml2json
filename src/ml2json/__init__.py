@@ -23,7 +23,7 @@ from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
                                    MinMaxScaler, StandardScaler, KernelCenterer,
-                                   OneHotEncoder)
+                                   OneHotEncoder, RobustScaler, MaxAbsScaler)
 from sklearn.svm import SVR
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
@@ -36,7 +36,7 @@ from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAna
                                    MiniBatchNMF, SparsePCA, SparseCoder, TruncatedSVD)
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
-from sklearn.neighbors import NearestNeighbors, KDTree, KNeighborsClassifier, KNeighborsRegressor
+from sklearn.neighbors import NearestNeighbors, KDTree, KNeighborsClassifier, KNeighborsRegressor, KernelDensity
 
 from . import classification as clf
 from . import regression as reg
@@ -47,6 +47,7 @@ from . import decomposition as dec
 from . import manifold as man
 from . import neighbors as nei
 from . import cross_decomposition as crdec
+from . import applicability_domain as ad
 from .utils import is_model_fitted
 
 # Make additional dependencies optional
@@ -68,6 +69,18 @@ if 'NNDescent' in nei.__optionals__:
     from pynndescent import NNDescent
 if 'UMAP' in man.__optionals__:
     from umap import UMAP
+if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
+    from mlchemad.applicability_domains import (BoundingBoxApplicabilityDomain,
+                                                ConvexHullApplicabilityDomain,
+                                                PCABoundingBoxApplicabilityDomain,
+                                                TopKatApplicabilityDomain,
+                                                LeverageApplicabilityDomain,
+                                                HotellingT2ApplicabilityDomain,
+                                                KernelDensityApplicabilityDomain,
+                                                IsolationForestApplicabilityDomain,
+                                                CentroidDistanceApplicabilityDomain,
+                                                KNNApplicabilityDomain,
+                                                StandardizationApproachApplicabilityDomain)
 
 
 __version__ = '0.2.2'
@@ -369,6 +382,9 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
     elif isinstance(model, KDTree):
         model_dict = nei.serialize_kdtree(model)
         return serialize_version(model, model_dict)
+    elif isinstance(model, KernelDensity):
+        model_dict = nei.serialize_kernel_density(model)
+        return serialize_version(model, model_dict)
     elif 'NNDescent' in nei.__optionals__ and isinstance(model, NNDescent):
         model_dict = nei.serialize_nndescent(model)
         return serialize_version(model, model_dict)
@@ -394,11 +410,52 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
     elif isinstance(model, StandardScaler):
         model_dict = pre.serialize_standard_scaler(model)
         return serialize_version(model, model_dict)
+    elif isinstance(model, RobustScaler):
+        model_dict = pre.serialize_robust_scaler(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, MaxAbsScaler):
+        model_dict = pre.serialize_maxabs_scaler(model)
+        return serialize_version(model, model_dict)
     elif isinstance(model, KernelCenterer):
         model_dict = pre.serialize_kernel_centerer(model)
         return serialize_version(model, model_dict)
     elif isinstance(model, OneHotEncoder):
         model_dict = pre.serialize_onehot_encoder(model)
+        return serialize_version(model, model_dict)
+    
+    # Applicability Domain
+    elif isinstance(model, BoundingBoxApplicabilityDomain):
+        model_dict = ad.serialize_bounding_box_applicability_domain(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, ConvexHullApplicabilityDomain):
+        model_dict = ad.serialize_convex_hull_applicability_domain(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, PCABoundingBoxApplicabilityDomain):
+        model_dict = ad.serialize_pca_bounding_box_applicability_domain(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, TopKatApplicabilityDomain):
+        model_dict = ad.serialize_topkat_applicability_domain(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, LeverageApplicabilityDomain):
+        model_dict = ad.serialize_leverage_applicability_domain(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, HotellingT2ApplicabilityDomain):
+        model_dict = ad.serialize_hotelling_t2_applicability_domain(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, KernelDensityApplicabilityDomain):
+        model_dict = ad.serialize_kernel_density_applicability_domain(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, IsolationForestApplicabilityDomain):
+        model_dict = ad.serialize_isolation_forest_applicability_domain(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, CentroidDistanceApplicabilityDomain):
+        model_dict = ad.serialize_centroid_distance_applicability_domain(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, KNNApplicabilityDomain):
+        model_dict = ad.serialize_knn_applicability_domain(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, StandardizationApproachApplicabilityDomain):
+        model_dict = ad.serialize_standardization_approach_applicability_domain(model)
         return serialize_version(model, model_dict)
 
     # Otherwise
@@ -702,6 +759,9 @@ def deserialize_model(model_dict: Dict):
     elif model_dict['meta'] == 'kdtree':
         check_version(model_dict)
         return  nei.deserialize_kdtree(model_dict)
+    elif model_dict['meta'] == 'kernel-density':
+        check_version(model_dict)
+        return  nei.deserialize_kernel_density(model_dict)
     elif model_dict['meta'] == 'nn-descent':
         check_version(model_dict)
         return  nei.deserialize_nndescent(model_dict)
@@ -727,12 +787,53 @@ def deserialize_model(model_dict: Dict):
     elif model_dict['meta'] == 'standard-scaler':
         check_version(model_dict)
         return pre.deserialize_standard_scaler(model_dict)
+    elif model_dict['meta'] == 'robust-scaler':
+        check_version(model_dict)
+        return pre.deserialize_robust_scaler(model_dict)
+    elif model_dict['meta'] == 'maxabs-scaler':
+        check_version(model_dict)
+        return pre.deserialize_maxabs_scaler(model_dict)
     elif model_dict['meta'] == 'kernel-centerer':
         check_version(model_dict)
         return pre.deserialize_kernel_centerer(model_dict)
     elif model_dict['meta'] == 'onehot-encoder':
         check_version(model_dict)
         return pre.deserialize_onehot_encoder(model_dict)
+    
+    # Applicability Domain
+    elif model_dict['meta'] == 'bounding-box-ad':
+        check_version(model_dict)
+        return ad.deserialize_bounding_box_applicability_domain(model_dict)
+    elif model_dict['meta'] == 'convex-hull-ad':
+        check_version(model_dict)
+        return ad.deserialize_convex_hull_applicability_domain(model_dict)
+    elif model_dict['meta'] == 'pca-bounding-box-ad':
+        check_version(model_dict)
+        return ad.deserialize_pca_bounding_box_applicability_domain(model_dict)
+    elif model_dict['meta'] == 'topkat-ad':
+        check_version(model_dict)
+        return ad.deserialize_topkat_applicability_domain(model_dict)
+    elif model_dict['meta'] == 'leverage-ad':
+        check_version(model_dict)
+        return ad.deserialize_leverage_applicability_domain(model_dict)
+    elif model_dict['meta'] == 'hotelling-t2-ad':
+        check_version(model_dict)
+        return ad.deserialize_hotelling_t2_applicability_domain(model_dict)
+    elif model_dict['meta'] == 'kernel-density-ad':
+        check_version(model_dict)
+        return ad.deserialize_kernel_density_applicability_domain(model_dict)
+    elif model_dict['meta'] == 'isolation-forest-ad':
+        check_version(model_dict)
+        return ad.deserialize_isolation_forest_applicability_domain(model_dict)
+    elif model_dict['meta'] == 'centroid-distance-ad':
+        check_version(model_dict)
+        return ad.deserialize_centroid_distance_applicability_domain(model_dict)
+    elif model_dict['meta'] == 'knn-ad':
+        check_version(model_dict)
+        return ad.deserialize_knn_applicability_domain(model_dict)
+    elif model_dict['meta'] == 'standardization-approach-ad':
+        check_version(model_dict)
+        return ad.deserialize_standardization_approach_applicability_domain(model_dict)   
 
     # Otherwise
     else:

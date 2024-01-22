@@ -17,7 +17,7 @@ def serialize_pca(model):
         'explained_variance_ratio_': model.explained_variance_ratio_.tolist(),
         'singular_values_': model.singular_values_.tolist(),
         'mean_': model.mean_.tolist(),
-        'n_components_': model.n_components_,
+        'n_components_': int(model.n_components_),
         'n_samples_': model.n_samples_,
         'noise_variance_': model.noise_variance_,
         'n_features_in_': model.n_features_in_,

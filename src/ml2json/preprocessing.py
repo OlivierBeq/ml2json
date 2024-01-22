@@ -5,7 +5,7 @@ import importlib
 
 import numpy as np
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler,
-                                   KernelCenterer, OneHotEncoder)
+                                   KernelCenterer, OneHotEncoder, RobustScaler, MaxAbsScaler)
 
 
 def serialize_label_binarizer(label_binarizer):
@@ -147,6 +147,72 @@ def deserialize_standard_scaler(model_dict):
 
     return model
 
+def serialize_robust_scaler(model):
+    serialized_model = {
+        'meta': 'robust-scaler',
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params(),
+    }
+    if hasattr(model, 'scale_'):
+        serialized_model['scale_'] = (model.scale_.tolist() 
+                                      if isinstance(model.scale_, np.ndarray)
+                                      else model.scale_)
+    if hasattr(model, 'center_'):
+        serialized_model['center_'] = (model.center_.tolist() 
+                                       if isinstance(model.center_, np.ndarray)
+                                       else model.center_)
+        
+    return serialized_model
+
+def deserialize_robust_scaler(model_dict):
+    model_dict['params']['quantile_range'] = tuple(model_dict['params']['quantile_range'])
+    
+    model = RobustScaler(**model_dict['params'])
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'scale_' in model_dict.keys():
+        if isinstance(model_dict['scale_'], list):
+            model.scale_ = np.array(model_dict['scale_'])
+        else:
+            model.scale_ = model_dict['scale_']
+    if 'center_' in model_dict.keys():
+        if isinstance(model_dict['center_'], list):
+            model.center_ = np.array(model_dict['center_'])
+        else:
+            model.center_ = model_dict['center_']
+
+    return model
+
+def serialize_maxabs_scaler(model):
+    serialized_model = {
+        'meta': 'maxabs-scaler',
+        'params': model.get_params(),
+    }
+    
+    if 'n_features_in_' in model.__dict__:
+        serialized_model['n_features_in_'] = model.n_features_in_
+    if 'n_samples_seen_' in model.__dict__:
+        serialized_model['n_samples_seen_'] = model.n_samples_seen_
+    if 'max_abs_' in model.__dict__:
+        serialized_model['max_abs_'] = model.max_abs_.tolist()
+    if 'scale_' in model.__dict__: 
+        serialized_model['scale_'] = model.scale_.tolist()
+        
+    return serialized_model
+
+def deserialize_maxabs_scaler(model_dict):
+    model = MaxAbsScaler(**model_dict['params'])
+    
+    if 'n_features_in_' in model_dict.keys():
+        model.n_features_in_ = model_dict['n_features_in_']
+    if 'n_samples_seen_' in model_dict.keys():
+        model.n_samples_seen_ = model_dict['n_samples_seen_']
+    if 'max_abs_' in model_dict.keys():
+        model.max_abs_ = np.array(model_dict['max_abs_'])
+    if 'scale_' in model_dict.keys():
+        model.scale_ = np.array(model_dict['scale_'])
+        
+    return model
 
 def serialize_label_encoder(model):
     serialized_model = {
