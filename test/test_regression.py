@@ -165,7 +165,7 @@ class TestAPI(unittest.TestCase):
 
     def test_xgboost_ranker(self):
         if 'XGBRanker' in __optionals__:
-            self.check_ranking_model(XGBRanker(), 'XGB-ranker.json')
+            self.check_ranking_model(XGBRanker(objective='rank:pairwise'), 'XGB-ranker.json')
 
     def test_xgboost_regressor(self):
         if 'XGBRegressor' in __optionals__:

@@ -13,7 +13,8 @@ from sklearn.tree import DecisionTreeRegressor, ExtraTreeRegressor
 from sklearn.ensemble import (AdaBoostRegressor, BaggingRegressor, ExtraTreesRegressor,
                               GradientBoostingRegressor, RandomForestRegressor,
                               StackingRegressor, VotingRegressor,
-                              HistGradientBoostingRegressor, _gb_losses)
+                              HistGradientBoostingRegressor)
+from sklearn._loss import loss
 from sklearn.neural_network import MLPRegressor
 from sklearn.tree._tree import Tree
 from sklearn.svm import SVR
@@ -335,14 +336,16 @@ def serialize_gradient_boosting_regressor(model):
     elif isinstance(model.init_, str):
         serialized_model['init_'] = model.init_
 
-    if isinstance(model._loss, _gb_losses.LeastSquaresError):
+    if isinstance(model._loss, loss.HalfSquaredError):
         serialized_model['_loss'] = 'ls'
-    elif isinstance(model._loss, _gb_losses.LeastAbsoluteError):
+    elif isinstance(model._loss, loss.AbsoluteError):
         serialized_model['_loss'] = 'lad'
-    elif isinstance(model._loss, _gb_losses.HuberLossFunction):
+    elif isinstance(model._loss, loss.HuberLoss):
         serialized_model['_loss'] = 'huber'
-    elif isinstance(model._loss, _gb_losses.QuantileLossFunction):
+        serialized_model['quantile'] = model._loss.quantile
+    elif isinstance(model._loss, loss.PinballLoss):
         serialized_model['_loss'] = 'quantile'
+        serialized_model['quantile'] = model._loss.closs.quantile
 
     if 'priors' in model.init_.__dict__:
         serialized_model['priors'] = model.init_.priors.tolist()
@@ -373,13 +376,13 @@ def deserialize_gradient_boosting_regressor(model_dict):
     model.max_features_ = model_dict['max_features_']
     model.n_features_in_ = model_dict['n_features_in_']
     if model_dict['_loss'] == 'ls':
-        model._loss = _gb_losses.LeastSquaresError()
+        model._loss = loss.HalfSquaredError()
     elif model_dict['_loss'] == 'lad':
-        model._loss = _gb_losses.LeastAbsoluteError()
+        model._loss = loss.AbsoluteError()
     elif model_dict['_loss'] == 'huber':
-        model._loss = _gb_losses.HuberLossFunction(1)
+        model._loss = loss.HuberLoss(quantile=model_dict['quantile'])
     elif model_dict['_loss'] == 'quantile':
-        model._loss = _gb_losses.QuantileLossFunction(1)
+        model._loss = loss.PinballLoss(quantile=model_dict['quantile'])
 
     if 'priors' in model_dict:
         model.init_.priors = np.array(model_dict['priors'])
