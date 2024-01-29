@@ -59,7 +59,7 @@ In addition of the support for scikit-learn models, ml2json supports the followi
 - Prince
 - MlChemAD
 
-ml2json requires scikit-learn >= 0.21.3.
+ml2json requires scikit-learn >= 1.2.2, <=1.4.0.
 
 ## Supported scikit-learn Models
 
