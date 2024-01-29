@@ -471,12 +471,21 @@ def serialize_gradient_boosting(model):
     elif isinstance(model.init_, str):
         serialized_model['init_'] = model.init_
 
-    if isinstance(model._loss, loss.HalfBinomialLoss):
-        serialized_model['_loss'] = 'deviance'
-    elif isinstance(model._loss, loss.ExponentialLoss):
-        serialized_model['_loss'] = 'exponential'
-    elif isinstance(model._loss, loss.HalfMultinomialLoss):
-        serialized_model['_loss'] = 'multinomial'
+    if sklearn.__version__ >= '1.4.0':
+        if isinstance(model._loss, loss.HalfBinomialLoss):
+            serialized_model['_loss'] = 'deviance'
+        elif isinstance(model._loss, loss.ExponentialLoss):
+            serialized_model['_loss'] = 'exponential'
+        elif isinstance(model._loss, loss.HalfMultinomialLoss):
+            serialized_model['_loss'] = 'multinomial'
+    else:
+        from sklearn.ensemble import _gb_losses
+        if isinstance(model._loss, _gb_losses.BinomialDeviance):
+            serialized_model['_loss'] = 'deviance'
+        elif isinstance(model._loss, _gb_losses.ExponentialLoss):
+            serialized_model['_loss'] = 'exponential'
+        elif isinstance(model._loss, _gb_losses.MultinomialDeviance):
+            serialized_model['_loss'] = 'multinomial'       
 
     if 'priors' in model.init_.__dict__:
         serialized_model['priors'] = model.init_.priors.tolist()
@@ -503,12 +512,22 @@ def deserialize_gradient_boosting(model_dict):
     model.max_features_ = model_dict['max_features_']
     model.n_classes_ = model_dict['n_classes_']
     model.n_features_in_ = model_dict['n_features_in_']
-    if model_dict['_loss'] == 'deviance':
-        model._loss = loss.HalfBinomialLoss()
-    elif model_dict['_loss'] == 'exponential':
-        model._loss = loss.ExponentialLoss()
-    elif model_dict['_loss'] == 'multinomial':
-        model._loss = loss.HalfMultinomialLoss(n_classes=model.n_classes_)
+    
+    if sklearn.__version__ >= '1.4.0':
+        if model_dict['_loss'] == 'deviance':
+            model._loss = loss.HalfBinomialLoss()
+        elif model_dict['_loss'] == 'exponential':
+            model._loss = loss.ExponentialLoss()
+        elif model_dict['_loss'] == 'multinomial':
+            model._loss = loss.HalfMultinomialLoss(n_classes=model.n_classes_)
+    else:
+        from sklearn.ensemble import _gb_losses
+        if model_dict['_loss'] == 'deviance':
+            model._loss = _gb_losses.BinomialDeviance(model.n_classes_)
+        elif model_dict['_loss'] == 'exponential':
+            model._loss = _gb_losses.ExponentialLoss(model.n_classes_)
+        elif model_dict['_loss'] == 'multinomial':
+            model._loss = _gb_losses.MultinomialDeviance(model.n_classes_)
 
     if 'priors' in model_dict:
         model.init_.priors = np.array(model_dict['priors'])
