@@ -15,8 +15,9 @@ from sklearn.tree._tree import Tree
 from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier,
                               GradientBoostingClassifier, RandomForestClassifier,
                               StackingClassifier, VotingClassifier, IsolationForest,
-                              HistGradientBoostingClassifier, _gb_losses,
+                              HistGradientBoostingClassifier,
                               RandomTreesEmbedding)
+from sklearn._loss import loss
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -470,11 +471,11 @@ def serialize_gradient_boosting(model):
     elif isinstance(model.init_, str):
         serialized_model['init_'] = model.init_
 
-    if isinstance(model._loss, _gb_losses.BinomialDeviance):
+    if isinstance(model._loss, loss.HalfBinomialLoss):
         serialized_model['_loss'] = 'deviance'
-    elif isinstance(model._loss, _gb_losses.ExponentialLoss):
+    elif isinstance(model._loss, loss.ExponentialLoss):
         serialized_model['_loss'] = 'exponential'
-    elif isinstance(model._loss, _gb_losses.MultinomialDeviance):
+    elif isinstance(model._loss, loss.HalfMultinomialLoss):
         serialized_model['_loss'] = 'multinomial'
 
     if 'priors' in model.init_.__dict__:
@@ -503,11 +504,11 @@ def deserialize_gradient_boosting(model_dict):
     model.n_classes_ = model_dict['n_classes_']
     model.n_features_in_ = model_dict['n_features_in_']
     if model_dict['_loss'] == 'deviance':
-        model._loss = _gb_losses.BinomialDeviance(model.n_classes_)
+        model._loss = loss.HalfBinomialLoss()
     elif model_dict['_loss'] == 'exponential':
-        model._loss = _gb_losses.ExponentialLoss(model.n_classes_)
+        model._loss = loss.ExponentialLoss()
     elif model_dict['_loss'] == 'multinomial':
-        model._loss = _gb_losses.MultinomialDeviance(model.n_classes_)
+        model._loss = loss.HalfMultinomialLoss(n_classes=model.n_classes_)
 
     if 'priors' in model_dict:
         model.init_.priors = np.array(model_dict['priors'])
@@ -1114,7 +1115,7 @@ def serialize_isolation_forest(model):
         'estimator_params': list(model.estimator_params),
         'params': model.get_params()
     }
-    
+
     if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
         serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
                                                type(model.base_estimator_).__name__,
@@ -1133,7 +1134,7 @@ def serialize_isolation_forest(model):
 
     if '_decision_path_lengths' in model.__dict__:
         serialized_model['_decision_path_lengths'] = [array.tolist() for array in model._decision_path_lengths]
-        
+
     if '_average_path_length_per_tree' in model.__dict__:
         serialized_model['_average_path_length_per_tree'] = [array.tolist() for array in model._average_path_length_per_tree]
 
@@ -1174,10 +1175,10 @@ def deserialize_isolation_forest(model_dict):
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
-        
+
     if '_decision_path_lengths' in model_dict.keys():
         model._decision_path_lengths = tuple([np.array(array) for array in model_dict['_decision_path_lengths']])
-    
+
     if '_average_path_length_per_tree' in model_dict.keys():
         model._average_path_length_per_tree = tuple([np.array(array) for array in model_dict['_average_path_length_per_tree']])
 

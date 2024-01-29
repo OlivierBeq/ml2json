@@ -60,7 +60,7 @@ if 'BoundingBoxApplicabilityDomain' in __optionals__:
         model.compute_minmax = model_dict['compute_minmax']
         model.constant_value_min = model_dict['constant_value_min']
         model.constant_value_max = model_dict['constant_value_max']
-        model.percentiles_min_max = (tuple(model_dict['percentiles_min_max']) 
+        model.percentiles_min_max = (tuple(model_dict['percentiles_min_max'])
                                     if model_dict['percentiles_min_max'] else None)
 
         if model.fitted_:
@@ -84,14 +84,14 @@ def serialize_convex_hull_applicability_domain(model):
             'points': model.points.tolist(),
             }
         )
-    
+
     return serialized_model
 
 if 'ConvexHullApplicabilityDomain' in __optionals__:
     def deserialize_convex_hull_applicability_domain(model_dict):
         model = ConvexHullApplicabilityDomain()
         model.fitted_ = model_dict['fitted_']
-        
+
         if model.fitted_:
             model.num_points = model_dict['num_points']
             model.num_dims = model_dict['num_dims']
@@ -116,7 +116,7 @@ def serialize_pca_bounding_box_applicability_domain(model):
             'max_': model.max_.tolist(),
             }
         )
-    
+
     return serialized_model
 
 if 'PCABoundingBoxApplicabilityDomain' in __optionals__:
@@ -126,7 +126,7 @@ if 'PCABoundingBoxApplicabilityDomain' in __optionals__:
         model.scaler = ml2json.from_dict(model_dict['scaler'])
         model.min_explained_var = model_dict['min_explained_var']
         model.pca = ml2json.from_dict(model_dict['pca'])
-        
+
         if model.fitted_:
             model.num_points = model_dict['num_points']
             model.num_dims = model_dict['num_dims']
@@ -153,14 +153,14 @@ def serialize_topkat_applicability_domain(model):
             'OPS_max_': model.OPS_max_.tolist(),
             }
         )
-    
+
     return serialized_model
 
 if 'TopKatApplicabilityDomain' in __optionals__:
     def deserialize_topkat_applicability_domain(model_dict):
         model = TopKatApplicabilityDomain()
         model.fitted_ = model_dict['fitted_']
-        
+
         if model.fitted_:
             model.num_points = model_dict['num_points']
             model.num_dims = model_dict['num_dims']
@@ -179,7 +179,7 @@ def serialize_leverage_applicability_domain(model):
         'fitted_': model.fitted_,
         'scaler': ml2json.to_dict(model.scaler),
     }
-    
+
     if model.fitted_:
         serialized_model.update(
             {
@@ -189,7 +189,7 @@ def serialize_leverage_applicability_domain(model):
             'threshold': model.threshold,
             }
         )
-    
+
     return serialized_model
 
 if 'LeverageApplicabilityDomain' in __optionals__:
@@ -197,7 +197,7 @@ if 'LeverageApplicabilityDomain' in __optionals__:
         model = LeverageApplicabilityDomain()
         model.fitted_ = model_dict['fitted_']
         model.scaler = ml2json.from_dict(model_dict['scaler'])
-        
+
         if model.fitted_:
             model.num_points = model_dict['num_points']
             model.num_dims = model_dict['num_dims']
@@ -212,7 +212,7 @@ def serialize_hotelling_t2_applicability_domain(model):
         'fitted_': model.fitted_,
         'alpha': model.alpha,
     }
-    
+
     if model.fitted_:
         serialized_model.update(
             {
@@ -221,7 +221,7 @@ def serialize_hotelling_t2_applicability_domain(model):
             't2': model.t2.tolist(),
             }
         )
-    
+
     return serialized_model
 
 if 'HotellingT2ApplicabilityDomain' in __optionals__:
@@ -229,7 +229,7 @@ if 'HotellingT2ApplicabilityDomain' in __optionals__:
         model = HotellingT2ApplicabilityDomain()
         model.fitted_ = model_dict['fitted_']
         model.alpha = model_dict['alpha']
-        
+
         if model.fitted_:
             model.num_points = model_dict['num_points']
             model.num_dims = model_dict['num_dims']
@@ -244,7 +244,7 @@ def serialize_kernel_density_applicability_domain(model):
         'kde': ml2json.to_dict(model.kde), # TODO: add ml2json.to_dict(model.kde)
         'threshold': model.threshold,
     }
-    
+
     if model.fitted_:
         serialized_model.update(
             {
@@ -253,7 +253,7 @@ def serialize_kernel_density_applicability_domain(model):
             'cutoff': model.cutoff,
             }
         )
-    
+
     return serialized_model
 
 if 'KernelDensityApplicabilityDomain' in __optionals__:
@@ -262,7 +262,7 @@ if 'KernelDensityApplicabilityDomain' in __optionals__:
         model.fitted_ = model_dict['fitted_']
         model.kde = ml2json.from_dict(model_dict['kde'])
         model.threshold = model_dict['threshold']
-        
+
         if model.fitted_:
             model.num_points = model_dict['num_points']
             model.num_dims = model_dict['num_dims']
@@ -276,7 +276,7 @@ def serialize_isolation_forest_applicability_domain(model):
         'fitted_': model.fitted_,
         'isol': ml2json.to_dict(model.isol),
     }
-    
+
     if model.fitted_:
         serialized_model.update(
             {
@@ -284,7 +284,7 @@ def serialize_isolation_forest_applicability_domain(model):
             'num_dims': model.num_dims,
             }
         )
-    
+
     return serialized_model
 
 if 'IsolationForestApplicabilityDomain' in __optionals__:
@@ -292,7 +292,7 @@ if 'IsolationForestApplicabilityDomain' in __optionals__:
         model = IsolationForestApplicabilityDomain()
         model.fitted_ = model_dict['fitted_']
         model.isol = ml2json.from_dict(model_dict['isol'])
-        
+
         if model.fitted_:
             model.num_points = model_dict['num_points']
             model.num_dims = model_dict['num_dims']
@@ -307,7 +307,7 @@ def serialize_centroid_distance_applicability_domain(model):
         'scaler': ml2json.to_dict(model.scaler),
         'threshold': model.threshold if model.threshold is not None else None,
     }
-    
+
     if model.fitted_:
         serialized_model.update(
             {
@@ -316,7 +316,7 @@ def serialize_centroid_distance_applicability_domain(model):
             'centroid': model.centroid.tolist(),
             }
         )
-    
+
     return serialized_model
 
 if 'CentroidDistanceApplicabilityDomain' in __optionals__:
@@ -326,7 +326,7 @@ if 'CentroidDistanceApplicabilityDomain' in __optionals__:
         model.dist = model_dict['dist']
         model.scaler = ml2json.from_dict(model_dict['scaler'])
         model.threshold = model_dict['threshold']
-        
+
         if model.fitted_:
             model.num_points = model_dict['num_points']
             model.num_dims = model_dict['num_dims']
@@ -343,8 +343,9 @@ def serialize_knn_applicability_domain(model):
         'k': model.k,
         'alpha': model.alpha,
         'hard_threshold': model.hard_threshold,
+        'nn': ml2json.to_dict(model.nn),
     }
-    
+
     if model.fitted_:
         serialized_model.update(
             {
@@ -355,7 +356,7 @@ def serialize_knn_applicability_domain(model):
             'threshold_': model.threshold_,
             }
         )
-    
+
     return serialized_model
 
 if 'KNNApplicabilityDomain' in __optionals__:
@@ -369,7 +370,8 @@ if 'KNNApplicabilityDomain' in __optionals__:
         model.k = model_dict['k']
         model.alpha = model_dict['alpha']
         model.hard_threshold = model_dict['hard_threshold']
-        
+        model.nn = ml2json.from_dict(model_dict['nn'])
+
         if model.fitted_:
             model.num_points = model_dict['num_points']
             model.num_dims = model_dict['num_dims']
@@ -385,7 +387,7 @@ def serialize_standardization_approach_applicability_domain(model):
         'fitted_': model.fitted_,
         'scaler': ml2json.to_dict(model.scaler),
     }
-    
+
     if model.fitted_:
         serialized_model.update(
             {
@@ -393,7 +395,7 @@ def serialize_standardization_approach_applicability_domain(model):
             'num_dims': model.num_dims,
             }
         )
-    
+
     return serialized_model
 
 if 'StandardizationApproachApplicabilityDomain' in __optionals__:
@@ -401,7 +403,7 @@ if 'StandardizationApproachApplicabilityDomain' in __optionals__:
         model = StandardizationApproachApplicabilityDomain()
         model.fitted_ = model_dict['fitted_']
         model.scaler = ml2json.from_dict(model_dict['scaler'])
-        
+
         if model.fitted_:
             model.num_points = model_dict['num_points']
             model.num_dims = model_dict['num_dims']

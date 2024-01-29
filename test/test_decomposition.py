@@ -90,52 +90,52 @@ class TestAPI(unittest.TestCase):
     def test_dictionary_learning(self):
         self.check_fit_transform_model(DictionaryLearning(n_components=10, transform_algorithm='lars',
                                                           transform_alpha=0.1, random_state=1234),
-                                       'dictionary-learning.json',
+                                       'dictionary-learning1.json',
                                        self.dict_X)
         self.check_fit_transform_model(DictionaryLearning(n_components=10, transform_algorithm='lasso_lars',
                                                           transform_alpha=0.1, random_state=1234),
-                                       'dictionary-learning.json',
+                                       'dictionary-learning2.json',
                                        self.dict_X)
         self.check_fit_transform_model(DictionaryLearning(n_components=10, transform_algorithm='lasso_cd',
                                                           transform_alpha=0.1, random_state=1234),
-                                       'dictionary-learning.json',
+                                       'dictionary-learning3.json',
                                        self.dict_X)
         self.check_fit_transform_model(DictionaryLearning(n_components=10, transform_algorithm='omp',
                                                           transform_alpha=0.1, random_state=1234),
-                                       'dictionary-learning.json',
+                                       'dictionary-learning4.json',
                                        self.dict_X)
         self.check_fit_transform_model(DictionaryLearning(n_components=10, transform_algorithm='threshold',
                                                           transform_alpha=0.1, random_state=1234),
-                                       'dictionary-learning.json',
+                                       'dictionary-learning5.json',
                                        self.dict_X)
 
     def test_minibatch_dictionary_learning(self):
         self.check_fit_transform_model(MiniBatchDictionaryLearning(n_components=10, transform_algorithm='lars',
                                                                    transform_alpha=0.1, random_state=1234,
                                                                    batch_size=256, max_iter=100),
-                                       'dictionary-learning.json',
+                                       'dictionary-learning6.json',
                                        self.dict_X)
         self.check_fit_transform_model(MiniBatchDictionaryLearning(n_components=10, transform_algorithm='omp',
                                                                    transform_alpha=0.1, random_state=1234,
                                                                    batch_size=256, max_iter=100),
-                                       'dictionary-learning.json',
+                                       'dictionary-learning7.json',
                                        self.dict_X)
         self.check_fit_transform_model(MiniBatchDictionaryLearning(n_components=10, transform_algorithm='threshold',
                                                                    transform_alpha=0.1, random_state=1234,
                                                                    batch_size=256, max_iter=100),
-                                       'dictionary-learning.json',
+                                       'dictionary-learning8.json',
                                        self.dict_X)
         self.check_fit_transform_model(MiniBatchDictionaryLearning(n_components=10, transform_algorithm='lasso_lars',
                                                                    transform_alpha=0.1, random_state=1234,
                                                                    batch_size=256, transform_max_iter=100,
                                                                    max_iter=100),
-                                       'dictionary-learning.json',
+                                       'dictionary-learning9.json',
                                        self.dict_X)
         self.check_fit_transform_model(MiniBatchDictionaryLearning(n_components=10, transform_algorithm='lasso_cd',
                                                                    transform_alpha=0.1, random_state=1234,
                                                                    batch_size=256, transform_max_iter=100,
                                                                    max_iter=100),
-                                       'dictionary-learning.json',
+                                       'dictionary-learning10.json',
                                        self.dict_X)
 
     def test_factor_analysis(self):

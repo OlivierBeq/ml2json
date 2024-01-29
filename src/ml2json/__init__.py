@@ -83,7 +83,7 @@ if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
                                                 StandardizationApproachApplicabilityDomain)
 
 
-__version__ = '0.2.2'
+__version__ = '0.3.0'
 
 
 def serialize_model(model, catboost_data: Pool = None) -> Dict:
@@ -98,7 +98,7 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
 
     # Classification
     if isinstance(model, LogisticRegression):
-        model_dict = clf.serialize_logistic_regression(model) 
+        model_dict = clf.serialize_logistic_regression(model)
         return serialize_version(model, model_dict)
     elif isinstance(model, BernoulliNB):
         model_dict = clf.serialize_bernoulli_nb(model)
@@ -422,7 +422,7 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
     elif isinstance(model, OneHotEncoder):
         model_dict = pre.serialize_onehot_encoder(model)
         return serialize_version(model, model_dict)
-    
+
     # Applicability Domain
     elif isinstance(model, BoundingBoxApplicabilityDomain):
         model_dict = ad.serialize_bounding_box_applicability_domain(model)
@@ -799,7 +799,7 @@ def deserialize_model(model_dict: Dict):
     elif model_dict['meta'] == 'onehot-encoder':
         check_version(model_dict)
         return pre.deserialize_onehot_encoder(model_dict)
-    
+
     # Applicability Domain
     elif model_dict['meta'] == 'bounding-box-ad':
         check_version(model_dict)
@@ -833,7 +833,7 @@ def deserialize_model(model_dict: Dict):
         return ad.deserialize_knn_applicability_domain(model_dict)
     elif model_dict['meta'] == 'standardization-approach-ad':
         check_version(model_dict)
-        return ad.deserialize_standardization_approach_applicability_domain(model_dict)   
+        return ad.deserialize_standardization_approach_applicability_domain(model_dict)
 
     # Otherwise
     else:
