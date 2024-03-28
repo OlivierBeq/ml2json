@@ -103,7 +103,7 @@ def serialize_pca_bounding_box_applicability_domain(model):
     serialized_model = {
         'meta': 'pca-bounding-box-ad',
         'fitted_': model.fitted_,
-        'scaler': ml2json.to_dict(model.scaler),
+        'scaler': ml2json.to_dict(model.scaler) if model.scaler is not None else None,
         'min_explained_var': model.min_explained_var,
         'pca': ml2json.to_dict(model.pca),
     }
@@ -123,7 +123,8 @@ if 'PCABoundingBoxApplicabilityDomain' in __optionals__:
     def deserialize_pca_bounding_box_applicability_domain(model_dict):
         model = PCABoundingBoxApplicabilityDomain()
         model.fitted_ = model_dict['fitted_']
-        model.scaler = ml2json.from_dict(model_dict['scaler'])
+        model.scaler = (ml2json.from_dict(model_dict['scaler'])
+                        if model_dict['scaler'] is not None else None)
         model.min_explained_var = model_dict['min_explained_var']
         model.pca = ml2json.from_dict(model_dict['pca'])
 
