@@ -82,6 +82,10 @@ class TestAPI(unittest.TestCase):
     def test_pca_bounding_box_applicability_domain(self):
         model = PCABoundingBoxApplicabilityDomain()
         self.check_applicability_domain(model, 'pca-bounding-box-ad.json')
+        
+        # check with scaling is None
+        model = PCABoundingBoxApplicabilityDomain(scaling=None)
+        self.check_applicability_domain(model, 'pca-bounding-box-ad.json')
 
     @unittest.skipIf(len(__optionals__) == 0, 'Optional dependencies not installed.')
     def test_topkat_applicability_domain(self):
