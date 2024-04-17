@@ -83,7 +83,7 @@ if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
                                                 StandardizationApproachApplicabilityDomain)
 
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 
 
 def serialize_model(model, catboost_data: Pool = None) -> Dict:
