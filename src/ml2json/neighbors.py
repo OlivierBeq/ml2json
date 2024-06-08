@@ -145,7 +145,6 @@ def deserialize_kdtree(model_dict):
         params.append(model_dict['sample_weight_arr'])
 
     params = tuple(params)
-    print(len(params))
 
     model.__setstate__(params)
 
