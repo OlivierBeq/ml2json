@@ -25,3 +25,7 @@ def is_model_fitted(model):
         return True
     except NotFittedError:
         return False
+    except TypeError as e:
+        if str(e).endswith('is not an estimator instance.'):
+            return True
+        raise e

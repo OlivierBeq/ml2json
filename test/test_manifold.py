@@ -17,6 +17,22 @@ try:
 except:
     pass
 
+try:
+    from openTSNE import (TSNE as OpenTSNE, TSNEEmbedding as OpenTNSEEmbedding,
+                          PartialTSNEEmbedding  as OpenPartialTSNEEmbedding)
+    from openTSNE.sklearn import TSNE as OpenTSNEsklearn
+    from openTSNE.affinity import (PerplexityBasedNN, FixedSigmaNN,
+                                   Multiscale, MultiscaleMixture,
+                                   Uniform, PrecomputedAffinities)
+    from openTSNE.nearest_neighbors import (Sklearn as OpentTSNESklearnNN, Annoy as OpentTSNEAnnoyNN,
+                                            NNDescent as OpentTSNENNDescentNN, HNSW as OpentTSNEHNSWNN,
+                                            PrecomputedDistanceMatrix as OpentTSNEPrecomputedDistanceMatrix,
+                                            PrecomputedNeighbors as OpentTSNEPrecomputedNeighbors)
+    from openTSNE.tsne import gradient_descent as OpenTSNEGradientDescentOptimizer
+    __optionals__.append('OpenTSNE')
+except:
+    pass
+
 from src import ml2json
 
 
@@ -81,3 +97,68 @@ class TestAPI(unittest.TestCase):
             self.check_model(UMAP(n_neighbors=15, random_state=1234, metric='euclidean', output_dens=True,
                                   precomputed_knn=precomputed_knn, low_memory=False), 'umap.json',
                              self.calhouse_data)
+
+    def check_opentsne_model(self, model, model_name, data, fit: bool = True):
+        if fit:
+            model = model.fit(data)
+        expected_ft = model.transform(data)
+
+        serialized_dict_model = ml2json.to_dict(model)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
+
+        ml2json.to_json(model, model_name)
+        deserialized_json_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_ft = deserialized_model.transform(data)
+
+            if not isinstance(actual_ft, tuple):
+                np.testing.assert_array_almost_equal(expected_ft, actual_ft)
+            else:
+                for x, y in zip(expected_ft, actual_ft):
+                    np.testing.assert_array_almost_equal(x, y)
+
+    def test_opentsne(self):
+        if 'OpenTSNE' in __optionals__:
+            # sklearn constructor
+            for neighbors in ['exact', 'pynndescent', 'hnsw']:
+                self.check_opentsne_model(OpenTSNEsklearn(random_state=1234, initialization='spectral',
+                                                          neighbors=neighbors),
+                                          'opentsne.json',
+                                          self.iris_data)
+                self.check_opentsne_model(OpenTSNEsklearn(random_state=1234, initialization='pca',
+                                                          neighbors=neighbors),
+                                          'opentsne.json',
+                                          self.iris_data)
+                self.check_opentsne_model(OpenTSNEsklearn(random_state=1234, initialization='random',
+                                                          neighbors=neighbors),
+                                          'opentsne.json',
+                                          self.iris_data)
+            with self.assertRaises(TypeError) as context:
+                self.check_opentsne_model(OpenTSNEsklearn(random_state=1234, initialization='spectral',
+                                                          neighbors='annoy'),
+                                          'opentsne.json',
+                                          self.iris_data)
+                self.check_opentsne_model(OpenTSNEsklearn(random_state=1234, initialization='pca',
+                                                          neighbors='annoy'),
+                                          'opentsne.json',
+                                          self.iris_data)
+                self.check_opentsne_model(OpenTSNEsklearn(random_state=1234, initialization='random',
+                                                          neighbors='annoy'),
+                                          'opentsne.json',
+                                          self.iris_data)
+            # With custom affinities
+            from openTSNE import initialization
+            init = initialization.pca(self.iris_data, random_state=42, svd_solver='full')
+            for method in ['exact', 'pynndescent', 'hnsw']:
+                affinities_perplex = PerplexityBasedNN(self.iris_data, method=method, random_state=42)
+                affinities_multimixt = MultiscaleMixture(self.iris_data, perplexities=[5, 10, 20, 30, 40], method=method, random_state=87)
+                affinities_multi = Multiscale(self.iris_data, perplexities=[5, 10, 20, 30, 40], method=method, random_state=87)
+                for affinity in [affinities_perplex, affinities_multimixt, affinities_multi]:
+                    emb = OpenTNSEEmbedding(init, affinity)
+                    # Early exaggeration
+                    emb.optimize(n_iter=250, exaggeration=12, inplace=True)
+                    # Regular optimization
+                    emb.optimize(n_iter=500, inplace=True)
+                    self.check_opentsne_model(emb, 'opentsne.json', self.iris_data, False)

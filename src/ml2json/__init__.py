@@ -69,6 +69,10 @@ if 'NNDescent' in nei.__optionals__:
     from pynndescent import NNDescent
 if 'UMAP' in man.__optionals__:
     from umap import UMAP
+if 'OpenTSNE' in man.__optionals__:
+    from openTSNE import (TSNE as OpenTSNE, TSNEEmbedding as OpenTSNEEmbedding,
+                          PartialTSNEEmbedding as OpenPartialTSNEEmbedding)
+    from openTSNE.sklearn import TSNE as OpenTSNEsklearn
 if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
     from mlchemad.applicability_domains import (BoundingBoxApplicabilityDomain,
                                                 ConvexHullApplicabilityDomain,
@@ -83,7 +87,7 @@ if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
                                                 StandardizationApproachApplicabilityDomain)
 
 
-__version__ = '0.3.2'
+__version__ = '0.4.0'
 
 
 def serialize_model(model, catboost_data: Pool = None) -> Dict:
@@ -297,7 +301,7 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
         model_dict = clus.serialize_hdbscan(model)
         return serialize_version(model, model_dict)
 
-    # Decomposition
+    # Cross-decomposition
     elif isinstance(model, CCA):
         model_dict = crdec.serialize_cca(model)
         return serialize_version(model, model_dict)
@@ -373,6 +377,15 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
         return serialize_version(model, model_dict)
     elif 'UMAP' in man.__optionals__ and isinstance(model, UMAP):
         model_dict = man.serialize_umap(model)
+        return serialize_version(model, model_dict)
+    elif 'OpenTSNE' in man.__optionals__ and isinstance(model, (OpenTSNE, OpenTSNEsklearn)):
+        model_dict = man.serialize_opentsne(model)
+        return serialize_version(model, model_dict)
+    elif 'OpenTSNE' in man.__optionals__ and isinstance(model, OpenTSNEEmbedding):
+        model_dict = man.serialize_opentsne_embedding(model)
+        return serialize_version(model, model_dict)
+    elif 'OpenTSNE' in man.__optionals__ and isinstance(model, OpenPartialTSNEEmbedding):
+        model_dict = man.serialize_opentsne_partial_embedding(model)
         return serialize_version(model, model_dict)
 
     # Neighbors
@@ -751,6 +764,15 @@ def deserialize_model(model_dict: Dict):
     elif model_dict['meta'] == 'umap':
         check_version(model_dict)
         return  man.deserialize_umap(model_dict)
+    elif model_dict['meta'] == 'openTSNE':
+        check_version(model_dict)
+        return  man.deserialize_opentsne(model_dict)
+    elif model_dict['meta'] == 'openTSNEEmbedding':
+        check_version(model_dict)
+        return  man.deserialize_opentsne_embedding(model_dict)
+    elif model_dict['meta'] == 'openTSNEPartialEmbedding':
+        check_version(model_dict)
+        return  man.deserialize_opentsne_partial_embedding(model_dict)
 
     # Neighbors
     elif model_dict['meta'] == 'nearest-neighbors':
