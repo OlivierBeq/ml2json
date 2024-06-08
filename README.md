@@ -58,6 +58,7 @@ In addition of the support for scikit-learn models, ml2json supports the followi
 - PyNNDescent
 - Prince
 - MlChemAD
+- openTSNE
 
 ml2json requires scikit-learn >= 1.2.2, <=1.4.0.
 
@@ -342,3 +343,7 @@ ml2json requires scikit-learn >= 1.2.2, <=1.4.0.
 | MLChemAD           | Applicability Domain                      | CentroidDistanceApplicabilityDomain                 | :heavy_check_mark: |
 | MLChemAD           | Applicability Domain                      | KNNApplicabilityDomain                              | :heavy_check_mark: |
 | MLChemAD           | Applicability Domain                      | StandardizationApproachApplicabilityDomain          | :heavy_check_mark: |
+| openTSNE           | Manifold Learning                         | openTSNE.TSNE                                       | :heavy_check_mark: |
+| openTSNE           | Manifold Learning                         | openTSNE.sklearn.TSNE                               | :heavy_check_mark: |
+| openTSNE           | Manifold Learning                         | openTSNE.TSNE                                       | :heavy_check_mark: |
+| openTSNE           | Manifold Learning                         | openTSNE.sklearn.TSNE                               | :heavy_check_mark: |
