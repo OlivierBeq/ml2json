@@ -83,8 +83,16 @@ class TestAPI(unittest.TestCase):
         model = PCABoundingBoxApplicabilityDomain()
         self.check_applicability_domain(model, 'pca-bounding-box-ad.json')
         
-        # check with scaling is None
-        model = PCABoundingBoxApplicabilityDomain(scaling=None)
+        # check with minmax scaling
+        model = PCABoundingBoxApplicabilityDomain(scaling='minmax')
+        self.check_applicability_domain(model, 'pca-bounding-box-ad.json')
+
+        # check with maxabs scaling
+        model = PCABoundingBoxApplicabilityDomain(scaling='maxabs')
+        self.check_applicability_domain(model, 'pca-bounding-box-ad.json')
+
+        # check with standard scaling
+        model = PCABoundingBoxApplicabilityDomain(scaling='standard')
         self.check_applicability_domain(model, 'pca-bounding-box-ad.json')
 
     @unittest.skipIf(len(__optionals__) == 0, 'Optional dependencies not installed.')
