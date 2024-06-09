@@ -37,7 +37,7 @@ def serialize_kmeans(model):
         'cluster_centers_': model.cluster_centers_.tolist(),
         'labels_': model.labels_.tolist(),
         'inertia_': model.inertia_,
-        '_tol': model._tol,
+        '_tol': float(model._tol),
         '_n_init': model._n_init,
         '_n_threads': model._n_threads,
         'n_iter_': model.n_iter_,
@@ -48,7 +48,8 @@ def serialize_kmeans(model):
     }
 
     if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+    serialized_model['params']['n_clusters'] = int(serialized_model['params']['n_clusters'])
 
     return serialized_model
 
@@ -82,7 +83,7 @@ def serialize_minibatch_kmeans(model):
         '_ewa_inertia': model._ewa_inertia,
         '_ewa_inertia_min': model._ewa_inertia_min,
         '_counts': model._counts.tolist(),
-        '_tol': model._tol,
+        '_tol': float(model._tol),
         '_n_init': model._n_init,
         '_init_size': model._init_size,
         '_n_threads': model._n_threads,
@@ -97,7 +98,8 @@ def serialize_minibatch_kmeans(model):
     }
 
     if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+    serialized_model['params']['n_clusters'] = int(serialized_model['params']['n_clusters'])
 
     return serialized_model
 
@@ -739,7 +741,7 @@ def serialize_bisecting_kmeans(model):
         'cluster_centers_': model.cluster_centers_.tolist(),
         'labels_': model.labels_.tolist(),
         'inertia_': model.inertia_,
-        '_tol': model._tol,
+        '_tol': float(model._tol),
         '_n_init': model._n_init,
         '_n_threads': model._n_threads,
         'n_features_in_': model.n_features_in_,
@@ -754,6 +756,7 @@ def serialize_bisecting_kmeans(model):
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+    serialized_model['params']['n_clusters'] = int(serialized_model['params']['n_clusters'])
 
     return serialized_model
 
