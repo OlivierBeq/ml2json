@@ -29,3 +29,20 @@ def is_model_fitted(model):
         if str(e).endswith('is not an estimator instance.'):
             return True
         raise e
+
+
+def recursive_inspection(iterable):
+    if isinstance(iterable, (int, str, float)) or iterable is None:
+        return
+    elif isinstance(iterable, dict):
+        for key, value in iterable.items():
+            ret = recursive_inspection(value)
+            if ret is not None:
+                return f'dict({key} -> {ret})'
+    elif isinstance(iterable, (list, tuple)):
+        for value in iterable:
+            ret = recursive_inspection(value)
+            if ret is not None:
+                return f'{type(iterable).__name__}({ret})'
+    else:
+        return type(iterable)
