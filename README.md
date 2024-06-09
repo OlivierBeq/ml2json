@@ -288,16 +288,16 @@ ml2json requires scikit-learn >= 1.2.2, <=1.4.0.
 | Imbalanced-Learn   | Under-sampling                            | OneSidedSelection                                   | :heavy_check_mark: |
 | Imbalanced-Learn   | Under-sampling                            | RandomUnderSampler                                  | :heavy_check_mark: |
 | Imbalanced-Learn   | Under-sampling                            | TomekLinks                                          | :heavy_check_mark: |
-| Imbalanced-Learn   | Over-sampling                             | RandomOverSampler                                   |        :x:         |
-| Imbalanced-Learn   | Over-sampling                             | SMOTE                                               |        :x:         |
-| Imbalanced-Learn   | Over-sampling                             | SMOTENC                                             |        :x:         |
-| Imbalanced-Learn   | Over-sampling                             | SMOTEN                                              |        :x:         |
-| Imbalanced-Learn   | Over-sampling                             | ADASYN                                              |        :x:         |
-| Imbalanced-Learn   | Over-sampling                             | BorderlineSMOTE                                     |        :x:         |
-| Imbalanced-Learn   | Over-sampling                             | KMeansSMOTE                                         |        :x:         |
-| Imbalanced-Learn   | Over-sampling                             | SVMSMOTE                                            |        :x:         |
-| Imbalanced-Learn   | Combined over & under sampling            | SMOTEENN                                            |        :x:         |
-| Imbalanced-Learn   | Combined over & under sampling            | SMOTETomek                                          |        :x:         |
+| Imbalanced-Learn   | Over-sampling                             | RandomOverSampler                                   | :heavy_check_mark: |
+| Imbalanced-Learn   | Over-sampling                             | SMOTE                                               | :heavy_check_mark: |
+| Imbalanced-Learn   | Over-sampling                             | SMOTENC                                             | :heavy_check_mark: |
+| Imbalanced-Learn   | Over-sampling                             | SMOTEN                                              | :heavy_check_mark: |
+| Imbalanced-Learn   | Over-sampling                             | ADASYN                                              | :heavy_check_mark: |
+| Imbalanced-Learn   | Over-sampling                             | BorderlineSMOTE                                     | :heavy_check_mark: |
+| Imbalanced-Learn   | Over-sampling                             | KMeansSMOTE                                         | :heavy_check_mark: |
+| Imbalanced-Learn   | Over-sampling                             | SVMSMOTE                                            | :heavy_check_mark: |
+| Imbalanced-Learn   | Combined over & under sampling            | SMOTEENN                                            | :heavy_check_mark: |
+| Imbalanced-Learn   | Combined over & under sampling            | SMOTETomek                                          | :heavy_check_mark: |
 | Imbalanced-Learn   | Ensemble Methods                          | EasyEnsembleClassifier                              |        :x:         |
 | Imbalanced-Learn   | Ensemble Methods                          | RUSBoostClassifier                                  |        :x:         |
 | Imbalanced-Learn   | Ensemble Methods                          | BalancedBaggingClassifier                           |        :x:         |

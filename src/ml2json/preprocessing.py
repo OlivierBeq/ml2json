@@ -355,7 +355,7 @@ def deserialize_ordinal_encoder(model_dict):
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if 'infrequent_categories_' in model_dict.keys():
         model.infrequent_categories_ = np.array(model_dict['infrequent_categories_'])
     if '_infrequent_enabled' in model_dict.keys():

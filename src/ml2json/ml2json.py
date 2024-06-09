@@ -517,6 +517,36 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
     elif 'imblearn' in ous.__optionals__ and isinstance(model, TomekLinks):
         model_dict = ous.serialize_tomek_links(model)
         return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, RandomOverSampler):
+        model_dict = ous.serialize_random_over_sampler(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, SMOTENC):
+        model_dict = ous.serialize_smotenc(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, SMOTEN):
+        model_dict = ous.serialize_smoten(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, SMOTE):
+        model_dict = ous.serialize_smote(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, ADASYN):
+        model_dict = ous.serialize_adasyn(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, BorderlineSMOTE):
+        model_dict = ous.serialize_borderline_smote(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, KMeansSMOTE):
+        model_dict = ous.serialize_kmeans_smote(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, SVMSMOTE):
+        model_dict = ous.serialize_svm_smote(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, SMOTEENN):
+        model_dict = ous.serialize_smote_enn(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, SMOTETomek):
+        model_dict = ous.serialize_smote_tomek(model)
+        return serialize_version(model, model_dict)
 
 
     # Otherwise
@@ -942,6 +972,36 @@ def deserialize_model(model_dict: Dict):
     elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'tomek-links':
         check_version(model_dict)
         return ous.deserialize_tomek_links(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'random-over-sampler':
+        check_version(model_dict)
+        return ous.deserialize_random_over_sampler(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smotenc':
+        check_version(model_dict)
+        return ous.deserialize_smotenc(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smoten':
+        check_version(model_dict)
+        return ous.deserialize_smoten(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smote':
+        check_version(model_dict)
+        return ous.deserialize_smote(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'adasyn':
+        check_version(model_dict)
+        return ous.deserialize_adasyn(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'borderline-smote':
+        check_version(model_dict)
+        return ous.deserialize_borderline_smote(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'kmeans-smote':
+        check_version(model_dict)
+        return ous.deserialize_kmeans_smote(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'svm-smote':
+        check_version(model_dict)
+        return ous.deserialize_svm_smote(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smote-enn':
+        check_version(model_dict)
+        return ous.deserialize_smote_enn(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smote-tomek':
+        check_version(model_dict)
+        return ous.deserialize_smote_tomek(model_dict)
 
     # Otherwise
     else:

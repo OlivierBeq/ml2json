@@ -57,11 +57,11 @@ class TestAPI(unittest.TestCase):
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
 
-            for key in sorted(model.__dict__.keys()):
-                if isinstance(model.__dict__[key], np.ndarray):
-                    print(key, (model.__dict__[key] == deserialized_dict_model.__dict__[key]).all())
-                else:
-                    print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
+            # for key in sorted(model.__dict__.keys()):
+            #     if isinstance(model.__dict__[key], np.ndarray):
+            #         print(key, (model.__dict__[key] == deserialized_dict_model.__dict__[key]).all())
+            #     else:
+            #         print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
 
             actual_ft = deserialized_model.fit_transform(data, labels)
 
@@ -80,11 +80,11 @@ class TestAPI(unittest.TestCase):
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
 
-            for key in sorted(model.__dict__.keys()):
-                if isinstance(model.__dict__[key], np.ndarray):
-                    print(key, (model.__dict__[key] == deserialized_dict_model.__dict__[key]).all())
-                else:
-                    print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
+            # for key in sorted(model.__dict__.keys()):
+            #     if isinstance(model.__dict__[key], np.ndarray):
+            #         print(key, (model.__dict__[key] == deserialized_dict_model.__dict__[key]).all())
+            #     else:
+            #         print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
 
             actual_p = deserialized_model.predict(data)
 
@@ -102,11 +102,11 @@ class TestAPI(unittest.TestCase):
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
 
-            for key in sorted(model.__dict__.keys()):
-                if isinstance(model.__dict__[key], np.ndarray):
-                    print(key, (model.__dict__[key] == deserialized_dict_model.__dict__[key]).all())
-                else:
-                    print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
+            # for key in sorted(model.__dict__.keys()):
+            #     if isinstance(model.__dict__[key], np.ndarray):
+            #         print(key, (model.__dict__[key] == deserialized_dict_model.__dict__[key]).all())
+            #     else:
+            #         print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
 
             actual_fp = deserialized_model.fit_predict(data, labels)
 

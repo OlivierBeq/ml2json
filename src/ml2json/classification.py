@@ -40,6 +40,13 @@ try:
     __optionals__.append('CatBoostClassifier')
 except:
     pass
+try:
+    from imblearn.ensemble import (EasyEnsembleClassifier, RUSBoostClassifier, BalancedBaggingClassifier,
+                                   BalancedRandomForestClassifier)
+    __optionals__.extend(['imblearn'])
+except:
+    pass
+
 
 from . import regression
 from .utils import csr
@@ -904,6 +911,7 @@ def deserialize_adaboost_classifier(model_dict):
 
 
 def serialize_bagging_classifier(model):
+    from .ml2json import serialize_model
     serialized_model = {
         'meta': 'bagging-classifier',
         '_max_samples': model._max_samples,
@@ -912,7 +920,7 @@ def serialize_bagging_classifier(model):
         'n_features_in_': model.n_features_in_,
         'classes_': model.classes_.tolist(),
         '_seeds': model._seeds.tolist(),
-        'estimators_': [serialize_decision_tree(decision_tree) for decision_tree in model.estimators_],
+        'estimators_': [serialize_model(decision_tree) for decision_tree in model.estimators_],
         'estimator_params': model.estimator_params,
         'estimators_features_': [array.tolist() for array in model.estimators_features_],
         'params': model.get_params()
@@ -949,6 +957,7 @@ def serialize_bagging_classifier(model):
 
 
 def deserialize_bagging_classifier(model_dict):
+    from .ml2json import deserialize_model
 
     if model_dict.get('base_estimator_') is not None:
         model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
@@ -968,7 +977,7 @@ def deserialize_bagging_classifier(model_dict):
         model.base_estimator_ = model_dict['params']['base_estimator']
     else:
         model._estimator = model_dict['params']['estimator']
-    model.estimators_ = [deserialize_decision_tree(decision_tree) for decision_tree in model_dict['estimators_']]
+    model.estimators_ = [deserialize_model(decision_tree) for decision_tree in model_dict['estimators_']]
     model._max_samples = model_dict['_max_samples']
     model._n_samples = model_dict['_n_samples']
     model._max_features = model_dict['_max_features']
@@ -1365,6 +1374,7 @@ def serialize_stacking_classifier(model):
 
     return serialized_model
 
+
 def deserialize_stacking_classifier(model_dict):
     # Import here to avoid circular imports
     from . import deserialize_model
@@ -1415,6 +1425,7 @@ def serialize_voting_classifier(model):
 
     return serialized_model
 
+
 def deserialize_voting_classifier(model_dict):
     # Import here to avoid circular imports
     from . import deserialize_model
@@ -1433,3 +1444,60 @@ def deserialize_voting_classifier(model_dict):
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
+
+
+if 'imblearn' in __optionals__:
+    def serialize_easy_ensemble_classifier(model):
+        # Import here to avoid circular imports
+        from . import serialize_model
+
+        serialized_model = {
+            'meta': 'easy-ensemble-classifier',
+            'estimator_': serialize_model(model.estimator_),
+            'estimators_': [serialize_model(estimator) for estimator in model.estimator_],
+            'estimators_samples_': [arr_.tolist() for arr_ in model.estimators_samples_],
+            'estimators_features_': [arr_.tolist() for arr_ in model.estimators_features_],
+            'classes_': model.classes_.tolist(),
+            'n_classes_': model.n_classes_,
+            'n_features_': model.n_features_,
+            'params':model.get_params(),
+            # 'params': {key: value
+            #            for key, value in model.get_params().items()
+            #            if key.split('__')[0] not in list(zip(*model.__dict__['estimators_']))[0]}
+        }
+
+        # Serialize the estimators in params
+        if serialized_model['params']['estimator'] is not None:
+            serialized_model['params']['estimator'] = serialize_model(serialized_model['params']['estimator'])
+
+        if 'n_features_in_' in model.__dict__:
+            serialized_model['n_features_in_'] = model.n_features_in_
+        if 'feature_names_in_' in model.__dict__:
+            serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+        return serialized_model
+
+
+    def deserialize_easy_ensemble_classifier(model_dict):
+        # Import here to avoid circular imports
+        from . import deserialize_model
+
+        if model_dict['params']['estimator'] is not None :
+            model_dict['params']['estimator'] = deserialize_model(model_dict['params']['estimator'])
+
+        model = EasyEnsembleClassifier(**model_dict['params'])
+
+        model.estimator_ = deserialize_model(model_dict['estimator_'])
+        model.estimators_ = [deserialize_model(estimator) for estimator in model_dict['estimators_']]
+        model.estimators_samples_ = [np.array(values) for values in model_dict['estimators_samples_']]
+        model.estimators_features_ = [np.array(values) for values in model_dict['estimators_features_']]
+        model.classes_ = np.array(model_dict['classes_'])
+        model.n_classes_ = model.n_classes_
+        model.n_features_ = model.n_features_
+
+        if 'n_features_in_' in model_dict.keys():
+            model.n_features_in_ = model_dict['n_features_in_']
+        if 'feature_names_in_' in model_dict.keys():
+            model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+
+        return model

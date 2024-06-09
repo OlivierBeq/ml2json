@@ -38,10 +38,7 @@ class TestAPI(unittest.TestCase):
         self.openml_X = scale(self.openml_X)
         self.openml_y = label_binarize(self.openml_y, classes=['tested_positive', 'tested_negative'])
 
-    def tearDown(self):
-        clear_data_home()
-
-    def check_fitresample_model(self, model, model_name, X, y, decimal=6):
+    def check_fitresample_model(self, model, model_name, X, y, decimal=6, is_text=False):
         expected_ft = model.fit_resample(X, y)
 
         serialized_dict_model = ml2json.to_dict(model)
@@ -53,16 +50,20 @@ class TestAPI(unittest.TestCase):
 
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
 
-            for key in sorted(model.__dict__.keys()):
-                if isinstance(model.__dict__[key], np.ndarray):
-                    print(key, (model.__dict__[key] == deserialized_dict_model.__dict__[key]).all())
-                else:
-                    print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
+            # for key in sorted(model.__dict__.keys()):
+            #     if isinstance(model.__dict__[key], np.ndarray):
+            #         print(key, (model.__dict__[key] == deserialized_dict_model.__dict__[key]).all())
+            #     else:
+            #         print(key, model.__dict__[key] == deserialized_dict_model.__dict__[key])
 
             actual_ft = deserialized_model.fit_resample(X, y)
 
-            np.testing.assert_array_almost_equal(expected_ft[0], actual_ft[0], decimal=decimal)
-            np.testing.assert_array_almost_equal(expected_ft[1], actual_ft[1], decimal=decimal)
+            if not is_text:
+                np.testing.assert_array_almost_equal(expected_ft[0], actual_ft[0], decimal=decimal)
+                np.testing.assert_array_almost_equal(expected_ft[1], actual_ft[1], decimal=decimal)
+            else:
+                np.testing.assert_array_equal(expected_ft[0], actual_ft[0])
+                np.testing.assert_array_equal(expected_ft[1], actual_ft[1])
 
 
     def test_cluster_centroids(self):
@@ -110,17 +111,61 @@ class TestAPI(unittest.TestCase):
     def test_one_sided_selection(self):
         model = OneSidedSelection(random_state=42)
         self.check_fitresample_model(model, 'one_sided_selection.json',
-                                     self.openml_X, self.openml_y,
-                                     decimal=4)
+                                     self.openml_X, self.openml_y)
 
     def test_random_under_sampler(self):
         model = RandomUnderSampler(random_state=8468546)
         self.check_fitresample_model(model, 'random_under_sampler.json',
-                                     self.openml_X, self.openml_y,
-                                     decimal=4)
+                                     self.openml_X, self.openml_y)
 
     def test_tomek_links(self):
         model = TomekLinks()
         self.check_fitresample_model(model, 'tomek_links.json',
-                                     self.openml_X, self.openml_y,
-                                     decimal=4)
+                                     self.openml_X, self.openml_y)
+
+    def test_random_over_sampler(self):
+        model = RandomOverSampler(random_state=48961)
+        self.check_fitresample_model(model, 'random_over_sampler.json',
+                                     self.X, self.y)
+
+    def test_smote(self):
+        model = SMOTE(random_state=48961)
+        self.check_fitresample_model(model, 'smote.json',
+                                     self.X, self.y)
+
+    def test_smotenc(self):
+        model = SMOTENC(categorical_features=[18, 19], random_state=48961)
+        X = np.copy(self.X)
+        X[:, -2:] = np.random.default_rng(1234).integers(0, 4, size=(1000, 2))
+        self.check_fitresample_model(model, 'smotenc.json',
+                                     X, self.y)
+
+    def test_smoten(self):
+        model = SMOTEN(random_state=6387687)
+        X = np.array(["A"] * 10 + ["B"] * 20 + ["C"] * 30, dtype=object).reshape(-1, 1)
+        y = np.array([0] * 20 + [1] * 40, dtype=np.int32)
+        self.check_fitresample_model(model, 'smoten.json', X, y, is_text=True)
+
+    def test_adasyn(self):
+        model = SMOTEN(random_state=486547865183 // 4856)
+        self.check_fitresample_model(model, 'adasyn.json', self.X, self.y)
+
+    def test_borderline_smote(self):
+        model = BorderlineSMOTE(random_state=647189)
+        self.check_fitresample_model(model, 'borderline_smote.json', self.X, self.y)
+
+    def test_kmeans_smote(self):
+        model = KMeansSMOTE(random_state=4148)
+        self.check_fitresample_model(model, 'kmeans_smote.json', self.X, self.y)
+
+    def test_svm_smote(self):
+        model = SVMSMOTE(random_state=51655)
+        self.check_fitresample_model(model, 'svm_smote.json', self.X, self.y)
+
+    def test_smote_enn(self):
+        model = SMOTEENN(random_state=52787)
+        self.check_fitresample_model(model, 'smote_enn.json', self.X, self.y)
+
+    def test_smote_tomek(self):
+        model = SMOTETomek(random_state=987634)
+        self.check_fitresample_model(model, 'smote_tomek.json', self.X, self.y)

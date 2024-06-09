@@ -4,6 +4,7 @@ import inspect
 import importlib
 
 import numpy as np
+import scipy.sparse
 from sklearn.neighbors import NearestNeighbors, KDTree, KernelDensity
 
 # Allow additional dependencies to be optional
@@ -22,7 +23,7 @@ def serialize_nearest_neighbors(model):
         'meta': 'nearest-neighbors',
         'effective_metric_params_': model.effective_metric_params_,
         '_fit_method': model._fit_method,
-        '_fit_X': model._fit_X.tolist(),
+        '_fit_X': model._fit_X.tolist() if not scipy.sparse.issparse(model._fit_X) else serialize_csr_matrix(model._fit_X),
         'n_samples_fit_': model.n_samples_fit_,
         'effective_metric_': model.effective_metric_,
         'n_features_in_': model.n_features_in_,
@@ -44,7 +45,7 @@ def deserialize_nearest_neighbors(model_dict):
 
     model.effective_metric_params_ = model_dict['effective_metric_params_']
     model._fit_method = model_dict['_fit_method']
-    model._fit_X = np.array(model_dict['_fit_X'])
+    model._fit_X = np.array(model_dict['_fit_X']) if isinstance(model_dict['_fit_X'], list) else deserialize_csr_matrix(model_dict['_fit_X'])
     model.n_samples_fit_ = model_dict['n_samples_fit_']
     model.effective_metric_ = model_dict['effective_metric_']
     model.n_features_in_ = model_dict['n_features_in_']
