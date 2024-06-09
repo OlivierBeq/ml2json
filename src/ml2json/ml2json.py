@@ -24,7 +24,7 @@ from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
                                    MinMaxScaler, StandardScaler, KernelCenterer,
                                    OneHotEncoder, RobustScaler, MaxAbsScaler,
-                                   OrdinalEncoder)
+                                   OrdinalEncoder, Normalizer)
 from sklearn.svm import SVR
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
@@ -448,6 +448,9 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
         return serialize_version(model, model_dict)
     elif isinstance(model, OrdinalEncoder):
         model_dict = pre.serialize_ordinal_encoder(model)
+        return serialize_version(model, model_dict)
+    elif isinstance(model, Normalizer):
+        model_dict = pre.serialize_normalizer(model)
         return serialize_version(model, model_dict)
 
     # Applicability Domain
@@ -908,6 +911,9 @@ def deserialize_model(model_dict: Dict):
     elif model_dict['meta'] == 'ordinal-encoder':
         check_version(model_dict)
         return pre.deserialize_ordinal_encoder(model_dict)
+    elif model_dict['meta'] == 'normalizer':
+        check_version(model_dict)
+        return pre.deserialize_normalizer(model_dict)
 
     # Applicability Domain
     elif model_dict['meta'] == 'bounding-box-ad':

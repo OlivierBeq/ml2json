@@ -252,7 +252,7 @@ ml2json requires scikit-learn >= 1.2.2, <=1.4.0.
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MultiLabelBinarizer                   | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MaxAbsScaler                          | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.MinMaxScaler                          | :heavy_check_mark: |
-| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.Normalizer                            |        :x:         |
+| Scikit-Learn       | Preprocessing and Normalization           | preprocessing.Normalizer                            | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.OneHotEncoder                         | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.OrdinalEncoder                        | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.PolynomialFeatures                    |        :x:         |

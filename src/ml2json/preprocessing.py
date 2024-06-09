@@ -5,7 +5,8 @@ import importlib
 
 import numpy as np
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler,
-                                   KernelCenterer, OneHotEncoder, RobustScaler, MaxAbsScaler, OrdinalEncoder)
+                                   KernelCenterer, OneHotEncoder, RobustScaler, MaxAbsScaler, OrdinalEncoder,
+                                   Normalizer)
 
 
 def serialize_label_binarizer(label_binarizer):
@@ -366,5 +367,31 @@ def deserialize_ordinal_encoder(model_dict):
         model._default_to_infrequent_mappings = [np.array(x) for x in model_dict['_default_to_infrequent_mappings']]
     if '_missing_indices' in model_dict.keys():
         model._missing_indices = {int(param): int(value) for param, value in model_dict['_missing_indices'].items()}
+
+    return model
+
+
+def serialize_normalizer(model):
+    serialized_model = {
+        'meta': 'normalizer',
+        'params': model.get_params(),
+    }
+
+    if 'n_features_in_' in model.__dict__:
+        serialized_model['n_features_in_'] = model.n_features_in_
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+    return serialized_model
+
+
+def deserialize_normalizer(model_dict):
+
+    model = Normalizer(**model_dict['params'])
+
+    if 'n_features_in_' in model_dict.keys():
+        model.n_features_in_ = model_dict['n_features_in_']
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model

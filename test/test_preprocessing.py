@@ -8,7 +8,7 @@ from sklearn.datasets import fetch_california_housing
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
                                    MinMaxScaler, StandardScaler, KernelCenterer,
                                    OneHotEncoder, RobustScaler, MaxAbsScaler,
-                                   OrdinalEncoder)
+                                   OrdinalEncoder, Normalizer)
 from sklearn.metrics.pairwise import pairwise_kernels
 
 from src import ml2json
@@ -214,3 +214,23 @@ class TestAPI(unittest.TestCase):
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
             actual_t = deserialized_model.transform(X_test)
             np.testing.assert_array_equal(expected_t, actual_t)
+
+    def test_normalizer(self):
+        scaler = Normalizer()
+
+        expected_ft = scaler.fit_transform(self.X)
+        expected_t = scaler.transform(self.X)
+
+        serialized_dict_model = ml2json.to_dict(scaler)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
+
+        ml2json.to_json(scaler, 'normalizer.json')
+        deserialized_json_model = ml2json.from_json('normalizer.json')
+        os.remove('normalizer.json')
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_t = deserialized_model.transform(self.X)
+            actual_ft = deserialized_model.fit_transform(self.X)
+
+            np.testing.assert_array_equal(expected_t, actual_t)
+            np.testing.assert_array_equal(expected_ft, actual_ft)
