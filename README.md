@@ -277,17 +277,17 @@ ml2json requires scikit-learn >= 1.2.2, <=1.4.0.
 | Scikit-Learn       | Decision Trees                            | tree.DecisionTreeRegressor                          | :heavy_check_mark: |
 | Scikit-Learn       | Decision Trees                            | tree.ExtraTreeClassifier                            | :heavy_check_mark: |
 | Scikit-Learn       | Decision Trees                            | tree.ExtraTreeRegressor                             | :heavy_check_mark: |
-| Imbalanced-Learn   | Under-sampling                            | ClusterCentroids                                    |        :x:         |
-| Imbalanced-Learn   | Under-sampling                            | CondensedNearestNeighbour                           |        :x:         |
-| Imbalanced-Learn   | Under-sampling                            | EditedNearestNeighbours                             |        :x:         |
-| Imbalanced-Learn   | Under-sampling                            | RepeatedEditedNearestNeighbours                     |        :x:         |
-| Imbalanced-Learn   | Under-sampling                            | AllKNN                                              |        :x:         |
-| Imbalanced-Learn   | Under-sampling                            | InstanceHardnessThreshold                           |        :x:         |
-| Imbalanced-Learn   | Under-sampling                            | NearMiss                                            |        :x:         |
-| Imbalanced-Learn   | Under-sampling                            | NeighbourhoodCleaningRule                           |        :x:         |
-| Imbalanced-Learn   | Under-sampling                            | OneSidedSelection                                   |        :x:         |
-| Imbalanced-Learn   | Under-sampling                            | RandomUnderSampler                                  |        :x:         |
-| Imbalanced-Learn   | Under-sampling                            | TomekLinks                                          |        :x:         |
+| Imbalanced-Learn   | Under-sampling                            | ClusterCentroids                                    | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | CondensedNearestNeighbour                           | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | EditedNearestNeighbours                             | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | RepeatedEditedNearestNeighbours                     | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | AllKNN                                              | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | InstanceHardnessThreshold                           | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | NearMiss                                            | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | NeighbourhoodCleaningRule                           | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | OneSidedSelection                                   | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | RandomUnderSampler                                  | :heavy_check_mark: |
+| Imbalanced-Learn   | Under-sampling                            | TomekLinks                                          | :heavy_check_mark: |
 | Imbalanced-Learn   | Over-sampling                             | RandomOverSampler                                   |        :x:         |
 | Imbalanced-Learn   | Over-sampling                             | SMOTE                                               |        :x:         |
 | Imbalanced-Learn   | Over-sampling                             | SMOTENC                                             |        :x:         |

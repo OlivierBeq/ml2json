@@ -48,6 +48,7 @@ from . import manifold as man
 from . import neighbors as nei
 from . import cross_decomposition as crdec
 from . import applicability_domain as ad
+from . import over_undersampling as ous
 from .utils import is_model_fitted
 
 # Make additional dependencies optional
@@ -85,6 +86,16 @@ if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
                                                 CentroidDistanceApplicabilityDomain,
                                                 KNNApplicabilityDomain,
                                                 StandardizationApproachApplicabilityDomain)
+if 'imblearn' in ous.__optionals__:
+    from imblearn.under_sampling import (ClusterCentroids, CondensedNearestNeighbour, EditedNearestNeighbours,
+                                         RepeatedEditedNearestNeighbours, AllKNN, InstanceHardnessThreshold,
+                                         NearMiss, NeighbourhoodCleaningRule, OneSidedSelection,
+                                         RandomUnderSampler, TomekLinks)
+    from imblearn.over_sampling import (RandomOverSampler, SMOTE, SMOTEN, SMOTENC, ADASYN, BorderlineSMOTE,
+                                        KMeansSMOTE, SVMSMOTE)
+    from imblearn.combine import SMOTEENN, SMOTETomek
+    from imblearn.ensemble import (EasyEnsembleClassifier, RUSBoostClassifier, BalancedBaggingClassifier,
+                                   BalancedRandomForestClassifier)
 
 
 def serialize_model(model, catboost_data: Pool = None) -> Dict:
@@ -467,6 +478,42 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
     elif isinstance(model, StandardizationApproachApplicabilityDomain):
         model_dict = ad.serialize_standardization_approach_applicability_domain(model)
         return serialize_version(model, model_dict)
+
+    # Balancing
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, ClusterCentroids):
+        model_dict = ous.serialize_cluster_centroids(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, CondensedNearestNeighbour):
+        model_dict = ous.serialize_condensed_nearest_neighbours(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, EditedNearestNeighbours):
+        model_dict = ous.serialize_edited_nearest_neighbours(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, RepeatedEditedNearestNeighbours):
+        model_dict = ous.serialize_repeated_edited_nearest_neighbours(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, AllKNN):
+        model_dict = ous.serialize_all_knn(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, InstanceHardnessThreshold):
+        model_dict = ous.serialize_instance_hardness_threshold(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, NearMiss):
+        model_dict = ous.serialize_near_miss(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, NeighbourhoodCleaningRule):
+        model_dict = ous.serialize_neighbourhood_cleaning_rule(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, OneSidedSelection):
+        model_dict = ous.serialize_one_sided_selection(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, RandomUnderSampler):
+        model_dict = ous.serialize_random_under_sampler(model)
+        return serialize_version(model, model_dict)
+    elif 'imblearn' in ous.__optionals__ and isinstance(model, TomekLinks):
+        model_dict = ous.serialize_tomek_links(model)
+        return serialize_version(model, model_dict)
+
 
     # Otherwise
     else:
@@ -853,6 +900,41 @@ def deserialize_model(model_dict: Dict):
     elif model_dict['meta'] == 'standardization-approach-ad':
         check_version(model_dict)
         return ad.deserialize_standardization_approach_applicability_domain(model_dict)
+
+    # Balancing
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'cluster-centroids':
+        check_version(model_dict)
+        return ous.deserialize_cluster_centroids(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'condensed-nearest-neighbours':
+        check_version(model_dict)
+        return ous.deserialize_condensed_nearest_neighbours(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'edited-nearest-neighbours':
+        check_version(model_dict)
+        return ous.deserialize_edited_nearest_neighbours(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'repeated-edited-nearest-neighbours':
+        check_version(model_dict)
+        return ous.deserialize_repeated_edited_nearest_neighbours(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'all-knn':
+        check_version(model_dict)
+        return ous.deserialize_all_knn(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'instance-hardness-threshold':
+        check_version(model_dict)
+        return ous.deserialize_instance_hardness_threshold(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'near-miss':
+        check_version(model_dict)
+        return ous.deserialize_near_miss(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'neighbourhood-cleaning-rule':
+        check_version(model_dict)
+        return ous.deserialize_neighbourhood_cleaning_rule(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'one-sided-selection':
+        check_version(model_dict)
+        return ous.deserialize_one_sided_selection(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'random-under-sampler':
+        check_version(model_dict)
+        return ous.deserialize_random_under_sampler(model_dict)
+    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'tomek-links':
+        check_version(model_dict)
+        return ous.deserialize_tomek_links(model_dict)
 
     # Otherwise
     else:
