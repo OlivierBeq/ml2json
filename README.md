@@ -57,7 +57,7 @@ In addition of the support for scikit-learn models, ml2json supports the followi
 - UMAP
 - PyNNDescent
 - Prince
-- MlChemAD
+- MLChemAD
 - openTSNE
 
 ml2json requires scikit-learn >= 1.2.2, <=1.4.0.

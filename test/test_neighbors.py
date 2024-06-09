@@ -91,4 +91,4 @@ class TestAPI(unittest.TestCase):
 
     def test_nndescent(self):
         if 'NNDescent' in __optionals__:
-            self.check_kdtree_model(NNDescent(self.data), 'nn-descent.json')
+            self.check_kdtree_model(NNDescent(self.data, random_state=1234), 'nn-descent.json')
