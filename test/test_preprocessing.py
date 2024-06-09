@@ -7,7 +7,8 @@ import numpy as np
 from sklearn.datasets import fetch_california_housing
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
                                    MinMaxScaler, StandardScaler, KernelCenterer,
-                                   OneHotEncoder, RobustScaler, MaxAbsScaler)
+                                   OneHotEncoder, RobustScaler, MaxAbsScaler,
+                                   OrdinalEncoder)
 from sklearn.metrics.pairwise import pairwise_kernels
 
 from src import ml2json
@@ -169,3 +170,47 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_equal(expected_t, actual_t)
             np.testing.assert_array_equal(expected_it, actual_it)
+
+    def test_ordinal_encoder(self):
+        X_train = np.array([["a"] * 5 + ["b"] * 20 + ["c"] * 10 + ["d"] * 3 + [np.nan]],dtype=object).T
+        model = OrdinalEncoder()
+        model.fit(X_train)
+        X_test = np.array([["a"], ["b"], ["c"], ["d"]], dtype=object)
+
+        expected_t = model.transform(X_test)
+        expected_it = model.inverse_transform(expected_t)
+
+        serialized_dict_model = ml2json.to_dict(model)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
+
+        model_name = 'onehot-encoder.json'
+        ml2json.to_json(model, model_name)
+        deserialized_json_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_t = deserialized_model.transform(X_test)
+            actual_it = deserialized_model.inverse_transform(actual_t)
+
+            np.testing.assert_array_equal(expected_t, actual_t)
+            np.testing.assert_array_equal(expected_it, actual_it)
+
+        model = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=3,
+                               max_categories=3, encoded_missing_value=4)
+        model.fit(X_train)
+        X_test = np.array([["a"], ["b"], ["c"], ["d"], ["e"]], dtype=object)
+
+        expected_t = model.transform(X_test)
+        expected_it = model.inverse_transform(expected_t)
+
+        serialized_dict_model = ml2json.to_dict(model)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
+
+        model_name = 'onehot-encoder.json'
+        ml2json.to_json(model, model_name)
+        deserialized_json_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_t = deserialized_model.transform(X_test)
+            np.testing.assert_array_equal(expected_t, actual_t)

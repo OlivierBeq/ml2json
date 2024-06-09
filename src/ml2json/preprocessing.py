@@ -5,7 +5,7 @@ import importlib
 
 import numpy as np
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer, MinMaxScaler, StandardScaler,
-                                   KernelCenterer, OneHotEncoder, RobustScaler, MaxAbsScaler)
+                                   KernelCenterer, OneHotEncoder, RobustScaler, MaxAbsScaler, OrdinalEncoder)
 
 
 def serialize_label_binarizer(label_binarizer):
@@ -91,6 +91,7 @@ def deserialize_minmax_scaler(model_dict):
 
     return model
 
+
 def serialize_standard_scaler(model):
     serialized_model = {
         'meta': 'standard-scaler',
@@ -147,6 +148,7 @@ def deserialize_standard_scaler(model_dict):
 
     return model
 
+
 def serialize_robust_scaler(model):
     serialized_model = {
         'meta': 'robust-scaler',
@@ -163,6 +165,7 @@ def serialize_robust_scaler(model):
                                        else model.center_)
         
     return serialized_model
+
 
 def deserialize_robust_scaler(model_dict):
     model_dict['params']['quantile_range'] = tuple(model_dict['params']['quantile_range'])
@@ -183,6 +186,7 @@ def deserialize_robust_scaler(model_dict):
 
     return model
 
+
 def serialize_maxabs_scaler(model):
     serialized_model = {
         'meta': 'maxabs-scaler',
@@ -200,6 +204,7 @@ def serialize_maxabs_scaler(model):
         
     return serialized_model
 
+
 def deserialize_maxabs_scaler(model_dict):
     model = MaxAbsScaler(**model_dict['params'])
     
@@ -214,6 +219,7 @@ def deserialize_maxabs_scaler(model_dict):
         
     return model
 
+
 def serialize_label_encoder(model):
     serialized_model = {
         'meta': 'label-encoder',
@@ -221,6 +227,7 @@ def serialize_label_encoder(model):
     }
 
     return serialized_model
+
 
 def deserialize_label_encoder(model_dict):
     model = LabelEncoder()
@@ -255,6 +262,7 @@ def deserialize_kernel_centerer(model_dict):
 
     return model
 
+
 def serialize_onehot_encoder(model):
     serialized_model = {
         'meta': 'onehot-encoder',
@@ -267,13 +275,20 @@ def serialize_onehot_encoder(model):
         'params': model.get_params(),
     }
 
-    serialized_model['params']['dtype'] = (inspect.getmodule(serialized_model['params']['dtype']).__name__,
-                                           serialized_model['params']['dtype'].__name__)
+    if inspect.getmodule(serialized_model['params']['dtype']) is None:
+        dtype = type(serialized_model['params']['dtype'])
+        name = serialized_model['params']['dtype'].name
+    else:
+        dtype = serialized_model['params']['dtype']
+        name = dtype.__name__
+
+    serialized_model['params']['dtype'] = (inspect.getmodule(dtype).__name__, name)
     
     if '_drop_idx_after_grouping' in model.__dict__: 
         serialized_model['_drop_idx_after_grouping'] = model._drop_idx_after_grouping.tolist() if model._drop_idx_after_grouping is not None else None
 
     return serialized_model
+
 
 def deserialize_onehot_encoder(model_dict):
 
@@ -291,5 +306,65 @@ def deserialize_onehot_encoder(model_dict):
     
     if '_drop_idx_after_grouping' in model_dict.keys():
         model._drop_idx_after_grouping = np.array(model_dict['_drop_idx_after_grouping']) if model_dict['_drop_idx_after_grouping'] is not None else None
+
+    return model
+
+
+def serialize_ordinal_encoder(model):
+    serialized_model = {
+        'meta': 'ordinal-encoder',
+        'categories_': [category.tolist() for category in model.categories_],
+        'categories_dtype': [f"np.dtype('{str(category.dtype)}')" for category in model.categories_],
+        '_infrequent_enabled': model._infrequent_enabled,
+        'n_features_in_': model.n_features_in_,
+        'params': model.get_params(),
+    }
+
+    if inspect.getmodule(serialized_model['params']['dtype']) is None:
+        dtype = type(serialized_model['params']['dtype'])
+        name = serialized_model['params']['dtype'].name
+    else:
+        dtype = serialized_model['params']['dtype']
+        name = dtype.__name__
+
+    serialized_model['params']['dtype'] = (inspect.getmodule(dtype).__name__, name)
+
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+    if 'infrequent_categories_' in model.__dict__:
+        serialized_model['infrequent_categories_'] = model.infrequent_categories_.tolist()
+    if '_infrequent_indices' in model.__dict__:
+        serialized_model['_infrequent_indices'] = [x.tolist() for x in model._infrequent_indices]
+    if '_default_to_infrequent_mappings' in model.__dict__:
+        serialized_model['_default_to_infrequent_mappings'] = [x.tolist() for x in model._default_to_infrequent_mappings]
+    if '_missing_indices' in model.__dict__:
+        serialized_model['_missing_indices'] = model._missing_indices
+
+    return serialized_model
+
+
+def deserialize_ordinal_encoder(model_dict):
+
+    model_dict['params']['dtype'] = getattr(importlib.import_module(model_dict['params']['dtype'][0]),
+                                            model_dict['params']['dtype'][1])
+
+    model = OrdinalEncoder(**model_dict['params'])
+
+    model.categories_ = [np.array(category, dtype=eval(dtype))
+                         for category, dtype in zip(model_dict['categories_'], model_dict['categories_dtype'])]
+    model.n_features_in_ = model_dict['n_features_in_']
+
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
+    if 'infrequent_categories_' in model_dict.keys():
+        model.infrequent_categories_ = np.array(model_dict['infrequent_categories_'])
+    if '_infrequent_enabled' in model_dict.keys():
+        model._infrequent_enabled = model_dict['_infrequent_enabled']
+    if '_infrequent_indices' in model_dict.keys():
+        model._infrequent_indices = [np.array(x) for x in model_dict['_infrequent_indices']]
+    if '_default_to_infrequent_mappings' in model_dict.keys():
+        model._default_to_infrequent_mappings = [np.array(x) for x in model_dict['_default_to_infrequent_mappings']]
+    if '_missing_indices' in model_dict.keys():
+        model._missing_indices = {int(param): int(value) for param, value in model_dict['_missing_indices'].items()}
 
     return model
