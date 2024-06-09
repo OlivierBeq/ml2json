@@ -242,7 +242,7 @@ ml2json requires scikit-learn >= 1.2.2, <=1.4.0.
 | Scikit-Learn       | Neural network models                     | neural_network.MLPClassifier                        | :heavy_check_mark: |
 | Scikit-Learn       | Neural network models                     | neural_network.MLPRegressor                         | :heavy_check_mark: |
 | Scikit-Learn       | Pipeline                                  | pipeline.FeatureUnion                               |        :x:         |
-| Scikit-Learn       | Pipeline                                  | pipeline.Pipeline                                   |        :x:         |
+| Scikit-Learn       | Pipeline                                  | pipeline.Pipeline                                   | :heavy_check_mark: |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.Binarizer                             |        :x:         |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.FunctionTransformer                   |        :x:         |
 | Scikit-Learn       | Preprocessing and Normalization           | preprocessing.KBinsDiscretizer                      |        :x:         |

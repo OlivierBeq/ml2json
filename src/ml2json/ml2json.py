@@ -38,6 +38,7 @@ from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAna
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
 from sklearn.neighbors import NearestNeighbors, KDTree, KNeighborsClassifier, KNeighborsRegressor, KernelDensity
+from sklearn.pipeline import FeatureUnion, Pipeline
 
 from . import classification as clf
 from . import regression as reg
@@ -50,7 +51,8 @@ from . import neighbors as nei
 from . import cross_decomposition as crdec
 from . import applicability_domain as ad
 from . import over_undersampling as ous
-from .utils import is_model_fitted
+from . import pipeline as ppl
+from .utils import is_model_fitted, recursive_inspection
 
 # Make additional dependencies optional
 if 'XGBRegressor' in reg.__optionals__:
@@ -548,6 +550,10 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
         model_dict = ous.serialize_smote_tomek(model)
         return serialize_version(model, model_dict)
 
+    # Pipeline
+    elif isinstance(model, Pipeline):
+        model_dict = ppl.serialize_pipeline(model)
+        return serialize_version(model, model_dict)
 
     # Otherwise
     else:
@@ -1002,6 +1008,11 @@ def deserialize_model(model_dict: Dict):
     elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smote-tomek':
         check_version(model_dict)
         return ous.deserialize_smote_tomek(model_dict)
+
+    # Pipeline
+    elif model_dict['meta'] == 'pipeline':
+        check_version(model_dict)
+        return ppl.deserialize_pipeline(model_dict)
 
     # Otherwise
     else:
