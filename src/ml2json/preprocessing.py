@@ -69,7 +69,7 @@ def serialize_minmax_scaler(model):
     }
 
     if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -118,7 +118,7 @@ def serialize_standard_scaler(model):
         serialized_model['n_samples_seen_'] = model.n_samples_seen_.tolist()
 
     if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
     return serialized_model
 
@@ -157,20 +157,23 @@ def serialize_robust_scaler(model):
         'params': model.get_params(),
     }
     if hasattr(model, 'scale_'):
-        serialized_model['scale_'] = (model.scale_.tolist() 
+        serialized_model['scale_'] = (model.scale_.tolist()
                                       if isinstance(model.scale_, np.ndarray)
                                       else model.scale_)
     if hasattr(model, 'center_'):
-        serialized_model['center_'] = (model.center_.tolist() 
+        serialized_model['center_'] = (model.center_.tolist()
                                        if isinstance(model.center_, np.ndarray)
                                        else model.center_)
-        
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+
     return serialized_model
 
 
 def deserialize_robust_scaler(model_dict):
     model_dict['params']['quantile_range'] = tuple(model_dict['params']['quantile_range'])
-    
+
     model = RobustScaler(**model_dict['params'])
     model.n_features_in_ = model_dict['n_features_in_']
 
@@ -185,6 +188,9 @@ def deserialize_robust_scaler(model_dict):
         else:
             model.center_ = model_dict['center_']
 
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+
     return model
 
 
@@ -193,31 +199,35 @@ def serialize_maxabs_scaler(model):
         'meta': 'maxabs-scaler',
         'params': model.get_params(),
     }
-    
+
     if 'n_features_in_' in model.__dict__:
         serialized_model['n_features_in_'] = model.n_features_in_
+    if 'feature_names_in_' in model.__dict__:
+        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
     if 'n_samples_seen_' in model.__dict__:
         serialized_model['n_samples_seen_'] = model.n_samples_seen_
     if 'max_abs_' in model.__dict__:
         serialized_model['max_abs_'] = model.max_abs_.tolist()
-    if 'scale_' in model.__dict__: 
+    if 'scale_' in model.__dict__:
         serialized_model['scale_'] = model.scale_.tolist()
-        
+
     return serialized_model
 
 
 def deserialize_maxabs_scaler(model_dict):
     model = MaxAbsScaler(**model_dict['params'])
-    
+
     if 'n_features_in_' in model_dict.keys():
         model.n_features_in_ = model_dict['n_features_in_']
+    if 'feature_names_in_' in model_dict.keys():
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
     if 'n_samples_seen_' in model_dict.keys():
         model.n_samples_seen_ = model_dict['n_samples_seen_']
     if 'max_abs_' in model_dict.keys():
         model.max_abs_ = np.array(model_dict['max_abs_'])
     if 'scale_' in model_dict.keys():
         model.scale_ = np.array(model_dict['scale_'])
-        
+
     return model
 
 
@@ -284,8 +294,8 @@ def serialize_onehot_encoder(model):
         name = dtype.__name__
 
     serialized_model['params']['dtype'] = (inspect.getmodule(dtype).__name__, name)
-    
-    if '_drop_idx_after_grouping' in model.__dict__: 
+
+    if '_drop_idx_after_grouping' in model.__dict__:
         serialized_model['_drop_idx_after_grouping'] = model._drop_idx_after_grouping.tolist() if model._drop_idx_after_grouping is not None else None
 
     return serialized_model
@@ -304,7 +314,7 @@ def deserialize_onehot_encoder(model_dict):
     model._infrequent_enabled = model_dict['_infrequent_enabled']
     model.n_features_in_ = model_dict['n_features_in_']
     model._n_features_outs = model_dict['_n_features_outs']
-    
+
     if '_drop_idx_after_grouping' in model_dict.keys():
         model._drop_idx_after_grouping = np.array(model_dict['_drop_idx_after_grouping']) if model_dict['_drop_idx_after_grouping'] is not None else None
 
