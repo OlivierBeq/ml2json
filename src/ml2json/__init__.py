@@ -4,4 +4,4 @@ from .ml2json import (serialize_model, deserialize_model, to_dict, from_dict, to
                       dict_to_json, json_to_dict)
 
 
-__version__ = '0.5.0'
+__version__ = '0.5.1'
