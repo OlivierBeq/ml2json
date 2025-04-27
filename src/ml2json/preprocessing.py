@@ -88,7 +88,7 @@ def deserialize_minmax_scaler(model_dict):
     model.n_samples_seen_ = model_dict['n_samples_seen_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -145,7 +145,7 @@ def deserialize_standard_scaler(model_dict):
         model.n_samples_seen_ = model_dict['n_samples_seen_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -189,7 +189,7 @@ def deserialize_robust_scaler(model_dict):
             model.center_ = model_dict['center_']
 
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
 
@@ -220,7 +220,7 @@ def deserialize_maxabs_scaler(model_dict):
     if 'n_features_in_' in model_dict.keys():
         model.n_features_in_ = model_dict['n_features_in_']
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
     if 'n_samples_seen_' in model_dict.keys():
         model.n_samples_seen_ = model_dict['n_samples_seen_']
     if 'max_abs_' in model_dict.keys():
@@ -402,6 +402,6 @@ def deserialize_normalizer(model_dict):
     if 'n_features_in_' in model_dict.keys():
         model.n_features_in_ = model_dict['n_features_in_']
     if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+        model.feature_names_in_ = np.array(model_dict['feature_names_in_'])
 
     return model
