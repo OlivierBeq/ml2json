@@ -38,7 +38,7 @@ class TestAPI(unittest.TestCase):
         self.simple_test_data = [0, 1, 2, 1]
         self.simple_test_labels = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 0]])
 
-        self.X = fetch_california_housing()['data']
+        self.X = fetch_california_housing(as_frame=True)['data']
         self.kernel_X = pairwise_kernels(self.X[:100], metric="linear", filter_params=True, degree=3, coef0=1)
 
     def check_model(self, model, model_name, data, labels):
