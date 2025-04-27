@@ -388,7 +388,7 @@ def deserialize_gradient_boosting_regressor(model_dict):
     model.train_score_ = np.array(model_dict['train_score_'])
     model.max_features_ = model_dict['max_features_']
     model.n_features_in_ = model_dict['n_features_in_']
-    
+
     if sklearn.__version__ >= '1.4.0':
         if model_dict['_loss'] == 'ls':
             model._loss = loss.HalfSquaredError()
