@@ -383,7 +383,7 @@ def serialize_dbscan(model):
         'core_sample_indices_': model.core_sample_indices_.tolist(),
         'labels_': model.labels_.tolist(),
         'n_features_in_': model.n_features_in_,
-        '_estimator_type': model._estimator_type,
+        '_estimator_type': getattr(model, '_estimator_type', model.__sklearn_tags__().estimator_type),
         'params': model.get_params()
     }
 
@@ -400,7 +400,8 @@ def deserialize_dbscan(model_dict):
     model.labels_ = np.array(model_dict['labels_'])
     model.core_sample_indices_ = model_dict['core_sample_indices_']
     model.n_features_in_ = model_dict['n_features_in_']
-    model._estimator_type = model_dict['_estimator_type']
+    if not hasattr(model, '_estimator_type'):
+        model._estimator_type = model_dict['_estimator_type']
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])

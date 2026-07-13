@@ -215,6 +215,7 @@ def deserialize_svr(model_dict):
     model = SVR(**model_dict['params'])
     model.shape_fit_ = model_dict['shape_fit_']
     model._gamma = model_dict['_gamma']
+    model._effective_probability = model.probability is True
 
 
     model.support_ = np.array(model_dict['support_']).astype(np.int32)

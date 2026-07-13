@@ -287,13 +287,17 @@ def serialize_onehot_encoder(model):
     }
 
     if inspect.getmodule(serialized_model['params']['dtype']) is None:
-        dtype = type(serialized_model['params']['dtype'])
+        # `dtype` is a np.dtype instance (e.g. np.dtype('float64')): the equivalent
+        # scalar type lives in the `numpy` module under its `.name`, not in the
+        # module of `type(dtype)` (e.g. numpy.dtypes.Float64DType since NumPy 2.0)
+        module_name = 'numpy'
         name = serialized_model['params']['dtype'].name
     else:
         dtype = serialized_model['params']['dtype']
+        module_name = inspect.getmodule(dtype).__name__
         name = dtype.__name__
 
-    serialized_model['params']['dtype'] = (inspect.getmodule(dtype).__name__, name)
+    serialized_model['params']['dtype'] = (module_name, name)
 
     if '_drop_idx_after_grouping' in model.__dict__:
         serialized_model['_drop_idx_after_grouping'] = model._drop_idx_after_grouping.tolist() if model._drop_idx_after_grouping is not None else None
@@ -332,13 +336,17 @@ def serialize_ordinal_encoder(model):
     }
 
     if inspect.getmodule(serialized_model['params']['dtype']) is None:
-        dtype = type(serialized_model['params']['dtype'])
+        # `dtype` is a np.dtype instance (e.g. np.dtype('float64')): the equivalent
+        # scalar type lives in the `numpy` module under its `.name`, not in the
+        # module of `type(dtype)` (e.g. numpy.dtypes.Float64DType since NumPy 2.0)
+        module_name = 'numpy'
         name = serialized_model['params']['dtype'].name
     else:
         dtype = serialized_model['params']['dtype']
+        module_name = inspect.getmodule(dtype).__name__
         name = dtype.__name__
 
-    serialized_model['params']['dtype'] = (inspect.getmodule(dtype).__name__, name)
+    serialized_model['params']['dtype'] = (module_name, name)
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()

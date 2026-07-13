@@ -158,7 +158,11 @@ if 'NNDescent' in __optionals__:
         del state['_distance_func'], state['_tree_search']
         del state['_search_function'], state['_deheap_function']
         del state['_distance_correction']
+        state.pop('_rerank_function', None)
 
+        state['_input_dtype'] = np.dtype(state['_input_dtype']).name
+        if '_min_distance' in state:
+            state['_min_distance'] = float(state['_min_distance'])
         state['_raw_data'] = state['_raw_data'].astype(float).tolist()
         state['rng_state'] = state['rng_state'].astype(int).tolist()
         state['search_rng_state'] = state['search_rng_state'].astype(int).tolist()
@@ -185,6 +189,9 @@ if 'NNDescent' in __optionals__:
 
         params = model_dict['params']
 
+        params['_input_dtype'] = np.dtype(params['_input_dtype']).type
+        if '_min_distance' in params:
+            params['_min_distance'] = np.float32(params['_min_distance'])
         params['_raw_data'] = np.array(params['_raw_data'], dtype=np.float32)
         params['rng_state'] = np.array(params['rng_state'], dtype=np.int64)
         params['search_rng_state'] = np.array(params['search_rng_state'], dtype=np.int64)

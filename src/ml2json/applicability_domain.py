@@ -134,6 +134,14 @@ if 'PCABoundingBoxApplicabilityDomain' in __optionals__:
             model.min_ = np.array(model_dict['min_'])
             model.max_ = np.array(model_dict['max_'])
 
+            # Re-fitting a PCA from serialized components_/mean_ reproduces transform()
+            # up to a few ULPs (BLAS reduction order depends on array memory layout),
+            # which can flip contains() for points that sit exactly on the training
+            # boundary. Widen the box by a negligible epsilon to absorb that noise.
+            tol = 1e4 * np.finfo(np.float64).eps * np.maximum(np.abs(model.min_), np.abs(model.max_))
+            model.min_ = model.min_ - tol
+            model.max_ = model.max_ + tol
+
         return model
 
 def serialize_topkat_applicability_domain(model):

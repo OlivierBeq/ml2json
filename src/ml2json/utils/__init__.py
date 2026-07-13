@@ -16,6 +16,14 @@ def is_model_fitted(model):
             return True
     except:
         pass
+    #   1.2 mlchemad applicability domains are not sklearn estimators and thus
+    #       lack __sklearn_tags__, which sklearn's check_is_fitted requires since 1.6
+    try:
+        from mlchemad.base import ApplicabilityDomain
+        if isinstance(model, ApplicabilityDomain):
+            return model.fitted_
+    except ImportError:
+        pass
     #   1.2 Scikit-Learn or SciPy objects
     if isinstance(model, (sp.sparse.csr_matrix, KDTree, SparseCoder)):
         return True

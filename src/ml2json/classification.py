@@ -333,6 +333,7 @@ def deserialize_svm(model_dict):
     model = svm.SVC(**model_dict['params'])
     model.shape_fit_ = model_dict['shape_fit_']
     model._gamma = model_dict['_gamma']
+    model._effective_probability = model.probability is True
 
     model.class_weight_ = np.array(model_dict['class_weight_']).astype(np.float64)
     model.classes_ = np.array(model_dict['classes_'])

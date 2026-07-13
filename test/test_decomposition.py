@@ -21,7 +21,7 @@ class TestAPI(unittest.TestCase):
         self.X, self.y = load_iris(return_X_y=True)
         self.dict_X, self.dict_dict, self.dict_code = make_sparse_coded_signal(n_samples=20, n_components=15,
                                                                                n_features=10, n_nonzero_coefs=10,
-                                                                               random_state=1234, data_transposed=False)
+                                                                               random_state=1234)
         self.friedman, _ = make_friedman1(n_samples=200, n_features=30, random_state=1234)
         self.news, _ = fetch_20newsgroups(shuffle=True, random_state=1234, return_X_y=True,
                                           remove=("headers", "footers", "quotes"))
