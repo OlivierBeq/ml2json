@@ -31,6 +31,15 @@ try:
 except ImportError:
     pass
 
+# LocalOutlierFactorApplicabilityDomain doesn't exist in older mlchemad
+# releases (the ones the classes above were written against), so it gets its
+# own guard rather than joining the block above.
+try:
+    from mlchemad.applicability_domains import LocalOutlierFactorApplicabilityDomain
+    __optionals__.append('LocalOutlierFactorApplicabilityDomain')
+except ImportError:
+    pass
+
 
 def serialize_bounding_box_applicability_domain(model):
     serialized_model = {
@@ -401,6 +410,46 @@ if 'StandardizationApproachApplicabilityDomain' in __optionals__:
         model = StandardizationApproachApplicabilityDomain()
         model.fitted_ = model_dict['fitted_']
         model.scaler = ml2json.from_dict(model_dict['scaler'])
+
+        if model.fitted_:
+            model.num_points = model_dict['num_points']
+            model.num_dims = model_dict['num_dims']
+
+        return model
+
+def serialize_local_outlier_factor_applicability_domain(model):
+    serialized_model = {
+        'fitted_': model.fitted_,
+        'scaler': ml2json.to_dict(model.scaler) if model.scaler is not None else None,
+        'dist': model.dist,
+        'k': model.k,
+        'contamination': model.contamination,
+        'threshold': model.threshold,
+        'lof': ml2json.to_dict(model.lof),
+    }
+
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            }
+        )
+
+    return serialized_model
+
+if 'LocalOutlierFactorApplicabilityDomain' in __optionals__:
+    def deserialize_local_outlier_factor_applicability_domain(model_dict):
+        model = LocalOutlierFactorApplicabilityDomain()
+        model.fitted_ = model_dict['fitted_']
+        model.scaler = (ml2json.from_dict(model_dict['scaler'])
+                        if model_dict['scaler'] is not None
+                        else None)
+        model.dist = model_dict['dist']
+        model.k = model_dict['k']
+        model.contamination = model_dict['contamination']
+        model.threshold = model_dict['threshold']
+        model.lof = ml2json.from_dict(model_dict['lof'])
 
         if model.fitted_:
             model.num_points = model_dict['num_points']

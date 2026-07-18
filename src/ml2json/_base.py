@@ -516,8 +516,12 @@ if _HAS_NNDESCENT:
         state['_search_graph'] = serialize_csr_matrix(state['_search_graph'])
         state['_visited'] = state['_visited'].astype(int).tolist()
         state['_vertex_order'] = state['_vertex_order'].astype(int).tolist()
-        state['_neighbor_graph'] = (state['_neighbor_graph'][0].tolist(),
-                                    state['_neighbor_graph'][1].astype(float).tolist())
+        # Absent on a compressed index (e.g. built via PyNNDescentTransformer's
+        # default compress_index=True): compress_index() deletes it to save
+        # memory once the search graph/forest have been derived from it.
+        if '_neighbor_graph' in state:
+            state['_neighbor_graph'] = (state['_neighbor_graph'][0].tolist(),
+                                        state['_neighbor_graph'][1].astype(float).tolist())
         state['_search_forest'] = ((state['_search_forest'][0][0].astype(float).tolist(),
                                     state['_search_forest'][0][1].astype(float).tolist(),
                                     state['_search_forest'][0][2].astype(int).tolist(),
@@ -540,8 +544,9 @@ if _HAS_NNDESCENT:
         params['_search_graph'] = deserialize_csr_matrix(params['_search_graph'])
         params['_visited'] = np.array(params['_visited'], dtype=np.uint8)
         params['_vertex_order'] = np.array(params['_vertex_order'], dtype=np.int32)
-        params['_neighbor_graph'] = (np.array(params['_neighbor_graph'][0]),
-                                     np.array(params['_neighbor_graph'][1], dtype=np.float32))
+        if '_neighbor_graph' in params:
+            params['_neighbor_graph'] = (np.array(params['_neighbor_graph'][0]),
+                                         np.array(params['_neighbor_graph'][1], dtype=np.float32))
         params['_search_forest'] = ((np.array(params['_search_forest'][0][0], dtype=np.float32),
                                      np.array(params['_search_forest'][0][1], dtype=np.float32),
                                      np.array(params['_search_forest'][0][2], dtype=np.int32),

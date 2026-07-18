@@ -8,7 +8,8 @@ import sklearn
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
-                             SpectralClustering, SpectralBiclustering, SpectralCoclustering)
+                             SpectralClustering, SpectralBiclustering, SpectralCoclustering,
+                             HDBSCAN as SklearnHDBSCAN)
 from sklearn.cluster._bisect_k_means import _BisectingTree
 
 # Allow additional dependencies to be optional
@@ -20,8 +21,8 @@ try:
 except:
     pass
 try:
-    from hdbscan import HDBSCAN
-    __optionals__.append('HDBSCAN')
+    from hdbscan import HDBSCAN, RobustSingleLinkage
+    __optionals__.extend(['HDBSCAN', 'RobustSingleLinkage'])
 except:
     pass
 
@@ -671,3 +672,35 @@ if 'HDBSCAN' in __optionals__:
             model._relative_validity = np.array(model_dict['_relative_validity'])
 
         return model
+
+
+def serialize_sklearn_hdbscan(model):
+    # Unlike the third-party hdbscan.HDBSCAN above (which caches its condensed/
+    # single-linkage trees, raw data, etc. as hand-rolled numpy structures),
+    # sklearn's native HDBSCAN only ever stores plain params/arrays in
+    # __dict__ - the generic engine handles it as-is.
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_sklearn_hdbscan(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+if 'RobustSingleLinkage' in __optionals__:
+    def serialize_robust_single_linkage(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_robust_single_linkage(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+# hdbscan.BranchDetector is intentionally not supported: fitting one requires
+# its clusterer to be fit with branch_detection_data=True, which populates
+# clusterer._branch_detection_data.dist_metric with an hdbscan.dist_metrics.
+# DistanceMetric instance (e.g. EuclideanDistance) - a Cython extension type
+# with no __dict__, not part of any leaf-type registry, and not
+# reconstructible from JSON-safe state without resorting to pickle (which
+# this library avoids by design). Unlike KDTree/BallTree/Tree, which got
+# dedicated hand-written (de)serializers because their C state is fully
+# introspectable via __getstate__/__setstate__, hdbscan's DistanceMetric
+# exposes no equivalent - only pickle's opaque __reduce__ output.

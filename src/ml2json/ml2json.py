@@ -39,7 +39,8 @@ from sklearn.svm import SVR, LinearSVC, LinearSVR, NuSVC, NuSVR, OneClassSVM
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
-                             SpectralClustering, SpectralBiclustering, SpectralCoclustering)
+                             SpectralClustering, SpectralBiclustering, SpectralCoclustering,
+                             HDBSCAN as SklearnHDBSCAN)
 from sklearn.cross_decomposition import (CCA, PLSCanonical,
                                          PLSRegression, PLSSVD)
 from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAnalysis, FastICA, IncrementalPCA,
@@ -111,8 +112,12 @@ if 'KModes' in clus.__optionals__:
     from kmodes.kprototypes import KPrototypes
 if 'HDBSCAN' in clus.__optionals__:
     from hdbscan import HDBSCAN
+if 'RobustSingleLinkage' in clus.__optionals__:
+    from hdbscan import RobustSingleLinkage
 if 'NNDescent' in nei.__optionals__:
     from pynndescent import NNDescent
+if 'PyNNDescentTransformer' in nei.__optionals__:
+    from pynndescent import PyNNDescentTransformer
 if 'UMAP' in man.__optionals__:
     from umap import UMAP
 if 'OpenTSNE' in man.__optionals__:
@@ -131,6 +136,8 @@ if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
                                                 CentroidDistanceApplicabilityDomain,
                                                 KNNApplicabilityDomain,
                                                 StandardizationApproachApplicabilityDomain)
+if 'LocalOutlierFactorApplicabilityDomain' in ad.__optionals__:
+    from mlchemad.applicability_domains import LocalOutlierFactorApplicabilityDomain
 if 'imblearn' in ous.__optionals__:
     from imblearn.under_sampling import (ClusterCentroids, CondensedNearestNeighbour, EditedNearestNeighbours,
                                          RepeatedEditedNearestNeighbours, AllKNN, InstanceHardnessThreshold,
@@ -226,6 +233,7 @@ _REGISTRY = [
     (SpectralBiclustering, clus.serialize_spectral_biclustering, clus.deserialize_spectral_biclustering),
     (SpectralCoclustering, clus.serialize_spectral_coclustering, clus.deserialize_spectral_coclustering),
     (Birch, clus.serialize_birch, clus.deserialize_birch),
+    (SklearnHDBSCAN, clus.serialize_sklearn_hdbscan, clus.deserialize_sklearn_hdbscan),
 
     # Cross-decomposition
     (CCA, crdec.serialize_cca, crdec.deserialize_cca),
@@ -415,6 +423,8 @@ if 'KModes' in clus.__optionals__:
     _REGISTRY.append((KModes, clus.serialize_kmodes, clus.deserialize_kmodes))
 if 'HDBSCAN' in clus.__optionals__:
     _REGISTRY.append((HDBSCAN, clus.serialize_hdbscan, clus.deserialize_hdbscan))
+if 'RobustSingleLinkage' in clus.__optionals__:
+    _REGISTRY.append((RobustSingleLinkage, clus.serialize_robust_single_linkage, clus.deserialize_robust_single_linkage))
 
 if 'UMAP' in man.__optionals__:
     _REGISTRY.append((UMAP, man.serialize_umap, man.deserialize_umap))
@@ -426,6 +436,8 @@ if 'OpenTSNE' in man.__optionals__:
 
 if 'NNDescent' in nei.__optionals__:
     _REGISTRY.append((NNDescent, nei.serialize_nndescent, nei.deserialize_nndescent))
+if 'PyNNDescentTransformer' in nei.__optionals__:
+    _REGISTRY.append((PyNNDescentTransformer, nei.serialize_pynndescent_transformer, nei.deserialize_pynndescent_transformer))
 
 if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
     _REGISTRY.extend([
@@ -441,6 +453,8 @@ if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
         (KNNApplicabilityDomain, ad.serialize_knn_applicability_domain, ad.deserialize_knn_applicability_domain),
         (StandardizationApproachApplicabilityDomain, ad.serialize_standardization_approach_applicability_domain, ad.deserialize_standardization_approach_applicability_domain),
     ])
+if 'LocalOutlierFactorApplicabilityDomain' in ad.__optionals__:
+    _REGISTRY.append((LocalOutlierFactorApplicabilityDomain, ad.serialize_local_outlier_factor_applicability_domain, ad.deserialize_local_outlier_factor_applicability_domain))
 
 if 'imblearn' in ous.__optionals__:
     _REGISTRY.extend([

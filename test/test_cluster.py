@@ -8,7 +8,8 @@ from sklearn.datasets import make_blobs, make_checkerboard
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
-                             SpectralClustering, SpectralBiclustering, SpectralCoclustering)
+                             SpectralClustering, SpectralBiclustering, SpectralCoclustering,
+                             HDBSCAN as SklearnHDBSCAN)
 
 # Allow testing of additional optional dependencies
 __optionals__ = []
@@ -19,8 +20,8 @@ try:
 except:
     pass
 try:
-    from hdbscan import HDBSCAN
-    __optionals__.append('HDBSCAN')
+    from hdbscan import HDBSCAN, RobustSingleLinkage
+    __optionals__.extend(['HDBSCAN', 'RobustSingleLinkage'])
 except:
     pass
 
@@ -312,3 +313,11 @@ class TestAPI(unittest.TestCase):
         if 'HDBSCAN' in __optionals__:
             self.check_fitpredict_model(HDBSCAN(), 'hdbscan.json', self.X)
             self.check_fitpredict_model(HDBSCAN(gen_min_span_tree=True), 'hdbscan.json', self.X)
+
+    def test_sklearn_hdbscan(self):
+        self.check_fitpredict_model(SklearnHDBSCAN(), 'sklearn-hdbscan.json', self.X)
+        self.check_fitpredict_model(SklearnHDBSCAN(store_centers='both'), 'sklearn-hdbscan.json', self.X)
+
+    def test_robust_single_linkage(self):
+        if 'RobustSingleLinkage' in __optionals__:
+            self.check_fitpredict_model(RobustSingleLinkage(), 'robust-single-linkage.json', self.X)

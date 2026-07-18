@@ -11,8 +11,8 @@ from sklearn.neighbors import (NearestNeighbors, KDTree, KernelDensity, BallTree
 # Allow testing of additional optional dependencies
 __optionals__ = []
 try:
-    from pynndescent import NNDescent
-    __optionals__.append('NNDescent')
+    from pynndescent import NNDescent, PyNNDescentTransformer
+    __optionals__.extend(['NNDescent', 'PyNNDescentTransformer'])
 except:
     pass
 
@@ -123,6 +123,11 @@ class TestAPI(unittest.TestCase):
 
     def test_radius_neighbors_transformer(self):
         self.check_transform_model(RadiusNeighborsTransformer(radius=2.0), 'radius-neighbors-transformer.json')
+
+    def test_pynndescent_transformer(self):
+        if 'PyNNDescentTransformer' in __optionals__:
+            self.check_transform_model(PyNNDescentTransformer(n_neighbors=5, random_state=1234),
+                                       'pynndescent-transformer.json')
 
     def test_local_outlier_factor(self):
         model = LocalOutlierFactor(novelty=True)
