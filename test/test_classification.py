@@ -48,6 +48,13 @@ from src import ml2json
 class TestAPI(unittest.TestCase):
 
     def setUp(self):
+        # Python's global `random` (used below for the sparse feature-hasher
+        # data) isn't reseeded per test, so its state - and thus this data -
+        # depends on how many other tests already drew from it this session.
+        # Seed explicitly so this test's data is reproducible regardless of
+        # run order (e.g. NuSVC's libsvm solver can hit a numerically
+        # infeasible fit on an unlucky draw otherwise).
+        random.seed(0)
         self.X, self.y = make_classification(n_samples=50, n_features=3, n_classes=3, n_informative=3, n_redundant=0, random_state=0, shuffle=False)
 
         feature_hasher = FeatureHasher(n_features=3)

@@ -46,6 +46,11 @@ from src import ml2json
 class TestAPI(unittest.TestCase):
 
     def setUp(self):
+        # Python's global `random` (used below for the sparse feature-hasher
+        # data) isn't reseeded per test, so its state - and thus this data -
+        # depends on how many other tests already drew from it this session.
+        # Seed explicitly so this test's data is reproducible regardless of run order.
+        random.seed(0)
         self.X, self.y = make_regression(n_samples=50, n_features=3, n_informative=3, random_state=0, shuffle=False)
         self.y_rank = np.argsort(np.argsort(self.y)).tolist()
 
