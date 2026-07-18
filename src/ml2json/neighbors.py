@@ -5,8 +5,8 @@ from . import _base
 # Allow additional dependencies to be optional
 __optionals__ = []
 try:
-    from pynndescent import NNDescent
-    __optionals__.append('NNDescent')
+    from pynndescent import NNDescent, PyNNDescentTransformer
+    __optionals__.extend(['NNDescent', 'PyNNDescentTransformer'])
 except:
     pass
 
@@ -86,3 +86,16 @@ if 'NNDescent' in __optionals__:
 
     def deserialize_nndescent(model_dict):
         return _base.deserialize_nndescent({**model_dict, 'meta': 'nn-descent'})
+
+
+if 'PyNNDescentTransformer' in __optionals__:
+    # A thin TransformerMixin wrapper storing its NNDescent as the `index_`
+    # attribute; the generic engine recurses into it and hits NNDescent's own
+    # leaf-type handler (_base.serialize_nndescent/deserialize_nndescent)
+    # automatically, so no hand-written logic is needed here.
+    def serialize_pynndescent_transformer(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_pynndescent_transformer(model_dict):
+        return _base.deserialize_model_generic(model_dict)

@@ -33,6 +33,12 @@ try:
 except ImportError:
     pass
 
+try:
+    from mlchemad.applicability_domains import LocalOutlierFactorApplicabilityDomain
+    __optionals__.append('LocalOutlierFactorApplicabilityDomain')
+except ImportError:
+    pass
+
 class TestAPI(unittest.TestCase):
 
     def setUp(self):
@@ -137,3 +143,16 @@ class TestAPI(unittest.TestCase):
     def test_standardization_approach_applicability_domain(self):
         model = StandardizationApproachApplicabilityDomain()
         self.check_applicability_domain(model, 'standardization-approach-ad.json')
+
+    @unittest.skipIf('LocalOutlierFactorApplicabilityDomain' not in __optionals__,
+                     'Optional dependencies not installed.')
+    def test_local_outlier_factor_applicability_domain(self):
+        # Note: scaling=None isn't exercised here - LocalOutlierFactorApplicabilityDomain._fit
+        # unconditionally calls self.scaler.fit_transform(X), unlike its KNN sibling, so it
+        # raises AttributeError on a None scaler regardless of serialization; a mlchemad bug,
+        # not an ml2json one.
+        model = LocalOutlierFactorApplicabilityDomain()
+        self.check_applicability_domain(model, 'lof-ad.json')
+
+        model = LocalOutlierFactorApplicabilityDomain(scaling='standard', k=3)
+        self.check_applicability_domain(model, 'lof-ad.json')
