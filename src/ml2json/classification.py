@@ -751,57 +751,37 @@ def deserialize_voting_classifier(model_dict):
 
 
 if 'imblearn' in __optionals__:
+    # These wrap the generic recursive engine rather than hand-enumerating
+    # attributes (like AdaBoostClassifier/BaggingClassifier above): they hold
+    # no exotic Cython/compiled state, just plain arrays and nested estimators
+    # already handled by the generic engine's own recursion.
     def serialize_easy_ensemble_classifier(model):
-        # Import here to avoid circular imports
-        from . import serialize_model
-
-        serialized_model = {
-            'meta': 'easy-ensemble-classifier',
-            'estimator_': serialize_model(model.estimator_),
-            'estimators_': [serialize_model(estimator) for estimator in model.estimator_],
-            'estimators_samples_': [arr_.tolist() for arr_ in model.estimators_samples_],
-            'estimators_features_': [arr_.tolist() for arr_ in model.estimators_features_],
-            'classes_': model.classes_.tolist(),
-            'n_classes_': model.n_classes_,
-            'n_features_': model.n_features_,
-            'params':model.get_params(),
-            # 'params': {key: value
-            #            for key, value in model.get_params().items()
-            #            if key.split('__')[0] not in list(zip(*model.__dict__['estimators_']))[0]}
-        }
-
-        # Serialize the estimators in params
-        if serialized_model['params']['estimator'] is not None:
-            serialized_model['params']['estimator'] = serialize_model(serialized_model['params']['estimator'])
-
-        if 'n_features_in_' in model.__dict__:
-            serialized_model['n_features_in_'] = model.n_features_in_
-        if 'feature_names_in_' in model.__dict__:
-            serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
-
-        return serialized_model
+        return _base.serialize_model_generic(model)
 
 
     def deserialize_easy_ensemble_classifier(model_dict):
-        # Import here to avoid circular imports
-        from . import deserialize_model
+        return _base.deserialize_model_generic(model_dict)
 
-        if model_dict['params']['estimator'] is not None :
-            model_dict['params']['estimator'] = deserialize_model(model_dict['params']['estimator'])
 
-        model = EasyEnsembleClassifier(**model_dict['params'])
+    def serialize_rusboost_classifier(model):
+        return _base.serialize_model_generic(model)
 
-        model.estimator_ = deserialize_model(model_dict['estimator_'])
-        model.estimators_ = [deserialize_model(estimator) for estimator in model_dict['estimators_']]
-        model.estimators_samples_ = [np.array(values) for values in model_dict['estimators_samples_']]
-        model.estimators_features_ = [np.array(values) for values in model_dict['estimators_features_']]
-        model.classes_ = np.array(model_dict['classes_'])
-        model.n_classes_ = model.n_classes_
-        model.n_features_ = model.n_features_
 
-        if 'n_features_in_' in model_dict.keys():
-            model.n_features_in_ = model_dict['n_features_in_']
-        if 'feature_names_in_' in model_dict.keys():
-            model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+    def deserialize_rusboost_classifier(model_dict):
+        return _base.deserialize_model_generic(model_dict)
 
-        return model
+
+    def serialize_balanced_bagging_classifier(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_balanced_bagging_classifier(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_balanced_random_forest_classifier(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_balanced_random_forest_classifier(model_dict):
+        return _base.deserialize_model_generic(model_dict)

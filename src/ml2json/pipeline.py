@@ -9,10 +9,8 @@ import numpy as np
 import scipy as sp
 import sklearn
 from sklearn.pipeline import FeatureUnion, Pipeline
-from sklearn.utils import Bunch
 
 from .utils.memory import serialize_memory, deserialize_memory
-from .utils.bunch import serialize_bunch, deserialize_bunch
 
 
 # Allow additional dependencies to be optional
@@ -33,7 +31,6 @@ def serialize_pipeline(model):
         'params': {param: value
                    for param, value in model.get_params().items()
                    if param in ['steps', 'memory', 'verbose']},
-        'named_steps': serialize_bunch(model.named_steps)
     }
     serialized_model['params']['steps'] = [(name, serialize_model(estimator)) for name, estimator in model.steps]
     if not isinstance(serialized_model['params']['memory'], str) and serialized_model['params']['memory'] is not None:
@@ -61,7 +58,6 @@ def deserialize_pipeline(model_dict):
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
-    # model.named_steps = deserialize_bunch(model_dict['named_steps'])
     return model
 
 
@@ -74,7 +70,6 @@ if 'imblearn' in __optionals__:
             'params': {param: value
                        for param, value in model.get_params().items()
                        if param in ['steps', 'memory', 'verbose']},
-            'named_steps': serialize_bunch(model.named_steps)
         }
         serialized_model['params']['steps'] = [(name, serialize_model(estimator)) for name, estimator in model.steps]
         if not isinstance(serialized_model['params']['memory'], str) and serialized_model['params']['memory'] is not None:
@@ -102,5 +97,4 @@ if 'imblearn' in __optionals__:
         if 'feature_names_in_' in model_dict.keys():
             model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
-        # model.named_steps = deserialize_bunch(model_dict['named_steps'])
         return model

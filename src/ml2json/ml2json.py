@@ -331,6 +331,14 @@ if 'imblearn' in ous.__optionals__:
 if 'imblearn' in ppl.__optionals__:
     _REGISTRY.append((ImblearnPipeline, ppl.serialize_imblearn_pipeline, ppl.deserialize_imblearn_pipeline))
 
+if 'imblearn' in clf.__optionals__:
+    _REGISTRY.extend([
+        (EasyEnsembleClassifier, clf.serialize_easy_ensemble_classifier, clf.deserialize_easy_ensemble_classifier),
+        (RUSBoostClassifier, clf.serialize_rusboost_classifier, clf.deserialize_rusboost_classifier),
+        (BalancedBaggingClassifier, clf.serialize_balanced_bagging_classifier, clf.deserialize_balanced_bagging_classifier),
+        (BalancedRandomForestClassifier, clf.serialize_balanced_random_forest_classifier, clf.deserialize_balanced_random_forest_classifier),
+    ])
+
 # CatBoost serializers need an extra `catboost_data` argument that no other
 # serializer takes, so they're routed separately in serialize_model rather
 # than forcing every serialize_X function to accept an unused parameter.
@@ -573,7 +581,15 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
             raise ModelNotSupported('This model type is not currently supported. Email support@mlrequest.com to request a feature or report a bug.')
         return serialize_version(model, model_dict)
 
-    model_dict['meta'] = _META_BY_TYPE[cls]
+    # A registered serializer that delegates to _base.serialize_model_generic
+    # (most of them do) can return a bare {'meta': 'ref', 'id': ...} marker
+    # instead of a full dict, when this exact object was already serialized
+    # elsewhere in the same object graph (e.g. the same fitted estimator
+    # reachable both via a Pipeline's `steps` and its `named_steps`).
+    # Overwriting 'meta' here would silently turn that marker into a fake
+    # full object missing 'module'/'type'/'dict', so leave refs untouched.
+    if model_dict.get('meta') != 'ref':
+        model_dict['meta'] = _META_BY_TYPE[cls]
     return serialize_version(model, model_dict)
 
 
@@ -588,6 +604,17 @@ def deserialize_model(model_dict: Dict):
         return deserialize_unfitted_model(model_dict)
 
     meta = model_dict['meta']
+
+    if meta == 'ref':
+        # A registered serializer delegating to _base.serialize_model_generic
+        # can hand back a bare memo reference (see serialize_model) when a
+        # hand-written serializer reaches this same nested object a second
+        # time via a path that calls serialize_model/deserialize_model
+        # directly rather than _base.recursive_serialize/recursive_deserialize
+        # (e.g. a Pipeline's `steps` and `named_steps` both holding the same
+        # fitted estimator). _base.recursive_deserialize already knows how to
+        # resolve these against the active deserialization memo.
+        return _base.recursive_deserialize(model_dict)
 
     if meta in _DESERIALIZE_BY_META:
         check_version(model_dict)
@@ -614,7 +641,11 @@ def serialize_unfitted_model(model):
         'unfitted': True,
         'meta': (inspect.getmodule(model).__name__,
                  type(model).__name__),
-        'params': model.get_params()
+        # deep=False: get_params(deep=True) (the default) flattens nested
+        # meta-estimator params (e.g. a Pipeline's per-step keys like
+        # 'randomundersampler__random_state') into a dict that ClassName(**params)
+        # can't reconstruct from - only the constructor's own top-level kwargs are valid.
+        'params': model.get_params(deep=False)
     }
     serialize_version(model, serialized_model)
     return serialized_model
