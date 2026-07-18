@@ -371,6 +371,14 @@ def deserialize_random_forest(model_dict):
     return _base.deserialize_model_generic(model_dict)
 
 
+def serialize_hist_gradient_boosting_classifier(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_hist_gradient_boosting_classifier(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
 def serialize_perceptron(model):
     serialized_model = {
         'coef_': model.coef_.tolist(),
