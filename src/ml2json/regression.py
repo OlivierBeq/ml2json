@@ -631,3 +631,232 @@ def deserialize_voting_regressor(model_dict):
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
+
+
+# The classes below all hold plain attributes (arrays, scalars, nested
+# already-supported estimators) with no exotic Cython/compiled state, so the
+# generic recursive engine handles them directly - same pattern as
+# AdaBoostRegressor/BaggingRegressor above.
+
+def serialize_ard_regression(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_ard_regression(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_bayesian_ridge(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_bayesian_ridge(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_elasticnet_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_elasticnet_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lasso_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lasso_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_multitask_elasticnet(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_multitask_elasticnet(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_multitask_elasticnet_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_multitask_elasticnet_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_multitask_lasso(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_multitask_lasso(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_multitask_lasso_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_multitask_lasso_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_gamma_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_gamma_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_poisson_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_poisson_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_tweedie_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_tweedie_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_huber_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_huber_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lars(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lars(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lars_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lars_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lasso_lars(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lasso_lars(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lasso_lars_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lasso_lars_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lasso_lars_ic(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lasso_lars_ic(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_orthogonal_matching_pursuit(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_orthogonal_matching_pursuit(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_orthogonal_matching_pursuit_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_orthogonal_matching_pursuit_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_passive_aggressive_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_passive_aggressive_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_quantile_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_quantile_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_ransac_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_ransac_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_ridge_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_ridge_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_sgd_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_sgd_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_theilsen_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_theilsen_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_linear_svr(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_linear_svr(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_nu_svr(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_nu_svr(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_radius_neighbors_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_radius_neighbors_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)

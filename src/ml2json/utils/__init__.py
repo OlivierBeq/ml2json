@@ -3,7 +3,7 @@
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
-from sklearn.neighbors import KDTree
+from sklearn.neighbors import KDTree, BallTree
 from sklearn.decomposition import SparseCoder
 
 import scipy as sp
@@ -26,7 +26,7 @@ def is_model_fitted(model):
     except ImportError:
         pass
     #   1.3 Scikit-Learn or SciPy objects
-    if isinstance(model, (sp.sparse.csr_matrix, KDTree, SparseCoder)):
+    if isinstance(model, (sp.sparse.csr_matrix, KDTree, BallTree, SparseCoder)):
         return True
     #   1.4 Any other non-estimator object (e.g. a scipy.stats distribution
     #       nested inside a param_distributions dict): these have no

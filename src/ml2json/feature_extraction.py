@@ -3,6 +3,8 @@
 import numpy as np
 from sklearn.feature_extraction import DictVectorizer
 
+from . import _base
+
 
 def serialize_dict_vectorizer(model):
     serialized_model = {
@@ -28,3 +30,11 @@ def deserialize_dict_vectorizer(model_dict):
     model.vocabulary_ = model_dict['vocabulary']
 
     return model
+
+
+def serialize_feature_hasher(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_feature_hasher(model_dict):
+    return _base.deserialize_model_generic(model_dict)
