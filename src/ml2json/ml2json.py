@@ -61,6 +61,15 @@ from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem, Polynom
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.isotonic import IsotonicRegression
 from sklearn.random_projection import GaussianRandomProjection, SparseRandomProjection
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.feature_selection import (SelectFromModel, RFE, RFECV, SequentialFeatureSelector,
+                                       GenericUnivariateSelect, SelectFdr, SelectFpr, SelectFwe,
+                                       SelectKBest, SelectPercentile, VarianceThreshold)
+from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
+from sklearn.multiclass import OneVsOneClassifier, OneVsRestClassifier, OutputCodeClassifier
+from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
+from sklearn.semi_supervised import LabelPropagation, LabelSpreading, SelfTrainingClassifier
+from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 
 from . import classification as clf
 from . import regression as reg
@@ -81,6 +90,13 @@ from . import kernel_approximation as kapp
 from . import kernel_ridge as kr
 from . import isotonic as iso
 from . import random_projection as rp
+from . import calibration as calib
+from . import feature_selection as fsel
+from . import gaussian_process as gp
+from . import multiclass as mcls
+from . import multioutput as mout
+from . import semi_supervised as ssup
+from . import compose as comp
 from numpy.random import RandomState
 
 from . import _base
@@ -372,6 +388,46 @@ _REGISTRY = [
 
     # Feature extraction additions
     (FeatureHasher, ext.serialize_feature_hasher, ext.deserialize_feature_hasher),
+
+    # Calibration
+    (CalibratedClassifierCV, calib.serialize_calibrated_classifier_cv, calib.deserialize_calibrated_classifier_cv),
+
+    # Feature selection
+    (SelectFromModel, fsel.serialize_select_from_model, fsel.deserialize_select_from_model),
+    (RFE, fsel.serialize_rfe, fsel.deserialize_rfe),
+    (RFECV, fsel.serialize_rfecv, fsel.deserialize_rfecv),
+    (SequentialFeatureSelector, fsel.serialize_sequential_feature_selector, fsel.deserialize_sequential_feature_selector),
+    (GenericUnivariateSelect, fsel.serialize_generic_univariate_select, fsel.deserialize_generic_univariate_select),
+    (SelectFdr, fsel.serialize_select_fdr, fsel.deserialize_select_fdr),
+    (SelectFpr, fsel.serialize_select_fpr, fsel.deserialize_select_fpr),
+    (SelectFwe, fsel.serialize_select_fwe, fsel.deserialize_select_fwe),
+    (SelectKBest, fsel.serialize_select_kbest, fsel.deserialize_select_kbest),
+    (SelectPercentile, fsel.serialize_select_percentile, fsel.deserialize_select_percentile),
+    (VarianceThreshold, fsel.serialize_variance_threshold, fsel.deserialize_variance_threshold),
+
+    # Gaussian process
+    (GaussianProcessClassifier, gp.serialize_gaussian_process_classifier, gp.deserialize_gaussian_process_classifier),
+    (GaussianProcessRegressor, gp.serialize_gaussian_process_regressor, gp.deserialize_gaussian_process_regressor),
+
+    # Multiclass
+    (OneVsOneClassifier, mcls.serialize_one_vs_one_classifier, mcls.deserialize_one_vs_one_classifier),
+    (OneVsRestClassifier, mcls.serialize_one_vs_rest_classifier, mcls.deserialize_one_vs_rest_classifier),
+    (OutputCodeClassifier, mcls.serialize_output_code_classifier, mcls.deserialize_output_code_classifier),
+
+    # Multioutput
+    (ClassifierChain, mout.serialize_classifier_chain, mout.deserialize_classifier_chain),
+    (MultiOutputClassifier, mout.serialize_multioutput_classifier, mout.deserialize_multioutput_classifier),
+    (MultiOutputRegressor, mout.serialize_multioutput_regressor, mout.deserialize_multioutput_regressor),
+    (RegressorChain, mout.serialize_regressor_chain, mout.deserialize_regressor_chain),
+
+    # Semi-supervised
+    (LabelPropagation, ssup.serialize_label_propagation, ssup.deserialize_label_propagation),
+    (LabelSpreading, ssup.serialize_label_spreading, ssup.deserialize_label_spreading),
+    (SelfTrainingClassifier, ssup.serialize_self_training_classifier, ssup.deserialize_self_training_classifier),
+
+    # Compose
+    (ColumnTransformer, comp.serialize_column_transformer, comp.deserialize_column_transformer),
+    (TransformedTargetRegressor, comp.serialize_transformed_target_regressor, comp.deserialize_transformed_target_regressor),
 ]
 
 # Optional dependencies: registered the same way, guarded by the same
