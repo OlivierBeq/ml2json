@@ -297,22 +297,20 @@ class TestSklearn(unittest.TestCase):
         """Classes not in ml2json's hand-written dispatch chain should now be
         serializable via the generic engine's fallback path, with predictions
         from the deserialized model matching the original exactly."""
-        from sklearn.semi_supervised import LabelPropagation, LabelSpreading
-        from sklearn.multiclass import OneVsRestClassifier
-        from sklearn.linear_model import LogisticRegression
+        from sklearn.impute import SimpleImputer, MissingIndicator
 
-        X_cls_, y_cls_ = self.X_cls, self.y_cls
+        X_ = np.array(self.X_cls, copy=True)
+        X_[0, 0] = np.nan
 
-        for model in [LabelPropagation(), LabelSpreading(), OneVsRestClassifier(LogisticRegression(max_iter=500))]:
-            X_ = X_cls_
-            model.fit(X_, y_cls_)
-            expected = model.predict(X_)
+        for model in [SimpleImputer(), MissingIndicator()]:
+            model.fit(X_)
+            expected = model.transform(X_)
 
             model_dict = ml2json.to_dict(model)
             self.assertTrue(model_dict['meta'].startswith('generic_object:'))
             deserialized = ml2json.from_dict(model_dict)
-            actual = deserialized.predict(X_)
-            np.testing.assert_array_equal(expected, actual)
+            actual = deserialized.transform(X_)
+            np.testing.assert_array_equal(np.asarray(expected), np.asarray(actual))
 
     def test_random_state_instance_as_constructor_param(self):
         """A live np.random.RandomState instance passed as e.g. random_state=
