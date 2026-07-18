@@ -81,6 +81,7 @@ from . import kernel_approximation as kapp
 from . import kernel_ridge as kr
 from . import isotonic as iso
 from . import random_projection as rp
+from . import boosting as boost
 from numpy.random import RandomState
 
 from . import _base
@@ -99,6 +100,12 @@ else:
     Pool = TypeVar('Pool')
 if 'CatBoost' in clf.__optionals__:
     from catboost import CatBoost
+if 'XGBBooster' in boost.__optionals__:
+    from xgboost import Booster as XGBBooster
+if 'LGBMBooster' in boost.__optionals__:
+    from lightgbm import Booster as LGBMBooster, Dataset as LGBMDataset
+if 'CatBoostPool' in boost.__optionals__:
+    from catboost import Pool as CatBoostPool
 if 'KModes' in clus.__optionals__:
     from kmodes.kmodes import KModes
     from kmodes.kprototypes import KPrototypes
@@ -470,6 +477,15 @@ if 'imblearn' in clf.__optionals__:
         (BalancedBaggingClassifier, clf.serialize_balanced_bagging_classifier, clf.deserialize_balanced_bagging_classifier),
         (BalancedRandomForestClassifier, clf.serialize_balanced_random_forest_classifier, clf.deserialize_balanced_random_forest_classifier),
     ])
+
+# Boosting libraries' own native, non-sklearn-estimator objects (Booster/Dataset/Pool)
+if 'XGBBooster' in boost.__optionals__:
+    _REGISTRY.append((XGBBooster, boost.serialize_xgboost_booster, boost.deserialize_xgboost_booster))
+if 'LGBMBooster' in boost.__optionals__:
+    _REGISTRY.append((LGBMBooster, boost.serialize_lightgbm_booster, boost.deserialize_lightgbm_booster))
+    _REGISTRY.append((LGBMDataset, boost.serialize_lightgbm_dataset, boost.deserialize_lightgbm_dataset))
+if 'CatBoostPool' in boost.__optionals__:
+    _REGISTRY.append((CatBoostPool, boost.serialize_catboost_pool, boost.deserialize_catboost_pool))
 
 # CatBoost serializers need an extra `catboost_data` argument that no other
 # serializer takes, so they're routed separately in serialize_model rather
