@@ -69,6 +69,8 @@ if 'CatBoostRegressor' in reg.__optionals__:
 else:
     from typing import TypeVar
     Pool = TypeVar('Pool')
+if 'CatBoost' in clf.__optionals__:
+    from catboost import CatBoost
 if 'KModes' in clus.__optionals__:
     from kmodes.kmodes import KModes
     from kmodes.kprototypes import KPrototypes
@@ -254,6 +256,8 @@ if 'LGBMClassifier' in clf.__optionals__:
     _REGISTRY.append((LGBMClassifier, clf.serialize_lightgbm_classifier, clf.deserialize_lightgbm_classifier))
 if 'CatBoostClassifier' in clf.__optionals__:
     _REGISTRY.append((CatBoostClassifier, clf.serialize_catboost_classifier, clf.deserialize_catboost_classifier))
+if 'CatBoost' in clf.__optionals__:
+    _REGISTRY.append((CatBoost, clf.serialize_catboost, clf.deserialize_catboost))
 
 if 'XGBRanker' in reg.__optionals__:
     _REGISTRY.append((XGBRanker, reg.serialize_xgboost_ranker, reg.deserialize_xgboost_ranker))
@@ -349,6 +353,8 @@ if 'CatBoostRegressor' in reg.__optionals__:
     _CATBOOST_SERIALIZE_FNS[CatBoostRegressor] = reg.serialize_catboost_regressor
 if 'CatBoostRanker' in reg.__optionals__:
     _CATBOOST_SERIALIZE_FNS[CatBoostRanker] = reg.serialize_catboost_ranker
+if 'CatBoost' in clf.__optionals__:
+    _CATBOOST_SERIALIZE_FNS[CatBoost] = clf.serialize_catboost
 
 _META_BY_TYPE = {}
 _DESERIALIZE_BY_META = {}

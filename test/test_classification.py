@@ -34,8 +34,8 @@ try:
 except:
     pass
 try:
-    from catboost import CatBoostClassifier, Pool
-    __optionals__.append('CatBoostClassifier')
+    from catboost import CatBoostClassifier, CatBoost, Pool
+    __optionals__.extend(['CatBoostClassifier', 'CatBoost'])
 except:
     pass
 
@@ -240,7 +240,7 @@ class TestAPI(unittest.TestCase):
         else:
             model.fit(self.X, self.y)
 
-        pool = Pool(data=self.X, label=self.y, feature_names=list(range(self.X.shape[0])))
+        pool = Pool(data=self.X, label=self.y, feature_names=list(range(self.X.shape[1])))
 
         # When
         serialized_model = ml2json.to_dict(model, pool)
@@ -250,7 +250,11 @@ class TestAPI(unittest.TestCase):
         expected_predictions = model.predict(self.X)
         actual_predictions = deserialized_model.predict(self.X)
 
-        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+        # almost_equal: raw (non-classifier) CatBoost.predict() returns
+        # continuous floats, and the JSON round-trip of the saved model text
+        # introduces float-formatting noise at ~1e-16, same as the regression/
+        # ranker CatBoost helpers in test_regression.py.
+        np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
 
         # JSON
         ml2json.to_json(model, model_name)
@@ -258,11 +262,20 @@ class TestAPI(unittest.TestCase):
         os.remove(model_name)
         json_predictions = deserialized_model.predict(self.X)
 
-        np.testing.assert_array_equal(expected_predictions, json_predictions)
+        np.testing.assert_array_almost_equal(expected_predictions, json_predictions)
 
     def test_catboost_classifier(self):
         if 'CatBoostClassifier' in __optionals__:
             self.check_model(CatBoostClassifier(allow_writing_files=False, verbose=False), 'catboost-cls.json')
+
+    def test_catboost(self):
+        # catboost.CatBoost is the library's generic base estimator (used
+        # directly for custom loss/objective combos not covered by
+        # CatBoostClassifier/CatBoostRegressor/CatBoostRanker). Exercised here
+        # with a classification-style loss to mirror test_catboost_classifier.
+        if 'CatBoost' in __optionals__:
+            model = CatBoost(params={'loss_function': 'MultiClass', 'allow_writing_files': False, 'verbose': False})
+            self.check_catboost_model(model, 'catboost.json')
 
     def test_adaboost_classifier(self):
         self.check_model(AdaBoostClassifier(n_estimators=25, learning_rate=1.0), 'adaboost-cls.json')

@@ -27,8 +27,8 @@ try:
 except:
     pass
 try:
-    from catboost import CatBoostClassifier
-    __optionals__.append('CatBoostClassifier')
+    from catboost import CatBoostClassifier, CatBoost
+    __optionals__.extend(['CatBoostClassifier', 'CatBoost'])
 except:
     pass
 try:
@@ -583,6 +583,49 @@ if 'CatBoostClassifier' in __optionals__:
 
     def deserialize_catboost_classifier(model_dict):
         model = CatBoostClassifier(**model_dict['params'])
+
+        filename = f'{str(uuid.uuid4())}.json'
+        with open(filename, 'w') as fh:
+            fh.write(model_dict['advanced-params'])
+        model.load_model(filename, format='json')
+        os.remove(filename)
+
+        if 'feature_names_in_' in model_dict.keys():
+            model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+
+        return model
+
+
+if 'CatBoost' in __optionals__:
+    # catboost.CatBoost is the library's generic, loss-agnostic base estimator -
+    # it's neither a classifier nor a regressor per se (used directly when a
+    # custom objective/loss isn't covered by CatBoostClassifier/CatBoostRegressor/
+    # CatBoostRanker). It's kept here, next to CatBoostClassifier, purely so all
+    # the CatBoost serializers stay together; it reuses the exact same
+    # Pool-based save_model/load_model(format='json') approach as its siblings.
+    # The one real difference: CatBoost.__init__ takes a single `params` dict
+    # (rather than **kwargs) and get_params() returns that same flat dict, so
+    # reconstruction is `CatBoost(params=model_dict['params'])` instead of
+    # `CatBoost(**model_dict['params'])`.
+    def serialize_catboost(model, catboost_data):
+        serialized_model = {
+            'params': model.get_params()
+        }
+
+        filename = f'{str(uuid.uuid4())}.json'
+        model.save_model(filename, format='json', pool=catboost_data)
+        with open(filename, 'r') as fh:
+            serialized_model['advanced-params'] = fh.read()
+        os.remove(filename)
+
+        if 'feature_names_in_' in model.__dict__:
+            serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+
+        return serialized_model
+
+
+    def deserialize_catboost(model_dict):
+        model = CatBoost(params=model_dict['params'])
 
         filename = f'{str(uuid.uuid4())}.json'
         with open(filename, 'w') as fh:

@@ -313,6 +313,7 @@ ml2json requires scikit-learn >= 1.2.2, <=1.4.0.
 | CatBoost           | Ensemble Methods                          | CatBoostClassifier                                  | :heavy_check_mark: |
 | CatBoost           | Ensemble Methods                          | CatBoostRanker                                      | :heavy_check_mark: |
 | CatBoost           | Ensemble Methods                          | CatBoostRegressor                                   | :heavy_check_mark: |
+| CatBoost           | Ensemble Methods                          | CatBoost                                            | :heavy_check_mark: |
 | kmodes             | Clustering                                | KModes                                              | :heavy_check_mark: |
 | kmodes             | Clustering                                | KPrototypes                                         | :heavy_check_mark: |
 | Scikit-Learn-extra | Clustering                                | cluster.KMedoids                                    |        :x:         |
