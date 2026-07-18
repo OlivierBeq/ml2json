@@ -34,7 +34,6 @@ except ImportError:
 
 def serialize_bounding_box_applicability_domain(model):
     serialized_model = {
-        'meta': 'bounding-box-ad',
         'fitted_': model.fitted_,
         'compute_minmax': model.compute_minmax,
         'constant_value_min': model.constant_value_min,
@@ -73,7 +72,6 @@ if 'BoundingBoxApplicabilityDomain' in __optionals__:
 
 def serialize_convex_hull_applicability_domain(model):
     serialized_model = {
-        'meta': 'convex-hull-ad',
         'fitted_': model.fitted_,
     }
     if model.fitted_:
@@ -101,7 +99,6 @@ if 'ConvexHullApplicabilityDomain' in __optionals__:
 
 def serialize_pca_bounding_box_applicability_domain(model):
     serialized_model = {
-        'meta': 'pca-bounding-box-ad',
         'fitted_': model.fitted_,
         'scaler': ml2json.to_dict(model.scaler) if model.scaler is not None else None,
         'min_explained_var': model.min_explained_var,
@@ -146,7 +143,6 @@ if 'PCABoundingBoxApplicabilityDomain' in __optionals__:
 
 def serialize_topkat_applicability_domain(model):
     serialized_model = {
-        'meta': 'topkat-ad',
         'fitted_': model.fitted_,
     }
     if model.fitted_:
@@ -184,7 +180,6 @@ if 'TopKatApplicabilityDomain' in __optionals__:
 
 def serialize_leverage_applicability_domain(model):
     serialized_model = {
-        'meta': 'leverage-ad',
         'fitted_': model.fitted_,
         'scaler': ml2json.to_dict(model.scaler),
     }
@@ -217,7 +212,6 @@ if 'LeverageApplicabilityDomain' in __optionals__:
 
 def serialize_hotelling_t2_applicability_domain(model):
     serialized_model = {
-        'meta': 'hotelling-t2-ad',
         'fitted_': model.fitted_,
         'alpha': model.alpha,
     }
@@ -248,7 +242,6 @@ if 'HotellingT2ApplicabilityDomain' in __optionals__:
 
 def serialize_kernel_density_applicability_domain(model):
     serialized_model = {
-        'meta': 'kernel-density-ad',
         'fitted_': model.fitted_,
         'kde': ml2json.to_dict(model.kde), # TODO: add ml2json.to_dict(model.kde)
         'threshold': model.threshold,
@@ -281,7 +274,6 @@ if 'KernelDensityApplicabilityDomain' in __optionals__:
 
 def serialize_isolation_forest_applicability_domain(model):
     serialized_model = {
-        'meta': 'isolation-forest-ad',
         'fitted_': model.fitted_,
         'isol': ml2json.to_dict(model.isol),
     }
@@ -310,7 +302,6 @@ if 'IsolationForestApplicabilityDomain' in __optionals__:
 
 def serialize_centroid_distance_applicability_domain(model):
     serialized_model = {
-        'meta': 'centroid-distance-ad',
         'fitted_': model.fitted_,
         'dist': model.dist,
         'scaler': ml2json.to_dict(model.scaler),
@@ -345,7 +336,6 @@ if 'CentroidDistanceApplicabilityDomain' in __optionals__:
 
 def serialize_knn_applicability_domain(model):
     serialized_model = {
-        'meta': 'knn-ad',
         'fitted_': model.fitted_,
         'scaler': ml2json.to_dict(model.scaler) if model.scaler is not None else None,
         'dist': model.dist,
@@ -392,7 +382,6 @@ if 'KNNApplicabilityDomain' in __optionals__:
 
 def serialize_standardization_approach_applicability_domain(model):
     serialized_model = {
-        'meta': 'standardization-approach-ad',
         'fitted_': model.fitted_,
         'scaler': ml2json.to_dict(model.scaler),
     }

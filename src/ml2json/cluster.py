@@ -33,7 +33,6 @@ from .utils.memory import serialize_memory, deserialize_memory
 
 def serialize_kmeans(model):
     serialized_model = {
-        'meta': 'kmeans',
         'cluster_centers_': model.cluster_centers_.tolist(),
         'labels_': model.labels_.tolist(),
         'inertia_': model.inertia_,
@@ -76,7 +75,6 @@ def deserialize_kmeans(model_dict):
 
 def serialize_minibatch_kmeans(model):
     serialized_model = {
-        'meta': 'minibatch-kmeans',
         'cluster_centers_': model.cluster_centers_.tolist(),
         'labels_': model.labels_.tolist(),
         'inertia_': model.inertia_,
@@ -133,7 +131,6 @@ def deserialize_minibatch_kmeans(model_dict):
 
 def serialize_affinity_propagation(model):
     serialized_model = {
-        'meta': 'affinity-propagation',
         'cluster_centers_indices_': model.cluster_centers_indices_.tolist(),
         'cluster_centers_': model.cluster_centers_.tolist(),
         'labels_': model.labels_.tolist(),
@@ -167,7 +164,6 @@ def deserialize_affinity_propagation(model_dict):
 
 def serialize_agglomerative_clustering(model):
     serialized_model = {
-        'meta': 'agglomerative-clustering',
         'n_clusters_': model.n_clusters_,
         'labels_': model.labels_.tolist(),
         'n_leaves_': model.n_leaves_,
@@ -208,7 +204,7 @@ def deserialize_agglomerative_clustering(model_dict):
 
 
 def serialize_birch(model):
-    return _base.serialize_model_generic(model, meta='birch')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_birch(model_dict):
@@ -217,7 +213,6 @@ def deserialize_birch(model_dict):
 
 def serialize_dbscan(model):
     serialized_model = {
-        'meta': 'dbscan',
         'components_': model.components_.tolist(),
         'core_sample_indices_': model.core_sample_indices_.tolist(),
         'labels_': model.labels_.tolist(),
@@ -250,7 +245,6 @@ def deserialize_dbscan(model_dict):
 
 def serialize_optics(model):
     serialized_model = {
-        'meta': 'optics',
         'labels_': model.labels_.tolist(),
         'reachability_': model.reachability_.tolist(),
         'ordering_': model.ordering_.tolist(),
@@ -286,7 +280,6 @@ def deserialize_optics(model_dict):
 
 def serialize_spectral_clustering(model):
     serialized_model = {
-        'meta': 'spectral-clustering',
         'affinity_matrix_': model.affinity_matrix_.tolist(),
         'labels_': model.labels_.tolist(),
         'n_features_in_': model.n_features_in_,
@@ -314,7 +307,6 @@ def deserialize_spectral_clustering(model_dict):
 def serialize_feature_agglomeration(model):
     params = model.get_params()
     serialized_model = {
-        'meta': 'feature-agglomeration',
         'n_clusters_': model.n_clusters_,
         'labels_': model.labels_.tolist(),
         'n_leaves_': model.n_leaves_,
@@ -361,7 +353,6 @@ def deserialize_feature_agglomeration(model_dict):
 
 def serialize_meanshift(model):
     serialized_model = {
-        'meta': 'meanshift',
         'cluster_centers_': model.cluster_centers_.tolist(),
         'labels_': model.labels_.tolist(),
         'n_iter_': model.n_iter_,
@@ -391,7 +382,6 @@ def deserialize_meanshift(model_dict):
 
 def serialize_spectral_biclustering(model):
     serialized_model = {
-        'meta': 'spectral-biclustering',
         'rows_': model.rows_.tolist(),
         'columns_': model.columns_.tolist(),
         'row_labels_': model.row_labels_.tolist(),
@@ -425,7 +415,6 @@ def deserialize_spectral_biclustering(model_dict):
 
 def serialize_spectral_coclustering(model):
     serialized_model = {
-        'meta': 'spectral-coclustering',
         'rows_': model.rows_.tolist(),
         'columns_': model.columns_.tolist(),
         'row_labels_': model.row_labels_.tolist(),
@@ -464,7 +453,6 @@ if 'KModes' in __optionals__:
                                 params['cat_dissim'].__name__)
 
         serialized_model = {
-            'meta': 'kmodes',
             '_enc_cluster_centroids': model._enc_cluster_centroids.astype(int).tolist(),
             'labels_': model.labels_.tolist(),
             'cost_': float(model.cost_),
@@ -506,7 +494,6 @@ if 'KPrototypes' in __optionals__:
         params['gamma'] = float(params['gamma'])
 
         serialized_model = {
-            'meta': 'kprototypes',
             '_enc_cluster_centroids': np.array(model._enc_cluster_centroids).astype(float).tolist(),
             'labels_': model.labels_.tolist(),
             'cost_': float(model.cost_),
@@ -544,7 +531,6 @@ def serialize_bisecting_tree(model):
         return None
 
     serialized_model = {
-        'meta': 'bisecting-tree',
         'center': model.center.tolist() if isinstance(model.center, np.ndarray) else model.center,
         'indices': model.indices.tolist() if isinstance(model.indices, np.ndarray) else model.indices,
         'score': model.score,
@@ -577,7 +563,6 @@ def deserialize_bisecting_tree(model_dict):
 
 def serialize_bisecting_kmeans(model):
     serialized_model = {
-        'meta': 'bisecting-kmeans',
         'cluster_centers_': model.cluster_centers_.tolist(),
         'labels_': model.labels_.tolist(),
         'inertia_': model.inertia_,
@@ -626,7 +611,6 @@ def deserialize_bisecting_kmeans(model_dict):
 if 'HDBSCAN' in __optionals__:
     def serialize_hdbscan(model):
         serialized_model = {
-            'meta': 'hdbscan',
             '_metric_kwargs': model._metric_kwargs,
             '_condensed_tree': model._condensed_tree.tolist(),
             '_condensed_tree_dtype': f"np.dtype({str(model._condensed_tree.dtype)})",

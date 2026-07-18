@@ -6,7 +6,6 @@ from sklearn.feature_extraction import DictVectorizer
 
 def serialize_dict_vectorizer(model):
     serialized_model = {
-        'meta': 'dict-vectorizer',
         'dtype': model.dtype.__name__,
         'separator': model.separator,
         'sparse': model.sparse,

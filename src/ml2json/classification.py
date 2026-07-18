@@ -46,7 +46,6 @@ from .preprocessing import (serialize_label_binarizer, deserialize_label_binariz
 
 def serialize_logistic_regression(model):
     serialized_model = {
-        'meta': 'lr',
         'classes_': model.classes_.tolist(),
         'coef_': model.coef_.tolist(),
         'intercept_': model.intercept_.tolist(),
@@ -76,7 +75,6 @@ def deserialize_logistic_regression(model_dict):
 
 def serialize_bernoulli_nb(model):
     serialized_model = {
-        'meta': 'bernoulli-nb',
         'classes_': model.classes_.tolist(),
         'class_count_': model.class_count_.tolist(),
         'class_log_prior_': model.class_log_prior_.tolist(),
@@ -108,7 +106,6 @@ def deserialize_bernoulli_nb(model_dict):
 
 def serialize_gaussian_nb(model):
     serialized_model = {
-        'meta': 'gaussian-nb',
         'classes_': model.classes_.tolist(),
         'class_count_': model.class_count_.tolist(),
         'class_prior_': model.class_prior_.tolist(),
@@ -142,7 +139,6 @@ def deserialize_gaussian_nb(model_dict):
 
 def serialize_multinomial_nb(model):
     serialized_model = {
-        'meta': 'multinomial-nb',
         'classes_': model.classes_.tolist(),
         'class_count_': model.class_count_.tolist(),
         'class_log_prior_': model.class_log_prior_.tolist(),
@@ -174,7 +170,6 @@ def deserialize_multinomial_nb(model_dict):
 
 def serialize_complement_nb(model):
     serialized_model = {
-        'meta': 'complement-nb',
         'classes_': model.classes_.tolist(),
         'class_count_': model.class_count_.tolist(),
         'class_log_prior_': model.class_log_prior_.tolist(),
@@ -208,7 +203,6 @@ def deserialize_complement_nb(model_dict):
 
 def serialize_lda(model):
     serialized_model = {
-        'meta': 'lda',
         'coef_': model.coef_.tolist(),
         'intercept_': model.intercept_.tolist(),
         'explained_variance_ratio_': model.explained_variance_ratio_.tolist(),
@@ -248,7 +242,6 @@ def deserialize_lda(model_dict):
 
 def serialize_qda(model):
     serialized_model = {
-        'meta': 'qda',
         'means_': model.means_.tolist(),
         'priors_': model.priors_.tolist(),
         'scalings_': [array.tolist() for array in model.scalings_],
@@ -282,7 +275,6 @@ def deserialize_qda(model_dict):
 
 def serialize_svm(model):
     serialized_model = {
-        'meta': 'svm',
         'class_weight_': model.class_weight_.tolist(),
         'classes_': model.classes_.tolist(),
         'support_': model.support_.tolist(),
@@ -356,7 +348,7 @@ def deserialize_svm(model_dict):
 
 
 def serialize_decision_tree(model):
-    return _base.serialize_model_generic(model, meta='decision-tree')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_decision_tree(model_dict):
@@ -364,7 +356,7 @@ def deserialize_decision_tree(model_dict):
 
 
 def serialize_gradient_boosting(model):
-    return _base.serialize_model_generic(model, meta='gb')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_gradient_boosting(model_dict):
@@ -372,7 +364,7 @@ def deserialize_gradient_boosting(model_dict):
 
 
 def serialize_random_forest(model):
-    return _base.serialize_model_generic(model, meta='rf')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_random_forest(model_dict):
@@ -381,7 +373,6 @@ def deserialize_random_forest(model_dict):
 
 def serialize_perceptron(model):
     serialized_model = {
-        'meta': 'perceptron',
         'coef_': model.coef_.tolist(),
         'intercept_': model.intercept_.tolist(),
         'n_iter_': model.n_iter_,
@@ -413,7 +404,6 @@ def deserialize_perceptron(model_dict):
 
 def serialize_mlp(model):
     serialized_model = {
-        'meta': 'mlp',
         'coefs_': [array.tolist() for array in model.coefs_],
         'loss_': model.loss_,
         'intercepts_': [array.tolist() for array in model.intercepts_],
@@ -458,7 +448,6 @@ def deserialize_mlp(model_dict):
 
 def serialize_xgboost_classifier(model):
     serialized_model = {
-        'meta': 'xgboost-classifier',
         'params': model.get_params()
     }
 
@@ -493,7 +482,6 @@ if 'XGBClassifier' in __optionals__:
 if 'XGBRFClassifier' in __optionals__:
     def serialize_xgboost_rf_classifier(model):
         serialized_model = {
-            'meta': 'xgboost-rf-classifier',
             'params': model.get_params()
         }
 
@@ -527,7 +515,6 @@ if 'XGBRFClassifier' in __optionals__:
 if 'LGBMClassifier' in __optionals__:
     def serialize_lightgbm_classifier(model):
         serialized_model = {
-            'meta': 'lightgbm-classifier',
             'params': model.get_params(),
             '_other_params': model._other_params
         }
@@ -579,7 +566,6 @@ if 'LGBMClassifier' in __optionals__:
 if 'CatBoostClassifier' in __optionals__:
     def serialize_catboost_classifier(model, catboost_data):
         serialized_model = {
-            'meta': 'catboost-classifier',
             'params': model.get_params()
         }
 
@@ -611,7 +597,7 @@ if 'CatBoostClassifier' in __optionals__:
 
 
 def serialize_adaboost_classifier(model):
-    return _base.serialize_model_generic(model, meta='adaboost-classifier')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_adaboost_classifier(model_dict):
@@ -619,7 +605,7 @@ def deserialize_adaboost_classifier(model_dict):
 
 
 def serialize_bagging_classifier(model):
-    return _base.serialize_model_generic(model, meta='bagging-classifier')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_bagging_classifier(model_dict):
@@ -627,7 +613,7 @@ def deserialize_bagging_classifier(model_dict):
 
 
 def serialize_extra_tree_classifier(model):
-    return _base.serialize_model_generic(model, meta='extra-tree-cls')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_extra_tree_classifier(model_dict):
@@ -635,7 +621,7 @@ def deserialize_extra_tree_classifier(model_dict):
 
 
 def serialize_extratrees_classifier(model):
-    return _base.serialize_model_generic(model, meta='extratrees-classifier')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_extratrees_classifier(model_dict):
@@ -643,7 +629,7 @@ def deserialize_extratrees_classifier(model_dict):
 
 
 def serialize_isolation_forest(model):
-    return _base.serialize_model_generic(model, meta='isolation-forest')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_isolation_forest(model_dict):
@@ -651,7 +637,7 @@ def deserialize_isolation_forest(model_dict):
 
 
 def serialize_random_trees_embedding(model):
-    return _base.serialize_model_generic(model, meta='random-trees-embedding')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_random_trees_embedding(model_dict):
@@ -659,7 +645,7 @@ def deserialize_random_trees_embedding(model_dict):
 
 
 def serialize_nearest_neighbour_classifier(model):
-    return _base.serialize_model_generic(model, meta='nearest-neighbour-classifier')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_nearest_neighbour_classifier(model_dict):
@@ -671,7 +657,6 @@ def serialize_stacking_classifier(model):
     from . import serialize_model
 
     serialized_model = {
-        'meta': 'stacking-classifier',
         '_n_feature_outs': model._n_feature_outs,
         'classes_': model.classes_.tolist(),
         'estimators_': [serialize_model(submodel) for submodel in model.estimators_],
@@ -726,7 +711,6 @@ def serialize_voting_classifier(model):
     from . import serialize_model
 
     serialized_model = {
-        'meta': 'voting-classifier',
         'classes_': model.classes_.tolist(),
         'le_': serialize_label_encoder(model.le_),
         'estimators_': [serialize_model(submodel) for submodel in model.estimators_],

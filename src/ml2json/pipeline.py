@@ -29,7 +29,6 @@ def serialize_pipeline(model):
     from .ml2json import serialize_model
 
     serialized_model = {
-        'meta': 'pipeline',
         'verbose': model.verbose,
         'params': {param: value
                    for param, value in model.get_params().items()
@@ -71,7 +70,6 @@ if 'imblearn' in __optionals__:
         from .ml2json import serialize_model
 
         serialized_model = {
-            'meta': 'imblearn-pipeline',
             'verbose': model.verbose,
             'params': {param: value
                        for param, value in model.get_params().items()
@@ -96,7 +94,7 @@ if 'imblearn' in __optionals__:
         model_dict['params']['steps'] = [(name, deserialize_model(estimator)) for name, estimator in model_dict['params']['steps']]
         if model_dict['params']['memory'] is not None and isinstance(model_dict['params']['memory'], dict):
             model_dict['params']['memory'] = deserialize_memory(model_dict['params']['memory'])
-        model = Pipeline(**model_dict['params'])
+        model = ImblearnPipeline(**model_dict['params'])
         if 'classes_' in model_dict.keys():
             model.classes_ = np.array(model_dict['classes_'])
         if 'n_feature_in_' in model_dict.keys():

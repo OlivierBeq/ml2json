@@ -11,7 +11,6 @@ from .utils.random_state import serialize_random_state, deserialize_random_state
 
 def serialize_pca(model):
     serialized_model = {
-        'meta': 'pca',
         'components_': model.components_.tolist(),
         'explained_variance_': model.explained_variance_.tolist(),
         'explained_variance_ratio_': model.explained_variance_ratio_.tolist(),
@@ -57,7 +56,6 @@ def deserialize_pca(model_dict):
 
 def serialize_kernel_pca(model):
     serialized_model = {
-        'meta': 'kernel-pca',
         'eigenvalues_': model.eigenvalues_.tolist(),
         'eigenvectors_': model.eigenvectors_.tolist(),
         'n_features_in_': model.n_features_in_,
@@ -95,7 +93,6 @@ def deserialize_kernel_pca(model_dict):
 
 def serialize_dictionary_learning(model):
     serialized_model = {
-        'meta': 'dictionary-learning',
         'components_': model.components_.tolist(),
         'n_iter_': model.n_iter_,
         'error_': model.error_,
@@ -125,7 +122,6 @@ def deserialize_dictionary_learning(model_dict):
 
 def serialize_factor_analysis(model):
     serialized_model = {
-        'meta': 'factor-analysis',
         'components_': model.components_.tolist(),
         'loglike_': model.loglike_,
         'noise_variance_': model.noise_variance_.tolist(),
@@ -159,7 +155,6 @@ def deserialize_factor_analysis(model_dict):
 
 def serialize_fast_ica(model):
     serialized_model = {
-        'meta': 'fast-ica',
         'components_': model.components_.tolist(),
         'mixing_': model.mixing_.tolist(),
         'whitening_': model.whitening_.tolist(),
@@ -203,7 +198,6 @@ def deserialize_fast_ica(model_dict):
 
 def serialize_incremental_pca(model):
     serialized_model = {
-        'meta': 'incremental-pca',
         'components_': model.components_.tolist(),
         'explained_variance_': model.explained_variance_.tolist(),
         'explained_variance_ratio_': model.explained_variance_ratio_.tolist(),
@@ -247,7 +241,6 @@ def deserialize_incremental_pca(model_dict):
 
 def serialize_minibatch_sparse_pca(model):
     serialized_model = {
-        'meta': 'minibatch-sparse-pca',
         'components_': model.components_.tolist(),
         'mean_': model.mean_.tolist(),
         'n_components_': model.n_components_,
@@ -279,7 +272,6 @@ def deserialize_minibatch_sparse_pca(model_dict):
 
 def serialize_sparse_pca(model):
     serialized_model = {
-        'meta': 'sparse-pca',
         'components_': model.components_.tolist(),
         'mean_': model.mean_.tolist(),
         'n_components_': model.n_components_,
@@ -316,7 +308,6 @@ def deserialize_sparse_pca(model_dict):
 
 def serialize_latent_dirichlet_allocation(model):
     serialized_model = {
-        'meta': 'latent-dirichlet-allocation',
         'components_': model.components_.tolist(),
         'exp_dirichlet_component_': model.exp_dirichlet_component_.tolist(),
         'bound_': model.bound_.tolist(),
@@ -356,7 +347,6 @@ def deserialize_latent_dirichlet_allocation(model_dict):
 
 def serialize_nmf(model):
     serialized_model = {
-        'meta': 'nmf',
         'components_': model.components_.tolist(),
         'n_components_': model.n_components_,
         'reconstruction_err_': model.reconstruction_err_,
@@ -388,7 +378,6 @@ def deserialize_nmf(model_dict):
 
 def serialize_minibatch_nmf(model):
     serialized_model = {
-        'meta': 'minibatch-nmf',
         'components_': model.components_.tolist(),
         'n_components_': model.n_components_,
         '_n_components': model._n_components,
@@ -476,7 +465,6 @@ def deserialize_minibatch_nmf(model_dict):
 
 def serialize_minibatch_dictionary_learning(model):
     serialized_model = {
-        'meta': 'minibatch-dictionary-learning',
         'components_': model.components_.tolist(),
         'n_iter_': model.n_iter_,
         'n_steps_': model.n_steps_,
@@ -506,7 +494,6 @@ def deserialize_minibatch_dictionary_learning(model_dict):
 
 def serialize_sparse_coder(model):
     serialized_model = {
-        'meta': 'sparse-coder',
         'params': model.get_params(),
     }
 
@@ -532,7 +519,6 @@ def deserialize_sparse_coder(model_dict):
 
 def serialize_truncated_svd(model):
     serialized_model = {
-        'meta': 'truncated-svd',
         'components_': model.components_.tolist(),
         'explained_variance_': model.explained_variance_.tolist(),
         'explained_variance_ratio_': model.explained_variance_ratio_.tolist(),

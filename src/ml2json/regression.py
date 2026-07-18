@@ -37,7 +37,6 @@ from .utils import csr
 
 def serialize_linear_regressor(model):
     serialized_model = {
-        'meta': 'linear-regression',
         'coef_': model.coef_.tolist(),
         'intercept_': model.intercept_.tolist(),
         'params': model.get_params()
@@ -57,7 +56,6 @@ def deserialize_linear_regressor(model_dict):
 
 def serialize_lasso_regressor(model):
     serialized_model = {
-        'meta': 'lasso-regression',
         'coef_': model.coef_.tolist(),
         'params': model.get_params()
     }
@@ -95,7 +93,6 @@ def deserialize_lasso_regressor(model_dict):
 
 def serialize_elastic_regressor(model):
     serialized_model = {
-        'meta': 'elasticnet-regression',
         'coef_': model.coef_.tolist(),
         'alpha': model.alpha,
         'params': model.get_params()
@@ -131,7 +128,6 @@ def deserialize_elastic_regressor(model_dict):
 
 def serialize_ridge_regressor(model):
     serialized_model = {
-        'meta': 'ridge-regression',
         'coef_': model.coef_.tolist(),
         'params': model.get_params()
     }
@@ -165,7 +161,6 @@ def deserialize_ridge_regressor(model_dict):
 
 def serialize_svr(model):
     serialized_model = {
-        'meta': 'svr',
         'support_': model.support_.tolist(),
         '_n_support': model._n_support.tolist(),
         '_probA': model._probA.tolist(),
@@ -243,7 +238,7 @@ def deserialize_svr(model_dict):
 
 
 def serialize_decision_tree_regressor(model):
-    return _base.serialize_model_generic(model, meta='decision-tree-regression')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_decision_tree_regressor(model_dict):
@@ -251,7 +246,7 @@ def deserialize_decision_tree_regressor(model_dict):
 
 
 def serialize_gradient_boosting_regressor(model):
-    return _base.serialize_model_generic(model, meta='gb-regression')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_gradient_boosting_regressor(model_dict):
@@ -259,7 +254,7 @@ def deserialize_gradient_boosting_regressor(model_dict):
 
 
 def serialize_random_forest_regressor(model):
-    return _base.serialize_model_generic(model, meta='rf-regression')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_random_forest_regressor(model_dict):
@@ -268,7 +263,6 @@ def deserialize_random_forest_regressor(model_dict):
 
 def serialize_mlp_regressor(model):
     serialized_model = {
-        'meta': 'mlp-regression',
         'coefs_': [array.tolist() for array in model.coefs_],
         'loss_': model.loss_,
         'intercepts_': [array.tolist() for array in model.intercepts_],
@@ -299,7 +293,6 @@ def deserialize_mlp_regressor(model_dict):
 if 'XGBRanker' in __optionals__:
     def serialize_xgboost_ranker(model):
         serialized_model = {
-            'meta': 'xgboost-ranker',
             'params': model.get_params()
         }
 
@@ -326,7 +319,6 @@ if 'XGBRanker' in __optionals__:
 if 'XGBRegressor' in __optionals__:
     def serialize_xgboost_regressor(model):
         serialized_model = {
-            'meta': 'xgboost-regressor',
             'params': model.get_params()
         }
 
@@ -353,7 +345,6 @@ if 'XGBRegressor' in __optionals__:
 if 'XGBRFRegressor' in __optionals__:
     def serialize_xgboost_rf_regressor(model):
         serialized_model = {
-            'meta': 'xgboost-rf-regressor',
             'params': model.get_params()
         }
 
@@ -381,7 +372,6 @@ if 'XGBRFRegressor' in __optionals__:
 if 'LGBMRegressor' in __optionals__:
     def serialize_lightgbm_regressor(model):
         serialized_model = {
-            'meta': 'lightgbm-regressor',
             'params': model.get_params(),
             '_other_params': model._other_params
         }
@@ -424,7 +414,6 @@ if 'LGBMRegressor' in __optionals__:
 if 'LGBMRanker' in __optionals__:
     def serialize_lightgbm_ranker(model):
         serialized_model = {
-            'meta': 'lightgbm-ranker',
             'params': model.get_params(),
             '_other_params': model._other_params
         }
@@ -469,7 +458,6 @@ if 'LGBMRanker' in __optionals__:
 if 'CatBoostRegressor' in __optionals__:
     def serialize_catboost_regressor(model, catboost_data):
         serialized_model = {
-            'meta': 'catboost-regressor',
             'params': model.get_params()
         }
 
@@ -497,7 +485,6 @@ if 'CatBoostRegressor' in __optionals__:
 if 'CatBoostRanker' in __optionals__:
     def serialize_catboost_ranker(model: CatBoostRanker, catboost_data):
         serialized_model = {
-            'meta': 'catboost-ranker',
             'params': model.get_params()
         }
 
@@ -523,7 +510,7 @@ if 'CatBoostRanker' in __optionals__:
 
 
 def serialize_adaboost_regressor(model):
-    return _base.serialize_model_generic(model, meta='adaboost-regressor')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_adaboost_regressor(model_dict):
@@ -531,7 +518,7 @@ def deserialize_adaboost_regressor(model_dict):
 
 
 def serialize_bagging_regressor(model):
-    return _base.serialize_model_generic(model, meta='bagging-regression')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_bagging_regressor(model_dict):
@@ -539,7 +526,7 @@ def deserialize_bagging_regressor(model_dict):
 
 
 def serialize_extra_tree_regressor(model):
-    return _base.serialize_model_generic(model, meta='extra-tree-reg')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_extra_tree_regressor(model_dict):
@@ -547,14 +534,14 @@ def deserialize_extra_tree_regressor(model_dict):
 
 
 def serialize_extratrees_regressor(model):
-    return _base.serialize_model_generic(model, meta='extratrees-regressor')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_extratrees_regressor(model_dict):
     return _base.deserialize_model_generic(model_dict)
 
 def serialize_nearest_neighbour_regressor(model):
-    return _base.serialize_model_generic(model, meta='nearest-neighbour-regressor')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_nearest_neighbour_regressor(model_dict):
@@ -566,7 +553,6 @@ def serialize_stacking_regressor(model):
     from . import serialize_model
 
     serialized_model = {
-        'meta': 'stacking-regressor',
         '_n_feature_outs': model._n_feature_outs,
         'estimators_': [serialize_model(submodel) for submodel in model.estimators_],
         'final_estimator_': serialize_model(model.final_estimator_),
@@ -611,7 +597,6 @@ def serialize_voting_regressor(model):
     from . import serialize_model
 
     serialized_model = {
-        'meta': 'voting-regressor',
         'estimators_': [serialize_model(submodel) for submodel in model.estimators_],
         'named_estimators_': {model_name: serialize_model(submodel) for model_name, submodel in
                               model.named_estimators_.items()},

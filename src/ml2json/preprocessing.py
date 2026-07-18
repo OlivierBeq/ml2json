@@ -4,7 +4,7 @@ from . import _base
 
 
 def serialize_label_binarizer(model):
-    return _base.serialize_model_generic(model, meta='label-binarizer')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_label_binarizer(model_dict):
@@ -12,7 +12,7 @@ def deserialize_label_binarizer(model_dict):
 
 
 def serialize_multilabel_binarizer(model):
-    return _base.serialize_model_generic(model, meta='multilabel-binarizer')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_multilabel_binarizer(model_dict):
@@ -20,7 +20,7 @@ def deserialize_multilabel_binarizer(model_dict):
 
 
 def serialize_minmax_scaler(model):
-    return _base.serialize_model_generic(model, meta='minmax-scaler')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_minmax_scaler(model_dict):
@@ -28,7 +28,7 @@ def deserialize_minmax_scaler(model_dict):
 
 
 def serialize_standard_scaler(model):
-    return _base.serialize_model_generic(model, meta='standard-scaler')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_standard_scaler(model_dict):
@@ -36,7 +36,7 @@ def deserialize_standard_scaler(model_dict):
 
 
 def serialize_robust_scaler(model):
-    return _base.serialize_model_generic(model, meta='robust-scaler')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_robust_scaler(model_dict):
@@ -44,7 +44,7 @@ def deserialize_robust_scaler(model_dict):
 
 
 def serialize_maxabs_scaler(model):
-    return _base.serialize_model_generic(model, meta='maxabs-scaler')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_maxabs_scaler(model_dict):
@@ -52,7 +52,7 @@ def deserialize_maxabs_scaler(model_dict):
 
 
 def serialize_label_encoder(model):
-    return _base.serialize_model_generic(model, meta='label-encoder')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_label_encoder(model_dict):
@@ -60,7 +60,7 @@ def deserialize_label_encoder(model_dict):
 
 
 def serialize_kernel_centerer(model):
-    return _base.serialize_model_generic(model, meta='kernel-centerer')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_kernel_centerer(model_dict):
@@ -68,7 +68,7 @@ def deserialize_kernel_centerer(model_dict):
 
 
 def serialize_onehot_encoder(model):
-    return _base.serialize_model_generic(model, meta='onehot-encoder')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_onehot_encoder(model_dict):
@@ -76,7 +76,7 @@ def deserialize_onehot_encoder(model_dict):
 
 
 def serialize_ordinal_encoder(model):
-    return _base.serialize_model_generic(model, meta='ordinal-encoder')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_ordinal_encoder(model_dict):
@@ -84,7 +84,7 @@ def deserialize_ordinal_encoder(model_dict):
 
 
 def serialize_normalizer(model):
-    return _base.serialize_model_generic(model, meta='normalizer')
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_normalizer(model_dict):
