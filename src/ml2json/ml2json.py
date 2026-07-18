@@ -10,7 +10,7 @@ import warnings
 from typing import Dict
 
 from sklearn import svm, discriminant_analysis, dummy
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor, ExtraTreeClassifier, ExtraTreeRegressor
 from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor, BaggingClassifier, BaggingRegressor,
@@ -19,14 +19,23 @@ from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor, BaggingClas
                               RandomForestRegressor, StackingClassifier, StackingRegressor, VotingClassifier,
                               VotingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor,
                               RandomTreesEmbedding)
-from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
-from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
-from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB, CategoricalNB
+from sklearn.linear_model import (LinearRegression, Lasso, Ridge, ElasticNet, ARDRegression, BayesianRidge,
+                                  ElasticNetCV, LassoCV, MultiTaskElasticNet, MultiTaskElasticNetCV, MultiTaskLasso,
+                                  MultiTaskLassoCV, GammaRegressor, PoissonRegressor, TweedieRegressor,
+                                  HuberRegressor, Lars, LarsCV, LassoLars, LassoLarsCV, LassoLarsIC,
+                                  LogisticRegressionCV, OrthogonalMatchingPursuit, OrthogonalMatchingPursuitCV,
+                                  PassiveAggressiveClassifier, PassiveAggressiveRegressor, QuantileRegressor,
+                                  RANSACRegressor, RidgeCV, RidgeClassifier, RidgeClassifierCV, SGDClassifier,
+                                  SGDRegressor, SGDOneClassSVM, TheilSenRegressor)
+from sklearn.neural_network import MLPClassifier, MLPRegressor, BernoulliRBM
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
                                    MinMaxScaler, StandardScaler, KernelCenterer,
                                    OneHotEncoder, RobustScaler, MaxAbsScaler,
-                                   OrdinalEncoder, Normalizer)
-from sklearn.svm import SVR
+                                   OrdinalEncoder, Normalizer, Binarizer, PowerTransformer,
+                                   QuantileTransformer, KBinsDiscretizer, PolynomialFeatures,
+                                   SplineTransformer, TargetEncoder)
+from sklearn.svm import SVR, LinearSVC, LinearSVR, NuSVC, NuSVR, OneClassSVM
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
@@ -38,8 +47,20 @@ from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAna
                                    MiniBatchNMF, SparsePCA, SparseCoder, TruncatedSVD)
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
-from sklearn.neighbors import NearestNeighbors, KDTree, KNeighborsClassifier, KNeighborsRegressor, KernelDensity
+from sklearn.neighbors import (NearestNeighbors, KDTree, BallTree, KNeighborsClassifier, KNeighborsRegressor,
+                               KernelDensity, RadiusNeighborsClassifier, RadiusNeighborsRegressor,
+                               KNeighborsTransformer, RadiusNeighborsTransformer, LocalOutlierFactor,
+                               NeighborhoodComponentsAnalysis, NearestCentroid)
 from sklearn.pipeline import FeatureUnion, Pipeline
+from sklearn.mixture import GaussianMixture, BayesianGaussianMixture
+from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.covariance import (EllipticEnvelope, EmpiricalCovariance, GraphicalLasso, GraphicalLassoCV,
+                                LedoitWolf, MinCovDet, OAS, ShrunkCovariance)
+from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem, PolynomialCountSketch, RBFSampler,
+                                          SkewedChi2Sampler)
+from sklearn.kernel_ridge import KernelRidge
+from sklearn.isotonic import IsotonicRegression
+from sklearn.random_projection import GaussianRandomProjection, SparseRandomProjection
 
 from . import classification as clf
 from . import regression as reg
@@ -53,6 +74,13 @@ from . import cross_decomposition as crdec
 from . import applicability_domain as ad
 from . import over_undersampling as ous
 from . import pipeline as ppl
+from . import mixture as mix
+from . import dummy as dum
+from . import covariance as cov
+from . import kernel_approximation as kapp
+from . import kernel_ridge as kr
+from . import isotonic as iso
+from . import random_projection as rp
 from numpy.random import RandomState
 
 from . import _base
@@ -244,6 +272,106 @@ _REGISTRY = [
 
     # Pipeline
     (Pipeline, ppl.serialize_pipeline, ppl.deserialize_pipeline),
+    (FeatureUnion, ppl.serialize_feature_union, ppl.deserialize_feature_union),
+
+    # Mixture
+    (GaussianMixture, mix.serialize_gaussian_mixture, mix.deserialize_gaussian_mixture),
+    (BayesianGaussianMixture, mix.serialize_bayesian_gaussian_mixture, mix.deserialize_bayesian_gaussian_mixture),
+
+    # Dummy
+    (DummyClassifier, dum.serialize_dummy_classifier, dum.deserialize_dummy_classifier),
+    (DummyRegressor, dum.serialize_dummy_regressor, dum.deserialize_dummy_regressor),
+
+    # Covariance
+    (EllipticEnvelope, cov.serialize_elliptic_envelope, cov.deserialize_elliptic_envelope),
+    (EmpiricalCovariance, cov.serialize_empirical_covariance, cov.deserialize_empirical_covariance),
+    (GraphicalLasso, cov.serialize_graphical_lasso, cov.deserialize_graphical_lasso),
+    (GraphicalLassoCV, cov.serialize_graphical_lasso_cv, cov.deserialize_graphical_lasso_cv),
+    (LedoitWolf, cov.serialize_ledoit_wolf, cov.deserialize_ledoit_wolf),
+    (MinCovDet, cov.serialize_min_cov_det, cov.deserialize_min_cov_det),
+    (OAS, cov.serialize_oas, cov.deserialize_oas),
+    (ShrunkCovariance, cov.serialize_shrunk_covariance, cov.deserialize_shrunk_covariance),
+
+    # Kernel approximation
+    (AdditiveChi2Sampler, kapp.serialize_additive_chi2_sampler, kapp.deserialize_additive_chi2_sampler),
+    (Nystroem, kapp.serialize_nystroem, kapp.deserialize_nystroem),
+    (PolynomialCountSketch, kapp.serialize_polynomial_count_sketch, kapp.deserialize_polynomial_count_sketch),
+    (RBFSampler, kapp.serialize_rbf_sampler, kapp.deserialize_rbf_sampler),
+    (SkewedChi2Sampler, kapp.serialize_skewed_chi2_sampler, kapp.deserialize_skewed_chi2_sampler),
+
+    # Kernel ridge
+    (KernelRidge, kr.serialize_kernel_ridge, kr.deserialize_kernel_ridge),
+
+    # Isotonic
+    (IsotonicRegression, iso.serialize_isotonic_regression, iso.deserialize_isotonic_regression),
+
+    # Random projection
+    (GaussianRandomProjection, rp.serialize_gaussian_random_projection, rp.deserialize_gaussian_random_projection),
+    (SparseRandomProjection, rp.serialize_sparse_random_projection, rp.deserialize_sparse_random_projection),
+
+    # Classification additions (linear_model/svm/naive_bayes/neighbors classifiers)
+    (CategoricalNB, clf.serialize_categorical_nb, clf.deserialize_categorical_nb),
+    (LinearSVC, clf.serialize_linear_svc, clf.deserialize_linear_svc),
+    (NuSVC, clf.serialize_nu_svc, clf.deserialize_nu_svc),
+    (OneClassSVM, clf.serialize_one_class_svm, clf.deserialize_one_class_svm),
+    (SGDOneClassSVM, clf.serialize_sgd_one_class_svm, clf.deserialize_sgd_one_class_svm),
+    (PassiveAggressiveClassifier, clf.serialize_passive_aggressive_classifier, clf.deserialize_passive_aggressive_classifier),
+    (RidgeClassifier, clf.serialize_ridge_classifier, clf.deserialize_ridge_classifier),
+    (RidgeClassifierCV, clf.serialize_ridge_classifier_cv, clf.deserialize_ridge_classifier_cv),
+    (SGDClassifier, clf.serialize_sgd_classifier, clf.deserialize_sgd_classifier),
+    (LogisticRegressionCV, clf.serialize_logistic_regression_cv, clf.deserialize_logistic_regression_cv),
+    (RadiusNeighborsClassifier, clf.serialize_radius_neighbors_classifier, clf.deserialize_radius_neighbors_classifier),
+    (NearestCentroid, clf.serialize_nearest_centroid, clf.deserialize_nearest_centroid),
+    (BernoulliRBM, dec.serialize_bernoulli_rbm, dec.deserialize_bernoulli_rbm),
+
+    # Regression additions (linear_model/svm/neighbors regressors)
+    (ARDRegression, reg.serialize_ard_regression, reg.deserialize_ard_regression),
+    (BayesianRidge, reg.serialize_bayesian_ridge, reg.deserialize_bayesian_ridge),
+    (ElasticNetCV, reg.serialize_elasticnet_cv, reg.deserialize_elasticnet_cv),
+    (LassoCV, reg.serialize_lasso_cv, reg.deserialize_lasso_cv),
+    (MultiTaskElasticNet, reg.serialize_multitask_elasticnet, reg.deserialize_multitask_elasticnet),
+    (MultiTaskElasticNetCV, reg.serialize_multitask_elasticnet_cv, reg.deserialize_multitask_elasticnet_cv),
+    (MultiTaskLasso, reg.serialize_multitask_lasso, reg.deserialize_multitask_lasso),
+    (MultiTaskLassoCV, reg.serialize_multitask_lasso_cv, reg.deserialize_multitask_lasso_cv),
+    (GammaRegressor, reg.serialize_gamma_regressor, reg.deserialize_gamma_regressor),
+    (PoissonRegressor, reg.serialize_poisson_regressor, reg.deserialize_poisson_regressor),
+    (TweedieRegressor, reg.serialize_tweedie_regressor, reg.deserialize_tweedie_regressor),
+    (HuberRegressor, reg.serialize_huber_regressor, reg.deserialize_huber_regressor),
+    (Lars, reg.serialize_lars, reg.deserialize_lars),
+    (LarsCV, reg.serialize_lars_cv, reg.deserialize_lars_cv),
+    (LassoLars, reg.serialize_lasso_lars, reg.deserialize_lasso_lars),
+    (LassoLarsCV, reg.serialize_lasso_lars_cv, reg.deserialize_lasso_lars_cv),
+    (LassoLarsIC, reg.serialize_lasso_lars_ic, reg.deserialize_lasso_lars_ic),
+    (OrthogonalMatchingPursuit, reg.serialize_orthogonal_matching_pursuit, reg.deserialize_orthogonal_matching_pursuit),
+    (OrthogonalMatchingPursuitCV, reg.serialize_orthogonal_matching_pursuit_cv, reg.deserialize_orthogonal_matching_pursuit_cv),
+    (PassiveAggressiveRegressor, reg.serialize_passive_aggressive_regressor, reg.deserialize_passive_aggressive_regressor),
+    (QuantileRegressor, reg.serialize_quantile_regressor, reg.deserialize_quantile_regressor),
+    (RANSACRegressor, reg.serialize_ransac_regressor, reg.deserialize_ransac_regressor),
+    (RidgeCV, reg.serialize_ridge_cv, reg.deserialize_ridge_cv),
+    (SGDRegressor, reg.serialize_sgd_regressor, reg.deserialize_sgd_regressor),
+    (TheilSenRegressor, reg.serialize_theilsen_regressor, reg.deserialize_theilsen_regressor),
+    (LinearSVR, reg.serialize_linear_svr, reg.deserialize_linear_svr),
+    (NuSVR, reg.serialize_nu_svr, reg.deserialize_nu_svr),
+    (RadiusNeighborsRegressor, reg.serialize_radius_neighbors_regressor, reg.deserialize_radius_neighbors_regressor),
+
+    # Neighbors additions
+    (KNeighborsTransformer, nei.serialize_kneighbors_transformer, nei.deserialize_kneighbors_transformer),
+    (RadiusNeighborsTransformer, nei.serialize_radius_neighbors_transformer, nei.deserialize_radius_neighbors_transformer),
+    (LocalOutlierFactor, nei.serialize_local_outlier_factor, nei.deserialize_local_outlier_factor),
+    (NeighborhoodComponentsAnalysis, nei.serialize_neighborhood_components_analysis, nei.deserialize_neighborhood_components_analysis),
+    (BallTree, nei.serialize_balltree, nei.deserialize_balltree),
+
+    # Preprocessing additions
+    (Binarizer, pre.serialize_binarizer, pre.deserialize_binarizer),
+    (PowerTransformer, pre.serialize_power_transformer, pre.deserialize_power_transformer),
+    (QuantileTransformer, pre.serialize_quantile_transformer, pre.deserialize_quantile_transformer),
+    (KBinsDiscretizer, pre.serialize_kbins_discretizer, pre.deserialize_kbins_discretizer),
+    (PolynomialFeatures, pre.serialize_polynomial_features, pre.deserialize_polynomial_features),
+    (SplineTransformer, pre.serialize_spline_transformer, pre.deserialize_spline_transformer),
+    (TargetEncoder, pre.serialize_target_encoder, pre.deserialize_target_encoder),
+
+    # Feature extraction additions
+    (FeatureHasher, ext.serialize_feature_hasher, ext.deserialize_feature_hasher),
 ]
 
 # Optional dependencies: registered the same way, guarded by the same

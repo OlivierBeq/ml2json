@@ -5,6 +5,7 @@ from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAna
                                    LatentDirichletAllocation, MiniBatchDictionaryLearning, MiniBatchSparsePCA, NMF,
                                    MiniBatchNMF, SparsePCA, SparseCoder, TruncatedSVD)
 
+from . import _base
 from .preprocessing import serialize_kernel_centerer, deserialize_kernel_centerer
 from .utils.random_state import serialize_random_state, deserialize_random_state
 
@@ -546,3 +547,15 @@ def deserialize_truncated_svd(model_dict):
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
+
+
+# BernoulliRBM (sklearn.neural_network) is an unsupervised feature-learning
+# transformer, not a classifier/regressor - it fits in here alongside the
+# other unsupervised decomposition/transform models rather than in
+# classification.py/regression.py.
+def serialize_bernoulli_rbm(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_bernoulli_rbm(model_dict):
+    return _base.deserialize_model_generic(model_dict)

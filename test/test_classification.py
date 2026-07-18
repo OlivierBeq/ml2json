@@ -10,15 +10,18 @@ import scipy as sp
 from sklearn.datasets import make_classification
 from sklearn.feature_extraction import FeatureHasher
 from sklearn import svm, discriminant_analysis
-from sklearn.linear_model import LogisticRegression, Perceptron
+from sklearn.linear_model import (LogisticRegression, Perceptron, LogisticRegressionCV,
+                                  PassiveAggressiveClassifier, RidgeClassifier, RidgeClassifierCV, SGDClassifier)
 from sklearn.ensemble import (AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier,
                               GradientBoostingClassifier, RandomForestClassifier, IsolationForest,
                               StackingClassifier, VotingClassifier, HistGradientBoostingClassifier,
                               RandomTreesEmbedding)
-from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
-from sklearn.neural_network import MLPClassifier
+from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB, CategoricalNB
+from sklearn.neural_network import MLPClassifier, BernoulliRBM
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsClassifier, RadiusNeighborsClassifier, NearestCentroid
+from sklearn.svm import LinearSVC, NuSVC, OneClassSVM
+from sklearn.linear_model import SGDOneClassSVM
 from sklearn.utils import shuffle
 
 # Allow testing of additional optional dependencies
@@ -376,3 +379,104 @@ class TestAPI(unittest.TestCase):
         ]
         model = VotingClassifier(estimators=estimators, voting='soft')
         self.check_model(model, 'voting-classifier.json')
+
+    def test_categorical_nb(self):
+        X_cat = np.random.randint(0, 3, size=self.X.shape)
+        model = CategoricalNB()
+        model.fit(X_cat, self.y)
+        expected_predictions = model.predict(X_cat)
+
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
+
+        actual_predictions = deserialized_model.predict(X_cat)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+        model_name = 'categorical-nb.json'
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        actual_predictions = deserialized_model.predict(X_cat)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+    def test_linear_svc(self):
+        self.check_model(LinearSVC(random_state=0, max_iter=5000), 'linear-svc.json')
+        self.check_sparse_model(LinearSVC(random_state=0, max_iter=5000), 'linear-svc.json')
+
+    def test_nu_svc(self):
+        self.check_model(NuSVC(random_state=0), 'nu-svc.json')
+        self.check_sparse_model(NuSVC(random_state=0), 'nu-svc.json')
+
+    def check_outlier_model(self, model, model_name):
+        model.fit(self.X)
+        expected_predictions = model.predict(self.X)
+
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
+
+        actual_predictions = deserialized_model.predict(self.X)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        actual_predictions = deserialized_model.predict(self.X)
+        np.testing.assert_array_equal(expected_predictions, actual_predictions)
+
+    def test_one_class_svm(self):
+        self.check_outlier_model(OneClassSVM(), 'one-class-svm.json')
+
+    def test_sgd_one_class_svm(self):
+        self.check_outlier_model(SGDOneClassSVM(random_state=0), 'sgd-one-class-svm.json')
+
+    def test_passive_aggressive_classifier(self):
+        self.check_model(PassiveAggressiveClassifier(random_state=0), 'passive-aggressive-classifier.json')
+        self.check_sparse_model(PassiveAggressiveClassifier(random_state=0), 'passive-aggressive-classifier.json')
+
+    def test_ridge_classifier(self):
+        self.check_model(RidgeClassifier(), 'ridge-classifier.json')
+        self.check_sparse_model(RidgeClassifier(), 'ridge-classifier.json')
+
+    def test_ridge_classifier_cv(self):
+        self.check_model(RidgeClassifierCV(), 'ridge-classifier-cv.json')
+        self.check_sparse_model(RidgeClassifierCV(), 'ridge-classifier-cv.json')
+
+    def test_sgd_classifier(self):
+        self.check_model(SGDClassifier(random_state=0), 'sgd-classifier.json')
+        self.check_sparse_model(SGDClassifier(random_state=0), 'sgd-classifier.json')
+
+    def test_logistic_regression_cv(self):
+        self.check_model(LogisticRegressionCV(cv=3), 'logistic-regression-cv.json')
+        self.check_sparse_model(LogisticRegressionCV(cv=3), 'logistic-regression-cv.json')
+
+    def test_radius_neighbors_classifier(self):
+        # A large radius avoids "no neighbors found" ValueErrors that are
+        # unrelated to (de)serialization - check_sparse_model fits on
+        # differently-scaled hashed features but predicts on self.X.
+        self.check_model(RadiusNeighborsClassifier(radius=1e6), 'radius-neighbors-classifier.json')
+        self.check_sparse_model(RadiusNeighborsClassifier(radius=1e6), 'radius-neighbors-classifier.json')
+
+    def test_nearest_centroid(self):
+        self.check_model(NearestCentroid(), 'nearest-centroid.json')
+        self.check_sparse_model(NearestCentroid(), 'nearest-centroid.json')
+
+    def test_bernoulli_rbm(self):
+        model = BernoulliRBM(n_components=5, random_state=0)
+        model.fit(np.absolute(self.X))
+        expected_t = model.transform(np.absolute(self.X))
+
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
+
+        actual_t = deserialized_model.transform(np.absolute(self.X))
+        np.testing.assert_array_almost_equal(expected_t, actual_t)
+
+        model_name = 'bernoulli-rbm.json'
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        actual_t = deserialized_model.transform(np.absolute(self.X))
+        np.testing.assert_array_almost_equal(expected_t, actual_t)

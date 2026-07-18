@@ -10,6 +10,7 @@ import scipy as sp
 import sklearn
 from sklearn.pipeline import FeatureUnion, Pipeline
 
+from . import _base
 from .utils.memory import serialize_memory, deserialize_memory
 
 
@@ -59,6 +60,18 @@ def deserialize_pipeline(model_dict):
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
+
+
+# Structurally similar to Pipeline (a list of named sub-transformers), but
+# with no exotic state of its own (no memory/verbose caching dance) - the
+# generic engine already recurses through transformer_list's nested,
+# already-supported transformers on its own.
+def serialize_feature_union(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_feature_union(model_dict):
+    return _base.deserialize_model_generic(model_dict)
 
 
 if 'imblearn' in __optionals__:

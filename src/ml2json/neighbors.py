@@ -38,6 +38,47 @@ def deserialize_kdtree(model_dict):
     return _base.deserialize_kdtree({**model_dict, 'meta': 'kdtree'})
 
 
+def serialize_balltree(model):
+    return _base.serialize_balltree(model)
+
+
+def deserialize_balltree(model_dict):
+    # Same 'meta' restore dance as deserialize_kdtree above.
+    return _base.deserialize_balltree({**model_dict, 'meta': 'balltree'})
+
+
+def serialize_kneighbors_transformer(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_kneighbors_transformer(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_radius_neighbors_transformer(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_radius_neighbors_transformer(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_local_outlier_factor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_local_outlier_factor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_neighborhood_components_analysis(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_neighborhood_components_analysis(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
 if 'NNDescent' in __optionals__:
     def serialize_nndescent(model):
         return _base.serialize_nndescent(model)

@@ -828,3 +828,104 @@ if 'imblearn' in __optionals__:
 
     def deserialize_balanced_random_forest_classifier(model_dict):
         return _base.deserialize_model_generic(model_dict)
+
+
+# The classes below all hold plain attributes (arrays, scalars, nested
+# already-supported estimators) with no exotic Cython/compiled state, so the
+# generic recursive engine handles them directly - same pattern as
+# AdaBoostClassifier/BaggingClassifier above.
+
+def serialize_categorical_nb(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_categorical_nb(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_linear_svc(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_linear_svc(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_nu_svc(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_nu_svc(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_one_class_svm(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_one_class_svm(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_sgd_one_class_svm(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_sgd_one_class_svm(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_passive_aggressive_classifier(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_passive_aggressive_classifier(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_ridge_classifier(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_ridge_classifier(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_ridge_classifier_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_ridge_classifier_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_sgd_classifier(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_sgd_classifier(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_logistic_regression_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_logistic_regression_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_radius_neighbors_classifier(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_radius_neighbors_classifier(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_nearest_centroid(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_nearest_centroid(model_dict):
+    return _base.deserialize_model_generic(model_dict)
