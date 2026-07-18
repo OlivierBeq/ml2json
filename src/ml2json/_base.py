@@ -26,6 +26,7 @@ before.
 """
 
 import ast
+import functools
 import importlib
 import sys
 import types
@@ -37,6 +38,7 @@ from joblib import Memory
 from numpy.random import RandomState
 from sklearn.utils import Bunch
 from sklearn.cluster._birch import _CFNode, _CFSubcluster
+from sklearn.ensemble._hist_gradient_boosting.predictor import TreePredictor
 from sklearn.neighbors import BallTree, KDTree
 from sklearn.tree._tree import Tree
 from sklearn._loss._loss import (CyAbsoluteError, CyExponentialLoss, CyHalfBinomialLoss, CyHalfGammaLoss,
@@ -170,6 +172,32 @@ def deserialize_function_reference(model_dict):
     return obj
 
 
+def serialize_functools_partial(value: functools.partial):
+    # e.g. sklearn's ColumnTransformer builds a FunctionTransformer wrapping
+    # functools.partial(check_array, dtype=..., ensure_all_finite=False) for its
+    # passthrough branch - reached here via HistGradientBoostingClassifier/
+    # Regressor's internal categorical-feature preprocessor. Must be a dedicated
+    # leaf rather than falling through to serialize_model_generic's __dict__ walk:
+    # a partial's func/args/keywords are stored in read-only C-level slots, not
+    # __dict__, so the generic walk would silently capture an empty state (and
+    # object.__new__(functools.partial) rejects reconstruction outright anyway).
+    assert isinstance(value, functools.partial)
+    return {
+        'meta': 'functools_partial',
+        'func': recursive_serialize(value.func),
+        'args': recursive_serialize(list(value.args)),
+        'keywords': recursive_serialize(value.keywords),
+    }
+
+
+def deserialize_functools_partial(model_dict):
+    assert model_dict['meta'] == 'functools_partial'
+    func = recursive_deserialize(model_dict['func'])
+    args = recursive_deserialize(model_dict['args'])
+    keywords = recursive_deserialize(model_dict['keywords'])
+    return functools.partial(func, *args, **keywords)
+
+
 def serialize_class_reference(cls):
     """A bare class used as a parameter value (e.g. KDTree's dist_metric stores
     the metric *class*, not an instance; a class default like DBSCAN's default
@@ -201,6 +229,21 @@ def serialize_module_reference(module):
 def deserialize_module_reference(model_dict):
     assert model_dict['meta'] == 'module_reference'
     return importlib.import_module(model_dict['name'])
+
+
+def serialize_slice(value: slice):
+    # e.g. ColumnTransformer's `output_indices_` dict (built by
+    # HistGradientBoostingClassifier/Regressor's internal categorical-feature
+    # preprocessor) maps each transformer name to a plain `slice` object - not
+    # JSON-safe, and not a container/scalar/registered type the generic engine
+    # otherwise recognizes.
+    assert isinstance(value, slice)
+    return {'meta': 'slice', 'start': value.start, 'stop': value.stop, 'step': value.step}
+
+
+def deserialize_slice(model_dict):
+    assert model_dict['meta'] == 'slice'
+    return slice(model_dict['start'], model_dict['stop'], model_dict['step'])
 
 
 # ---------------------------------------------------------------------------
@@ -475,6 +518,51 @@ def _deserialize_binary_tree(model_dict, cls):
     return tree
 
 
+def serialize_tree_predictor(predictor: TreePredictor):
+    # HistGradientBoostingClassifier/Regressor's per-iteration trees. Unlike
+    # Tree/KDTree, TreePredictor is a plain Python class (init/getstate/dict,
+    # no C-level __new__ to fight) - object.__new__(cls) + a restored __dict__
+    # would normally be enough. It still needs dedicated handling because two
+    # of its three arrays (`binned_left_cat_bitsets`/`raw_left_cat_bitsets`,
+    # holding categorical-split bitsets) are almost always empty with shape
+    # (0, 8) when the model has no categorical features: serialize_numpy_array's
+    # plain .tolist() round trip collapses that to `[]`, and reconstructing via
+    # np.array([], dtype=...) silently yields shape (0,) instead of (0, 8) -
+    # `predict()` then crashes ("Buffer has wrong number of dimensions") since
+    # the Cython prediction loop indexes these bitsets as 2D. `nodes` doesn't
+    # have this problem (a tree always has >=1 node) and is serialized the same
+    # way as DecisionTreeClassifier's Tree.nodes (see serialize_tree above).
+    assert isinstance(predictor, TreePredictor)
+    nodes = predictor.nodes
+    binned = predictor.binned_left_cat_bitsets
+    raw = predictor.raw_left_cat_bitsets
+    return {
+        'meta': 'hgb_tree_predictor',
+        'nodes': nodes.tolist(),
+        'nodes_names': list(nodes.dtype.names),
+        'nodes_dtype': [nodes.dtype[i].str for i in range(len(nodes.dtype))],
+        'binned_left_cat_bitsets': binned.ravel().tolist(),
+        'binned_left_cat_bitsets_shape': list(binned.shape),
+        'binned_left_cat_bitsets_dtype': str(binned.dtype),
+        'raw_left_cat_bitsets': raw.ravel().tolist(),
+        'raw_left_cat_bitsets_shape': list(raw.shape),
+        'raw_left_cat_bitsets_dtype': str(raw.dtype),
+    }
+
+
+def deserialize_tree_predictor(model_dict):
+    assert model_dict['meta'] == 'hgb_tree_predictor'
+    nodes_dtype = np.dtype({'names': model_dict['nodes_names'], 'formats': model_dict['nodes_dtype']})
+    nodes = np.array([tuple(row) for row in model_dict['nodes']], dtype=nodes_dtype)
+    binned = np.array(model_dict['binned_left_cat_bitsets'],
+                      dtype=_dtype_from_str(model_dict['binned_left_cat_bitsets_dtype'])
+                      ).reshape(model_dict['binned_left_cat_bitsets_shape'])
+    raw = np.array(model_dict['raw_left_cat_bitsets'],
+                   dtype=_dtype_from_str(model_dict['raw_left_cat_bitsets_dtype'])
+                   ).reshape(model_dict['raw_left_cat_bitsets_shape'])
+    return TreePredictor(nodes, binned, raw)
+
+
 def serialize_kdtree(tree: KDTree):
     assert isinstance(tree, KDTree)
     return _serialize_binary_tree(tree, meta='kdtree')
@@ -702,8 +790,11 @@ __serialize_leaf_fn__ = [
     (sp.sparse.csr_matrix, serialize_csr_matrix),
     (_CYLOSS_TYPES, serialize_cyloss),
     ((types.FunctionType, types.BuiltinFunctionType), serialize_function_reference),
+    (functools.partial, serialize_functools_partial),
     (types.ModuleType, serialize_module_reference),
+    (slice, serialize_slice),
     (Tree, serialize_tree),
+    (TreePredictor, serialize_tree_predictor),
     (KDTree, serialize_kdtree),
     (BallTree, serialize_balltree),
 ]
@@ -721,9 +812,12 @@ __deserialize_leaf_fn__ = {
     'csr': deserialize_csr_matrix,
     'cython_loss': deserialize_cyloss,
     'tree': deserialize_tree,
+    'hgb_tree_predictor': deserialize_tree_predictor,
     'function_reference': deserialize_function_reference,
+    'functools_partial': deserialize_functools_partial,
     'class_reference': deserialize_class_reference,
     'module_reference': deserialize_module_reference,
+    'slice': deserialize_slice,
     'kdtree': deserialize_kdtree,
     'balltree': deserialize_balltree,
 }

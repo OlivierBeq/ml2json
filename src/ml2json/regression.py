@@ -253,6 +253,14 @@ def deserialize_gradient_boosting_regressor(model_dict):
     return _base.deserialize_model_generic(model_dict)
 
 
+def serialize_hist_gradient_boosting_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_hist_gradient_boosting_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
 def serialize_random_forest_regressor(model):
     return _base.serialize_model_generic(model)
 

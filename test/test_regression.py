@@ -140,6 +140,42 @@ class TestAPI(unittest.TestCase):
         self.check_model(GradientBoostingRegressor(), 'gradientboosting-regressor.json')
         self.check_sparse_model(GradientBoostingRegressor(), 'gradientboosting-regressor.json')
 
+    def test_hist_gradient_boosting_regression(self):
+        # HistGradientBoostingRegressor holds its fitted state in compiled/binned
+        # objects (a list of TreePredictor per boosting iteration, plus a
+        # _BinMapper) that don't round-trip through a plain __dict__ walk without
+        # dedicated handling. No sklearn implementation for sparse matrix.
+        self.check_model(HistGradientBoostingRegressor(max_iter=25, max_depth=3, random_state=0),
+                         'hist-gradientboosting-regressor.json')
+
+    def test_hist_gradient_boosting_regression_early_stopping(self):
+        # Exercises train_score_/validation_score_/do_early_stopping_/_use_validation_data,
+        # which are only populated (and only affect n_iter_/predictions) when
+        # early stopping is enabled.
+        model = HistGradientBoostingRegressor(max_iter=30, max_depth=4, random_state=1, early_stopping=True,
+                                              validation_fraction=0.2, n_iter_no_change=3)
+        model.fit(self.X, self.y)
+        deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+        np.testing.assert_array_equal(model.predict(self.X), deserialized_model.predict(self.X))
+        np.testing.assert_array_equal(model.train_score_, deserialized_model.train_score_)
+        np.testing.assert_array_equal(model.validation_score_, deserialized_model.validation_score_)
+
+    def test_hist_gradient_boosting_regression_categorical(self):
+        # categorical_features makes the TreePredictor's binned_left_cat_bitsets/
+        # raw_left_cat_bitsets non-empty (they're (0, 8)-shaped, and easy to get
+        # silently right for the wrong reason, otherwise) and builds an internal
+        # ColumnTransformer/FunctionTransformer preprocessor holding a bare numpy
+        # dtype and a functools.partial - both exercised only in this scenario.
+        rng = np.random.RandomState(2)
+        X = rng.rand(120, 4)
+        X[:, 0] = rng.randint(0, 5, size=120)
+        y = X[:, 1] * 3 + X[:, 0]
+        model = HistGradientBoostingRegressor(max_iter=15, max_depth=4, random_state=2, categorical_features=[0])
+        model.fit(X, y)
+        self.assertTrue(any(p[0].raw_left_cat_bitsets.size > 0 for p in model._predictors))
+        deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+        np.testing.assert_array_equal(model.predict(X), deserialized_model.predict(X))
+
     def test_random_forest_regression(self):
         self.check_model(RandomForestRegressor(max_depth=2, random_state=0, n_estimators=100), 'rf-regressor.json')
         self.check_sparse_model(RandomForestRegressor(max_depth=2, random_state=0, n_estimators=100), 'rf-regressor.json')

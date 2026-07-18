@@ -190,6 +190,7 @@ _REGISTRY = [
     (DecisionTreeClassifier, clf.serialize_decision_tree, clf.deserialize_decision_tree),
     (GradientBoostingClassifier, clf.serialize_gradient_boosting, clf.deserialize_gradient_boosting),
     (RandomForestClassifier, clf.serialize_random_forest, clf.deserialize_random_forest),
+    (HistGradientBoostingClassifier, clf.serialize_hist_gradient_boosting_classifier, clf.deserialize_hist_gradient_boosting_classifier),
     (MLPClassifier, clf.serialize_mlp, clf.deserialize_mlp),
     (AdaBoostClassifier, clf.serialize_adaboost_classifier, clf.deserialize_adaboost_classifier),
     (BaggingClassifier, clf.serialize_bagging_classifier, clf.deserialize_bagging_classifier),
@@ -211,6 +212,7 @@ _REGISTRY = [
     (DecisionTreeRegressor, reg.serialize_decision_tree_regressor, reg.deserialize_decision_tree_regressor),
     (GradientBoostingRegressor, reg.serialize_gradient_boosting_regressor, reg.deserialize_gradient_boosting_regressor),
     (RandomForestRegressor, reg.serialize_random_forest_regressor, reg.deserialize_random_forest_regressor),
+    (HistGradientBoostingRegressor, reg.serialize_hist_gradient_boosting_regressor, reg.deserialize_hist_gradient_boosting_regressor),
     (ExtraTreesRegressor, reg.serialize_extratrees_regressor, reg.deserialize_extratrees_regressor),
     (MLPRegressor, reg.serialize_mlp_regressor, reg.deserialize_mlp_regressor),
     (AdaBoostRegressor, reg.serialize_adaboost_regressor, reg.deserialize_adaboost_regressor),
@@ -884,10 +886,16 @@ def serialize_version(model, model_dict):
     # A user-supplied RandomState instance (e.g. RandomForestClassifier(random_state=
     # np.random.RandomState(0))) leaks straight through model.get_params() into
     # 'params' unconverted by every hand-written serializer, which is not
-    # JSON-safe. Sanitize it here since every serialize_* branch funnels through
-    # this single function before returning.
+    # JSON-safe. Same for a bare type used as a constructor default/argument
+    # (e.g. OrdinalEncoder(dtype=np.float64) - which HistGradientBoostingClassifier/
+    # Regressor builds internally as an unfitted transformer spec whenever
+    # `categorical_features` is set, reached here via serialize_unfitted_model on
+    # that nested, not-yet-fit OrdinalEncoder). Sanitize both here since every
+    # serialize_* branch funnels through this single function before returning.
     if 'params' in model_dict:
-        model_dict['params'] = {key: (serialize_random_state(value) if isinstance(value, RandomState) else value)
+        model_dict['params'] = {key: (serialize_random_state(value) if isinstance(value, RandomState)
+                                      else _base.recursive_serialize(value) if isinstance(value, type)
+                                      else value)
                                 for key, value in model_dict['params'].items()}
     # Obtain library used to fit the model
     module = inspect.getmodule(model)
@@ -904,13 +912,18 @@ def check_version(model_dict):
 
     :param model_dict: serialized model
     """
-    # Reverse of the RandomState sanitization done in serialize_version, so every
-    # deserialize_* branch (which calls SomeClass(**model_dict['params'])) receives
-    # back a real RandomState instance rather than its serialized dict form.
+    # Reverse of the RandomState/bare-type sanitization done in serialize_version,
+    # so every deserialize_* branch (which calls SomeClass(**model_dict['params']))
+    # receives back a real RandomState instance/type rather than its serialized
+    # dict form.
     if 'params' in model_dict:
-        model_dict['params'] = {key: (deserialize_random_state(value)
-                                      if isinstance(value, dict) and value.get('meta') == 'random_state' else value)
-                                for key, value in model_dict['params'].items()}
+        def _restore_param(value):
+            if isinstance(value, dict) and value.get('meta') == 'random_state':
+                return deserialize_random_state(value)
+            if isinstance(value, dict) and value.get('meta') in ('numpy_scalar_type', 'class_reference'):
+                return _base.recursive_deserialize(value)
+            return value
+        model_dict['params'] = {key: _restore_param(value) for key, value in model_dict['params'].items()}
     if 'versions' not in model_dict:
         return
     # Obtain module used to fit the model
