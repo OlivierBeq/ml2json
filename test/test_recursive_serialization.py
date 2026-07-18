@@ -297,15 +297,14 @@ class TestSklearn(unittest.TestCase):
         """Classes not in ml2json's hand-written dispatch chain should now be
         serializable via the generic engine's fallback path, with predictions
         from the deserialized model matching the original exactly."""
-        from sklearn.linear_model import RidgeClassifier
-        from sklearn.neighbors import NearestCentroid
-        from sklearn.naive_bayes import CategoricalNB
+        from sklearn.semi_supervised import LabelPropagation, LabelSpreading
+        from sklearn.multiclass import OneVsRestClassifier
+        from sklearn.linear_model import LogisticRegression
 
         X_cls_, y_cls_ = self.X_cls, self.y_cls
-        X_cat_ = np.abs(X_cls_[:, :5]).astype(int)
 
-        for model in [RidgeClassifier(), NearestCentroid(), CategoricalNB()]:
-            X_ = X_cat_ if isinstance(model, CategoricalNB) else X_cls_
+        for model in [LabelPropagation(), LabelSpreading(), OneVsRestClassifier(LogisticRegression(max_iter=500))]:
+            X_ = X_cls_
             model.fit(X_, y_cls_)
             expected = model.predict(X_)
 
