@@ -346,7 +346,12 @@ _META_BY_TYPE = {}
 _DESERIALIZE_BY_META = {}
 for _cls, _ser_fn, _deser_fn in _REGISTRY:
     _meta = _meta_for(_cls)
-    if _meta in _DESERIALIZE_BY_META:
+    # Two distinct classes intentionally sharing one (de)serializer (e.g.
+    # openTSNE.TSNE and its openTSNE.sklearn.TSNE wrapper, both handled by
+    # man.deserialize_opentsne) collide on meta harmlessly - same wire format,
+    # same reconstruction function. Only a *different* handler landing on an
+    # already-claimed meta is a genuine ambiguity worth failing fast on.
+    if _meta in _DESERIALIZE_BY_META and _DESERIALIZE_BY_META[_meta] is not _deser_fn:
         raise RuntimeError(f'Duplicate meta {_meta!r}: {_cls} collides with an existing registry entry')
     _DESERIALIZE_BY_META[_meta] = _deser_fn
     _META_BY_TYPE[_cls] = _meta
