@@ -187,6 +187,22 @@ def deserialize_class_reference(model_dict):
     return obj
 
 
+def serialize_module_reference(module):
+    """A bare module reference stashed on an instance (e.g. scipy's BSpline
+    caches the array-namespace module it was built with, in `_xp`/
+    `_xp_internal`). Like a class/function reference, importable by name
+    alone - and it must be treated as a leaf rather than walked via
+    `serialize_model_generic`, since a module's own __dict__ is its entire
+    namespace (hundreds of unrelated functions/classes), not instance state."""
+    assert isinstance(module, types.ModuleType)
+    return {'meta': 'module_reference', 'name': module.__name__}
+
+
+def deserialize_module_reference(model_dict):
+    assert model_dict['meta'] == 'module_reference'
+    return importlib.import_module(model_dict['name'])
+
+
 # ---------------------------------------------------------------------------
 # Generic recursive engine
 #
@@ -318,12 +334,24 @@ def serialize_model_generic(model, meta=None):
             # Derived from the `loss` param already in __dict__ and re-created lazily;
             # itself a Cython object with no __dict__, so it can't be serialized directly.
             del attrs['_loss_function_']
+        try:
+            serialized_attrs = recursive_serialize(attrs)
+        except BaseException:
+            # The memo entry above was registered before this object's contents
+            # were actually serialized. If that walk fails, any other reference
+            # to this same object elsewhere in the graph (e.g. via a retried
+            # fallback path) must not resolve to a 'ref' pointing at an id that
+            # was never actually written out - that produces a dangling
+            # reference and a confusing KeyError at deserialize time instead of
+            # surfacing this real error.
+            del _serialize_memo[obj_id]
+            raise
         return {
             'meta': meta,
             'id': uid,
             'module': type(model).__module__,
             'type': type(model).__qualname__,
-            'dict': recursive_serialize(attrs),
+            'dict': serialized_attrs,
         }
     finally:
         if is_outermost_call:
@@ -669,6 +697,7 @@ __serialize_leaf_fn__ = [
     (sp.sparse.csr_matrix, serialize_csr_matrix),
     (_CYLOSS_TYPES, serialize_cyloss),
     ((types.FunctionType, types.BuiltinFunctionType), serialize_function_reference),
+    (types.ModuleType, serialize_module_reference),
     (Tree, serialize_tree),
     (KDTree, serialize_kdtree),
     (BallTree, serialize_balltree),
@@ -689,6 +718,7 @@ __deserialize_leaf_fn__ = {
     'tree': deserialize_tree,
     'function_reference': deserialize_function_reference,
     'class_reference': deserialize_class_reference,
+    'module_reference': deserialize_module_reference,
     'kdtree': deserialize_kdtree,
     'balltree': deserialize_balltree,
 }
