@@ -7,14 +7,20 @@ import unittest
 import numpy as np
 from sklearn.datasets import make_regression
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
+from sklearn.linear_model import (LinearRegression, Lasso, Ridge, ElasticNet, ARDRegression, BayesianRidge,
+                                  ElasticNetCV, LassoCV, MultiTaskElasticNet, MultiTaskElasticNetCV, MultiTaskLasso,
+                                  MultiTaskLassoCV, GammaRegressor, PoissonRegressor, TweedieRegressor,
+                                  HuberRegressor, Lars, LarsCV, LassoLars, LassoLarsCV, LassoLarsIC,
+                                  OrthogonalMatchingPursuit, OrthogonalMatchingPursuitCV,
+                                  PassiveAggressiveRegressor, QuantileRegressor, RANSACRegressor, RidgeCV,
+                                  SGDRegressor, TheilSenRegressor)
 from sklearn.tree import DecisionTreeRegressor, ExtraTreeRegressor
 from sklearn.ensemble import (AdaBoostRegressor, BaggingRegressor, ExtraTreesRegressor,
                               GradientBoostingRegressor, RandomForestRegressor,
                               StackingRegressor, VotingRegressor, HistGradientBoostingRegressor)
 from sklearn.neural_network import MLPRegressor
-from sklearn.svm import SVR
-from sklearn.neighbors import KNeighborsRegressor
+from sklearn.svm import SVR, LinearSVR, NuSVR
+from sklearn.neighbors import KNeighborsRegressor, RadiusNeighborsRegressor
 
 # Allow testing of additional optional dependencies
 __optionals__ = []
@@ -49,6 +55,9 @@ class TestAPI(unittest.TestCase):
             features.append({'a': random.randint(0, 2), 'b': random.randint(3, 5), 'c': random.randint(6, 8)})
         self.y_sparse = [random.random() for i in range(0, 100)]
         self.X_sparse = feature_hasher.transform(features)
+
+        self.y_pos = np.abs(self.y) + 0.1
+        self.y_multitask = np.vstack((self.y, self.y[::-1])).T
 
     def check_model(self, model, model_name):
         # Given
@@ -317,3 +326,123 @@ class TestAPI(unittest.TestCase):
         ]
         model = VotingRegressor(estimators=estimators)
         self.check_model(model, 'stacking-regressor.json')
+
+    def check_multitask_model(self, model, model_name):
+        model.fit(self.X, self.y_multitask)
+        expected_predictions = model.predict(self.X)
+
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
+
+        actual_predictions = deserialized_model.predict(self.X)
+        np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
+
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        actual_predictions = deserialized_model.predict(self.X)
+        np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
+
+    def check_positive_model(self, model, model_name):
+        model.fit(self.X, self.y_pos)
+        expected_predictions = model.predict(self.X)
+
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
+
+        actual_predictions = deserialized_model.predict(self.X)
+        np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
+
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        actual_predictions = deserialized_model.predict(self.X)
+        np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
+
+    def test_ard_regression(self):
+        self.check_model(ARDRegression(), 'ard-regression.json')
+
+    def test_bayesian_ridge(self):
+        self.check_model(BayesianRidge(), 'bayesian-ridge.json')
+
+    def test_elasticnet_cv(self):
+        self.check_model(ElasticNetCV(cv=3), 'elasticnet-cv.json')
+
+    def test_lasso_cv(self):
+        self.check_model(LassoCV(cv=3), 'lasso-cv.json')
+
+    def test_multitask_elasticnet(self):
+        self.check_multitask_model(MultiTaskElasticNet(), 'multitask-elasticnet.json')
+
+    def test_multitask_elasticnet_cv(self):
+        self.check_multitask_model(MultiTaskElasticNetCV(cv=3), 'multitask-elasticnet-cv.json')
+
+    def test_multitask_lasso(self):
+        self.check_multitask_model(MultiTaskLasso(), 'multitask-lasso.json')
+
+    def test_multitask_lasso_cv(self):
+        self.check_multitask_model(MultiTaskLassoCV(cv=3), 'multitask-lasso-cv.json')
+
+    def test_gamma_regressor(self):
+        self.check_positive_model(GammaRegressor(), 'gamma-regressor.json')
+
+    def test_poisson_regressor(self):
+        self.check_positive_model(PoissonRegressor(), 'poisson-regressor.json')
+
+    def test_tweedie_regressor(self):
+        self.check_positive_model(TweedieRegressor(), 'tweedie-regressor.json')
+
+    def test_huber_regressor(self):
+        self.check_model(HuberRegressor(), 'huber-regressor.json')
+
+    def test_lars(self):
+        self.check_model(Lars(), 'lars.json')
+
+    def test_lars_cv(self):
+        self.check_model(LarsCV(cv=3), 'lars-cv.json')
+
+    def test_lasso_lars(self):
+        self.check_model(LassoLars(), 'lasso-lars.json')
+
+    def test_lasso_lars_cv(self):
+        self.check_model(LassoLarsCV(cv=3), 'lasso-lars-cv.json')
+
+    def test_lasso_lars_ic(self):
+        self.check_model(LassoLarsIC(), 'lasso-lars-ic.json')
+
+    def test_orthogonal_matching_pursuit(self):
+        self.check_model(OrthogonalMatchingPursuit(), 'orthogonal-matching-pursuit.json')
+
+    def test_orthogonal_matching_pursuit_cv(self):
+        self.check_model(OrthogonalMatchingPursuitCV(cv=3), 'orthogonal-matching-pursuit-cv.json')
+
+    def test_passive_aggressive_regressor(self):
+        self.check_model(PassiveAggressiveRegressor(random_state=0), 'passive-aggressive-regressor.json')
+
+    def test_quantile_regressor(self):
+        self.check_model(QuantileRegressor(), 'quantile-regressor.json')
+
+    def test_ransac_regressor(self):
+        self.check_model(RANSACRegressor(random_state=0), 'ransac-regressor.json')
+
+    def test_ridge_cv(self):
+        self.check_model(RidgeCV(), 'ridge-cv.json')
+
+    def test_sgd_regressor(self):
+        self.check_model(SGDRegressor(random_state=0), 'sgd-regressor.json')
+
+    def test_theilsen_regressor(self):
+        self.check_model(TheilSenRegressor(random_state=0), 'theilsen-regressor.json')
+
+    def test_linear_svr(self):
+        self.check_model(LinearSVR(random_state=0, max_iter=5000), 'linear-svr.json')
+        self.check_sparse_model(LinearSVR(random_state=0, max_iter=5000), 'linear-svr.json')
+
+    def test_nu_svr(self):
+        self.check_model(NuSVR(), 'nu-svr.json')
+        self.check_sparse_model(NuSVR(), 'nu-svr.json')
+
+    def test_radius_neighbors_regressor(self):
+        self.check_model(RadiusNeighborsRegressor(radius=1e6), 'radius-neighbors-regressor.json')

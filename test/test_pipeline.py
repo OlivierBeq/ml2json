@@ -36,3 +36,21 @@ class TestAPI(unittest.TestCase):
         for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
             actual = deserialized_model.predict(X_test)
             np.testing.assert_array_equal(expected, actual)
+
+    def test_feature_union(self):
+        from sklearn.decomposition import PCA
+        from sklearn.preprocessing import StandardScaler
+
+        union = FeatureUnion([('pca', PCA(n_components=2, random_state=1234)), ('scaler', StandardScaler())])
+        expected = union.fit_transform(self.X)
+
+        serialized_dict_model = ml2json.to_dict(union)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
+
+        ml2json.to_json(union, 'feature-union.json')
+        deserialized_json_model = ml2json.from_json('feature-union.json')
+        os.remove('feature-union.json')
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual = deserialized_model.transform(self.X)
+            np.testing.assert_array_almost_equal(expected, actual)

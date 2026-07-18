@@ -8,7 +8,9 @@ from sklearn.datasets import fetch_california_housing
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
                                    MinMaxScaler, StandardScaler, KernelCenterer,
                                    OneHotEncoder, RobustScaler, MaxAbsScaler,
-                                   OrdinalEncoder, Normalizer)
+                                   OrdinalEncoder, Normalizer, Binarizer, PowerTransformer,
+                                   QuantileTransformer, KBinsDiscretizer, PolynomialFeatures,
+                                   SplineTransformer, TargetEncoder)
 from sklearn.metrics.pairwise import pairwise_kernels
 
 from src import ml2json
@@ -234,3 +236,63 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_equal(expected_t, actual_t)
             np.testing.assert_array_equal(expected_ft, actual_ft)
+
+    def check_transformer(self, transformer, model_name, data=None):
+        data = self.X if data is None else data
+        expected_ft = transformer.fit_transform(data)
+        expected_t = transformer.transform(data)
+
+        serialized_dict_model = ml2json.to_dict(transformer)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
+
+        ml2json.to_json(transformer, model_name)
+        deserialized_json_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_t = deserialized_model.transform(data)
+
+            if hasattr(expected_t, 'toarray'):
+                expected_t = expected_t.toarray()
+            if hasattr(actual_t, 'toarray'):
+                actual_t = actual_t.toarray()
+
+            np.testing.assert_array_almost_equal(expected_t, actual_t)
+
+    def test_binarizer(self):
+        self.check_transformer(Binarizer(), 'binarizer.json')
+
+    def test_power_transformer(self):
+        self.check_transformer(PowerTransformer(), 'power-transformer.json', data=self.X + 1.0)
+
+    def test_quantile_transformer(self):
+        self.check_transformer(QuantileTransformer(n_quantiles=100), 'quantile-transformer.json')
+
+    def test_kbins_discretizer(self):
+        self.check_transformer(KBinsDiscretizer(n_bins=3, encode='ordinal'), 'kbins-discretizer.json')
+        self.check_transformer(KBinsDiscretizer(n_bins=3, encode='onehot-dense'), 'kbins-discretizer.json')
+
+    def test_polynomial_features(self):
+        self.check_transformer(PolynomialFeatures(degree=2), 'polynomial-features.json')
+
+    def test_spline_transformer(self):
+        self.check_transformer(SplineTransformer(), 'spline-transformer.json')
+
+    def test_target_encoder(self):
+        X_train = np.array([["a"] * 5 + ["b"] * 20 + ["c"] * 10 + ["d"] * 3], dtype=object).T
+        y_train = np.array([0, 1] * 19)
+        model = TargetEncoder(target_type='binary')
+        expected_ft = model.fit_transform(X_train, y_train)
+        expected_t = model.transform(X_train)
+
+        serialized_dict_model = ml2json.to_dict(model)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
+
+        model_name = 'target-encoder.json'
+        ml2json.to_json(model, model_name)
+        deserialized_json_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        for deserialized_model in [deserialized_dict_model, deserialized_json_model]:
+            actual_t = deserialized_model.transform(X_train)
+            np.testing.assert_array_almost_equal(expected_t, actual_t)
