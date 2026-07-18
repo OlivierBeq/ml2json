@@ -231,6 +231,11 @@ def recursive_serialize(obj):
             return serialize_fn(obj)
 
     # Containers
+    if isinstance(obj, slice):
+        # e.g. ColumnTransformer's output_indices_ maps each transformer name
+        # to a slice into the concatenated output. start/stop/step are always
+        # plain ints or None, so no further recursion is needed.
+        return {'meta': 'slice', 'start': obj.start, 'stop': obj.stop, 'step': obj.step}
     if isinstance(obj, (list, tuple, set)):
         return {'meta': type(obj).__name__, 'items': [recursive_serialize(item) for item in obj]}
     if isinstance(obj, dict):
@@ -276,6 +281,8 @@ def recursive_deserialize(obj):
         return tuple(recursive_deserialize(item) for item in obj['items'])
     if meta == 'set':
         return {recursive_deserialize(item) for item in obj['items']}
+    if meta == 'slice':
+        return slice(obj['start'], obj['stop'], obj['step'])
     if meta == 'dict':
         return {recursive_deserialize(key): recursive_deserialize(value) for key, value in obj['items']}
     if meta == 'ml2json_model':
