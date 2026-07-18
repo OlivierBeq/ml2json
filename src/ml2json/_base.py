@@ -1,21 +1,43 @@
 # -*- coding: utf-8 -*-
 
-import sys
-import inspect
-import importlib
-import warnings
+"""Generic recursive (de)serialization engine.
 
-from typing import Any
-from itertools import chain
+Instead of hand-writing a serialize_X/deserialize_X function pair for every
+supported model class, `serialize_model_generic`/`deserialize_model_generic`
+walk a fitted object's `__dict__` recursively, encoding base types directly
+and delegating to a small registry of "leaf" handlers for the few types that
+aren't JSON-representable as-is (numpy arrays/scalars/dtypes, scipy sparse
+matrices, RandomState, joblib Memory, sklearn's Bunch). Values that are
+themselves other supported ml2json models are recursed into via the normal
+`serialize_model`/`deserialize_model` dispatcher.
+
+A few types need dedicated (de)serialize functions rather than the fully
+generic `object.__new__(cls)` + `__dict__` restore path - typically because
+they're Cython extension types that reject `object.__new__` outright (KDTree,
+Tree) and must be constructed through their own two-step constructor/
+`__setstate__` dance instead. These are still registered as uniform leaf
+types (a plain `type -> (serialize_fn, deserialize_fn)` entry), just with a
+dedicated reconstruction function instead of the generic one.
+
+Birch's `_CFNode`/`_CFSubcluster` object graph (shared and circular
+references) is the one case that doesn't fit even that: it's kept here as
+standalone helpers for hand-written serializers that need them, exactly as
+before.
+"""
+
+import ast
+import importlib
+import sys
+import types
 
 import numpy as np
 import scipy as sp
+import sklearn
 from joblib import Memory
 from numpy.random import RandomState
-import sklearn
 from sklearn.utils import Bunch
-from sklearn.cluster import Birch
 from sklearn.cluster._birch import _CFNode, _CFSubcluster
+from sklearn.neighbors import BallTree, KDTree
 from sklearn.tree._tree import Tree
 from sklearn._loss._loss import (CyAbsoluteError, CyExponentialLoss, CyHalfBinomialLoss, CyHalfGammaLoss,
                                  CyHalfMultinomialLoss, CyHalfPoissonLoss, CyHalfSquaredError, CyHalfTweedieLoss,
@@ -24,178 +46,490 @@ from sklearn.linear_model._sgd_fast import (EpsilonInsensitive, Hinge, ModifiedH
                                             SquaredEpsilonInsensitive, SquaredHinge)
 from sklearn.linear_model._stochastic_gradient import BaseSGD
 
+from .utils.csr import serialize_csr_matrix, deserialize_csr_matrix
+from .utils.bunch import serialize_bunch, deserialize_bunch
+from .utils.random_state import serialize_random_state, deserialize_random_state
+from .utils.memory import serialize_memory, deserialize_memory
+
+try:
+    from pynndescent import NNDescent
+    _HAS_NNDESCENT = True
+except ImportError:
+    _HAS_NNDESCENT = False
+
+# Deep (but bounded) recursion for large trees/pipelines. Left far below
+# sys.maxsize on purpose: a genuinely unbounded limit turns a bug (e.g. an
+# accidental reference cycle) into a C-level stack overflow/segfault instead
+# of a catchable RecursionError.
 DEFAULT_REC_DEPTH = sys.getrecursionlimit()
-sys.setrecursionlimit(int(2 ** 30))
+sys.setrecursionlimit(max(DEFAULT_REC_DEPTH, 10_000))
 
 
-def recursive_serialize(obj: object):
-    # print(obj)
-    # Base types
-    if isinstance(obj, (int, str, float)) or obj is None:
-        return obj
-    # List and Tuples
-    elif isinstance(obj, list):
-        return ([recursive_serialize(item) for item in obj])
-    elif isinstance(obj, list):
-        return str(tuple(recursive_serialize(item) for item in obj))
-    elif isinstance(obj, set):
-        return str(set(recursive_serialize(item) for item in obj))
-    # Dictionary
-    elif isinstance(obj, dict):
-        return {str(recursive_serialize(key)): recursive_serialize(value)
-                for key, value in obj.items()}
-    # Object with predefined serialization method
-    elif isinstance(obj, tuple(chain(__serialize_obj_fn__.keys()))):
-        for obj_type, serialize_fn in __serialize_obj_fn__.items():
-            if isinstance(obj, obj_type):
-                return str(serialize_fn(obj))
-    # Object is a type
-    if type(obj).__name__ == 'type':
-        for obj_type, serialize_type in __serialize_obj_types__.items():
-            if obj is obj_type:
-                return str(serialize_type(obj))
-    # Object with __dict__ attribute
-    elif hasattr(obj, '__dict__'):
-        return {'meta': type(obj).__name__.lower()} | {str(recursive_serialize(key)): recursive_serialize(value)
-                                                           for key, value in obj.__dict__.items()}
-    else:
-        raise RuntimeError(f'Cannot find type: {type(obj)}')
-
-
-def recursive_deserialize(obj: object):
+class ModelNotSupported(Exception):
+    """Raised when a value cannot be (de)serialized by the recursive engine."""
     pass
 
 
-def serialize_numpy_value(value: np.bool_ | np.int8 | np.uint8 | np.int16 | np.uint16 | np.int32 | np.uint32 | np.intp | np.uintp | np.float16 | np.float32 | np.float64 | np.longdouble | np.complex64 | np.complex128 | np.clongdouble):
-    return {'meta': 'numpy_value', 'module': inspect.getmodule(type(value)).__name__, 'type': type(value).__name__, 'value': value.item()}
+# ---------------------------------------------------------------------------
+# Leaf type handlers
+# ---------------------------------------------------------------------------
 
-
-def deserialize_numpy_value(model_dict: dict[str, Any]):
-    assert model_dict['meta'] == 'numpy_value'
-    return getattr(importlib.import_module(model_dict['module']), model_dict['type'])(model_dict['value'])
-
-
-def serialize_numpy_type(dtype: np.dtype):
-    assert any(dtype is x for x in (np.bool_, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.intp,
-                                    np.uintp, np.float16, np.float32, np.float64, np.longdouble, np.complex64,
-                                    np.complex128, np.clongdouble))
-    return {'meta': 'numpy_type', 'module': 'numpy', 'type': dtype.__name__}
-
-
-def deserialize_numpy_type(model_dict: dict[str, Any]):
-    assert model_dict['meta'] == 'numpy_type'
-    return getattr(importlib.import_module(model_dict['module']), model_dict['type'])(model_dict['value'])
+def _dtype_from_str(name):
+    """str(np.dtype(...)) round-trips directly for simple dtypes (e.g. 'float64'),
+    but for structured/record dtypes it yields a list-of-tuples literal (e.g.
+    "[('left_node', '<i8'), ...]") that np.dtype() only accepts pre-parsed."""
+    try:
+        return np.dtype(name)
+    except TypeError:
+        return np.dtype(ast.literal_eval(name))
 
 
 def serialize_numpy_dtype(dtype: np.dtype):
     assert isinstance(dtype, np.dtype)
-    return {'meta': 'numpy_dtype', 'module': 'numpy', 'type': serialize_numpy_type(dtype.type)}
+    return {'meta': 'numpy_dtype', 'name': str(dtype)}
 
 
-def deserialize_numpy_dtype(model_dict: dict[str, Any]):
+def deserialize_numpy_dtype(model_dict):
     assert model_dict['meta'] == 'numpy_dtype'
-    return getattr(importlib.import_module(model_dict['module']), 'dtype')(model_dict['type'])
+    return _dtype_from_str(model_dict['name'])
+
+
+def serialize_numpy_scalar_type(dtype_type: type):
+    assert isinstance(dtype_type, type) and issubclass(dtype_type, np.generic)
+    return {'meta': 'numpy_scalar_type', 'name': str(np.dtype(dtype_type))}
+
+
+def deserialize_numpy_scalar_type(model_dict):
+    assert model_dict['meta'] == 'numpy_scalar_type'
+    return _dtype_from_str(model_dict['name']).type
+
+
+def serialize_numpy_scalar(value: np.generic):
+    assert isinstance(value, np.generic)
+    return {'meta': 'numpy_scalar', 'dtype': str(value.dtype), 'value': value.item()}
+
+
+def deserialize_numpy_scalar(model_dict):
+    assert model_dict['meta'] == 'numpy_scalar'
+    return _dtype_from_str(model_dict['dtype']).type(model_dict['value'])
 
 
 def serialize_numpy_array(array: np.ndarray):
     assert isinstance(array, np.ndarray)
-    return {'meta': 'numpy_array', 'module': 'numpy', 'type': 'array', 'values': recursive_serialize(array.tolist()), 'value_type': str(array.dtype)}
+    if array.dtype == object:
+        # Elements can be arbitrary Python objects (e.g. an ensemble's
+        # estimators_ array of fitted sub-estimators) - .tolist() would leave
+        # them as live objects instead of a JSON-safe structure.
+        return {'meta': 'numpy_array', 'dtype': 'object', 'shape': list(array.shape),
+                'values': [recursive_serialize(value) for value in array.ravel().tolist()]}
+    return {'meta': 'numpy_array', 'values': array.tolist(), 'dtype': str(array.dtype)}
 
 
-def deserialize_numpy_array(model_dict: dict[str, Any]):
+def deserialize_numpy_array(model_dict):
     assert model_dict['meta'] == 'numpy_array'
-    return getattr(importlib.import_module(model_dict['module']), model_dict['type'])(model_dict['values'], dtype=getattr(importlib.import_module(model_dict['module']), model_dict['value_type']))
+    if model_dict['dtype'] == 'object':
+        flat = [recursive_deserialize(value) for value in model_dict['values']]
+        array = np.empty(len(flat), dtype=object)
+        for i, value in enumerate(flat):
+            array[i] = value
+        return array.reshape(model_dict['shape'])
+    dtype = _dtype_from_str(model_dict['dtype'])
+    if dtype.names:
+        # Structured/record dtype: .tolist() yields a list of plain tuples,
+        # which np.array() needs re-wrapped as an actual tuple per row.
+        return np.array([tuple(row) for row in model_dict['values']], dtype=dtype)
+    return np.array(model_dict['values'], dtype=dtype)
 
 
-def serialize_random_state(random_state: RandomState):
-    assert isinstance(random_state, RandomState)
-    model_dict = {'meta': 'random_state', 'random_state': random_state.get_state(legacy=False)}
-    model_dict['random_state']['state']['key'] = recursive_serialize(model_dict['random_state']['state']['key'])
-    return model_dict
+def serialize_random_generator(generator: np.random.Generator):
+    assert isinstance(generator, np.random.Generator)
+    return {'meta': 'random_generator', 'bit_generator_type': type(generator.bit_generator).__name__,
+           'state': recursive_serialize(generator.bit_generator.state)}
 
 
-def deserialize_random_state(model_dict: dict[str, Any]):
-    assert model_dict['meta'] == 'random_state'
-    model_dict['random_state']['state']['key'] = recursive_deserialize(model_dict['random_state']['state']['key'])
-    random_state = np.random.RandomState()
-    random_state.set_state(model_dict['random_state'])
-    return random_state
+def deserialize_random_generator(model_dict):
+    assert model_dict['meta'] == 'random_generator'
+    rng = getattr(importlib.import_module('numpy.random'), model_dict['bit_generator_type'])()
+    rng.state = recursive_deserialize(model_dict['state'])
+    return np.random.Generator(rng)
 
 
-def serialize_csr_matrix(csr_matrix: sp.sparse.csr_matrix):
-    assert sp.sparse.issparse(csr_matrix)
-    serialized_csr_matrix = {
-        'meta': 'scipy_csr',
-        'data': recursive_serialize(csr_matrix.data),
-        'indices': recursive_serialize(csr_matrix.indices),
-        'indptr': recursive_serialize(csr_matrix.indptr),
-        '_shape': csr_matrix._shape,
+def serialize_function_reference(func):
+    """A plain module-level function used as a parameter value (e.g. sklearn's
+    `score_func=f_classif`). Unlike bound methods, these are importable by
+    (module, qualname) alone, with no enclosing instance state to capture."""
+    assert isinstance(func, (types.FunctionType, types.BuiltinFunctionType))
+    return {'meta': 'function_reference', 'module': func.__module__, 'name': func.__qualname__}
+
+
+def deserialize_function_reference(model_dict):
+    assert model_dict['meta'] == 'function_reference'
+    obj = importlib.import_module(model_dict['module'])
+    for part in model_dict['name'].split('.'):
+        obj = getattr(obj, part)
+    return obj
+
+
+def serialize_class_reference(cls):
+    """A bare class used as a parameter value (e.g. KDTree's dist_metric stores
+    the metric *class*, not an instance; a class default like DBSCAN's default
+    metric could too). Reconstructed by import path alone, same as a function
+    reference - there's no instance state to capture, only the type itself."""
+    assert isinstance(cls, type)
+    return {'meta': 'class_reference', 'module': cls.__module__, 'name': cls.__qualname__}
+
+
+def deserialize_class_reference(model_dict):
+    assert model_dict['meta'] == 'class_reference'
+    obj = importlib.import_module(model_dict['module'])
+    for part in model_dict['name'].split('.'):
+        obj = getattr(obj, part)
+    return obj
+
+
+# ---------------------------------------------------------------------------
+# Generic recursive engine
+#
+# (The __serialize_leaf_fn__/__deserialize_leaf_fn__ registries are defined at
+# the bottom of this file, since a couple of entries - the Cython loss types -
+# are only defined further down; recursive_serialize/recursive_deserialize
+# only look them up at call time, once the module has finished loading.)
+# ---------------------------------------------------------------------------
+
+def recursive_serialize(obj):
+    """Serialize an arbitrary Python value into a JSON-safe structure."""
+    if obj is None or isinstance(obj, (bool, int, str, float)):
+        return obj
+
+    # Bare type/class reference (e.g. np.float64 the class itself, used as a
+    # constructor argument such as OneHotEncoder(dtype=np.float64))
+    if isinstance(obj, type):
+        if issubclass(obj, np.generic):
+            return serialize_numpy_scalar_type(obj)
+        return serialize_class_reference(obj)
+
+    # Registered leaf types (checked before generic containers: Bunch is a
+    # dict subclass and must be handled by its own serializer, not as a dict)
+    for obj_type, serialize_fn in __serialize_leaf_fn__:
+        if isinstance(obj, obj_type):
+            return serialize_fn(obj)
+
+    # Containers
+    if isinstance(obj, (list, tuple, set)):
+        return {'meta': type(obj).__name__, 'items': [recursive_serialize(item) for item in obj]}
+    if isinstance(obj, dict):
+        return {'meta': 'dict', 'items': [[recursive_serialize(key), recursive_serialize(value)]
+                                          for key, value in obj.items()]}
+
+    # A nested, already-supported ml2json model (e.g. a StandardScaler
+    # embedded in some other object's __dict__)
+    from .ml2json import serialize_model, ModelNotSupported as _MLNotSupported
+    try:
+        nested = serialize_model(obj)
+        # A repeat visit to an object already seen elsewhere in this same
+        # object graph (e.g. Birch's _CFNode.prev_leaf_/next_leaf_, which
+        # point at each other) surfaces here as a bare {'meta': 'ref', ...}
+        # marker from serialize_model_generic's memo - pass it through as-is
+        # rather than wrapping it, since ml2json.deserialize_model has no
+        # branch for 'ref' (it isn't a real model type).
+        if isinstance(nested, dict) and nested.get('meta') == 'ref':
+            return nested
+        return {'meta': 'ml2json_model', 'model': nested}
+    except _MLNotSupported:
+        pass
+
+    # Generic fallback: recurse into the object's own __dict__
+    if hasattr(obj, '__dict__'):
+        return serialize_model_generic(obj)
+
+    raise ModelNotSupported(f'Cannot serialize object of type {type(obj)}: {obj!r}')
+
+
+def recursive_deserialize(obj):
+    """Reverse of `recursive_serialize`."""
+    if obj is None or isinstance(obj, (bool, int, str, float)):
+        return obj
+    if not isinstance(obj, dict) or 'meta' not in obj:
+        raise ModelNotSupported(f'Cannot deserialize malformed payload: {obj!r}')
+
+    meta = obj['meta']
+
+    if meta == 'list':
+        return [recursive_deserialize(item) for item in obj['items']]
+    if meta == 'tuple':
+        return tuple(recursive_deserialize(item) for item in obj['items'])
+    if meta == 'set':
+        return {recursive_deserialize(item) for item in obj['items']}
+    if meta == 'dict':
+        return {recursive_deserialize(key): recursive_deserialize(value) for key, value in obj['items']}
+    if meta == 'ml2json_model':
+        from .ml2json import deserialize_model
+        return deserialize_model(obj['model'])
+    if meta == 'ref':
+        return _deserialize_memo[obj['id']]
+    if meta in __deserialize_leaf_fn__:
+        return __deserialize_leaf_fn__[meta](obj)
+    if meta.startswith('generic_object:'):
+        return deserialize_model_generic(obj)
+
+    raise ModelNotSupported(f'Cannot deserialize unknown meta tag: {meta!r}')
+
+
+# Object-graph reference tracking for serialize_model_generic/deserialize_model_generic.
+# Active only for the duration of one top-level call (reset in a finally block),
+# so shared/circular references *within* a single object graph (e.g. Birch's
+# _CFNode.prev_leaf_/next_leaf_, which point at each other both ways) resolve
+# correctly instead of duplicating objects or recursing infinitely. Module-level
+# rather than passed as a parameter so it stays active even when recursion
+# passes back out through ml2json.serialize_model/deserialize_model's dispatch
+# (e.g. a _CFNode nested inside another _CFNode's __dict__, which isn't itself
+# a top-level ml2json model and so gets routed through that dispatcher's own
+# fallback branch, calling back into this module without knowing about the memo).
+_serialize_memo = None
+_deserialize_memo = None
+
+
+def serialize_model_generic(model, meta=None):
+    """Serialize any object by recursively walking its __dict__.
+
+    :param model: object to serialize
+    :param meta: explicit 'meta' tag to use (kept stable for existing wire
+        formats); auto-derived from the object's fully qualified type when
+        omitted, e.g. for classes reached only through the fallback path
+    """
+    global _serialize_memo
+    if not hasattr(model, '__dict__'):
+        raise ModelNotSupported(f'Cannot serialize object of type {type(model)} (no __dict__): {model!r}')
+
+    is_outermost_call = _serialize_memo is None
+    if is_outermost_call:
+        _serialize_memo = {}
+    try:
+        obj_id = id(model)
+        if obj_id in _serialize_memo:
+            return {'meta': 'ref', 'id': _serialize_memo[obj_id]}
+        uid = str(len(_serialize_memo))
+        _serialize_memo[obj_id] = uid
+
+        if meta is None:
+            meta = f'generic_object:{type(model).__module__}.{type(model).__qualname__}'
+        attrs = dict(model.__dict__)
+        if isinstance(model, BaseSGD) and '_loss_function_' in attrs:
+            # Derived from the `loss` param already in __dict__ and re-created lazily;
+            # itself a Cython object with no __dict__, so it can't be serialized directly.
+            del attrs['_loss_function_']
+        return {
+            'meta': meta,
+            'id': uid,
+            'module': type(model).__module__,
+            'type': type(model).__qualname__,
+            'dict': recursive_serialize(attrs),
+        }
+    finally:
+        if is_outermost_call:
+            _serialize_memo = None
+
+
+def deserialize_model_generic(model_dict):
+    """Reconstruct an object serialized by `serialize_model_generic`.
+
+    Reconstructs via `object.__new__(cls)` and restores the full `__dict__`
+    directly rather than calling `__init__`/`set_params`: since well-behaved
+    estimators only store constructor arguments as attributes in `__init__`
+    (no side effects, per sklearn's API contract), everything `__init__`
+    would have done is already captured in the serialized `__dict__`.
+    """
+    global _deserialize_memo
+    is_outermost_call = _deserialize_memo is None
+    if is_outermost_call:
+        _deserialize_memo = {}
+    try:
+        cls = importlib.import_module(model_dict['module'])
+        for part in model_dict['type'].split('.'):
+            cls = getattr(cls, part)
+        obj = object.__new__(cls)
+        uid = model_dict.get('id')
+        if uid is not None:
+            # Registered before recursing into 'dict' so a cyclic reference
+            # back to this same object (found while deserializing its own
+            # attributes) resolves to this shell instead of recursing forever.
+            _deserialize_memo[uid] = obj
+        obj.__dict__ = recursive_deserialize(model_dict['dict'])
+        return obj
+    finally:
+        if is_outermost_call:
+            _deserialize_memo = None
+
+
+# ---------------------------------------------------------------------------
+# Special-case leaf types kept for future use (not wired into the uniform
+# registry above: each needs extra context or graph-shaped reconstruction
+# that a flat type -> function mapping can't express).
+# ---------------------------------------------------------------------------
+
+def serialize_tree(tree: Tree):
+    # Fully self-contained: n_features/n_outputs/n_classes are needed to
+    # reconstruct the Tree (they're constructor args, not part of
+    # __getstate__), but Tree exposes them as its own readable attributes,
+    # so no context from a parent model is required.
+    assert isinstance(tree, Tree)
+    serialized_tree = tree.__getstate__()
+    dtypes = [serialized_tree['nodes'].dtype[i].str for i in range(len(serialized_tree['nodes'].dtype))]
+    serialized_tree['nodes'] = serialized_tree['nodes'].tolist()
+    serialized_tree['values'] = serialized_tree['values'].tolist()
+    return {
+        'meta': 'tree',
+        'tree': serialized_tree,
+        'nodes_dtype': dtypes,
+        'n_features': int(tree.n_features),
+        'n_outputs': int(tree.n_outputs),
+        'n_classes': tree.n_classes.tolist(),
     }
-    return serialized_csr_matrix
 
 
-def deserialize_csr_matrix(csr_dict: dict[str, Any]):
-    assert csr_dict['meta'] == 'scipy_csr'
-    csr_matrix = sp.sparse.csr_matrix(tuple(csr_dict['_shape']))
-    csr_matrix.data = recursive_deserialize(csr_dict['data'])
-    csr_matrix.indices = recursive_deserialize(csr_dict['indices'])
-    csr_matrix.indptr = recursive_deserialize(csr_dict['indptr'])
-    return csr_matrix
+def deserialize_tree(tree_dict):
+    assert tree_dict['meta'] == 'tree'
+    tree_dict['tree']['nodes'] = [tuple(lst) for lst in tree_dict['tree']['nodes']]
+    names = ['left_child', 'right_child', 'feature', 'threshold', 'impurity', 'n_node_samples', 'weighted_n_node_samples']
+    if sklearn.__version__ >= '1.3':
+        names.append('missing_go_to_left')
+    tree_dict['tree']['nodes'] = np.array(tree_dict['tree']['nodes'], dtype=np.dtype({'names': names, 'formats': tree_dict['nodes_dtype']}))
+    tree_dict['tree']['values'] = np.array(tree_dict['tree']['values'])
+    n_classes = np.array(tree_dict['n_classes'], dtype=np.intp)
+    tree = Tree(tree_dict['n_features'], n_classes, tree_dict['n_outputs'])
+    tree.__setstate__(tree_dict['tree'])
+    return tree
 
 
-def serialize_bunch(bunch: Bunch):
-    assert isinstance(bunch, Bunch)
-    serialized_bunch = {
-        'meta': 'bunch',
-        'items': {param: recursive_serialize(value)
-                  for param, value in bunch.items()}
+def _serialize_binary_tree(tree, meta):
+    # Self-contained, like Tree: __getstate__() carries everything except the
+    # raw data array needed to construct the shell before __setstate__. KDTree
+    # and BallTree (sklearn's two BinaryTree implementations, chosen from each
+    # other at fit time based on data/metric) share this exact state shape.
+    state = tree.__getstate__()
+    return {
+        'meta': meta,
+        'data': recursive_serialize(np.asarray(tree.data)),
+        'data_arr': recursive_serialize(state[0]),
+        'idx_data_arr': recursive_serialize(state[1].astype(np.int64)),
+        'node_data_arr': recursive_serialize(state[2]),
+        'node_bounds_arr': recursive_serialize(state[3]),
+        'leaf_size': state[4],
+        'n_levels': state[5],
+        'n_nodes': state[6],
+        'n_trims': state[7],
+        'n_leaves': state[8],
+        'n_splits': state[9],
+        'n_calls': state[10],
+        'dist_metric': serialize_class_reference(type(state[11])),
+        'sample_weight_arr': recursive_serialize(state[12]) if state[12] is not None else None,
     }
-    return serialized_bunch
 
 
-def deserialize_bunch(bunch_dict: dict[str, Any]):
-    assert bunch_dict['meta'] == 'bunch'
-    bunch = Bunch(**{param: recursive_deserialize(value)
-                     for param, value in bunch_dict['items'].items()})
-    return bunch
+def _deserialize_binary_tree(model_dict, cls):
+    tree = cls(recursive_deserialize(model_dict['data']))
+    params = (
+        recursive_deserialize(model_dict['data_arr']),
+        np.array(recursive_deserialize(model_dict['idx_data_arr']), dtype=np.int64),
+        recursive_deserialize(model_dict['node_data_arr']),
+        recursive_deserialize(model_dict['node_bounds_arr']),
+        model_dict['leaf_size'],
+        model_dict['n_levels'],
+        model_dict['n_nodes'],
+        model_dict['n_trims'],
+        model_dict['n_leaves'],
+        model_dict['n_splits'],
+        model_dict['n_calls'],
+        deserialize_class_reference(model_dict['dist_metric'])(),
+        recursive_deserialize(model_dict['sample_weight_arr']) if model_dict['sample_weight_arr'] is not None else None,
+    )
+    tree.__setstate__(params)
+    return tree
 
 
-def serialize_memory(memory: Memory):
-    assert isinstance(memory, Memory)
-    serialized_memory = {
-        'meta': 'memory',
-        'depth': memory.depth,
-        '_verbose': memory._verbose,
-        'mmap_mode': memory.mmap_mode,
-        'timestamp': memory.timestamp,
-        'bytes_limit': memory.bytes_limit,
-        'backend': memory.backend,
-        'compress': memory.compress,
-        'backend_options': memory.backend_options,
-        'location': memory.location,
-    }
-    return serialized_memory
+def serialize_kdtree(tree: KDTree):
+    assert isinstance(tree, KDTree)
+    return _serialize_binary_tree(tree, meta='kdtree')
 
 
-def deserialize_memory(memory_dict: dict[str, Any]):
-    assert memory_dict['meta'] == 'memory'
-    memory = Memory(location=memory_dict['location'],
-                    backend=memory_dict['backend'],
-                    mmap_mode=memory_dict['mmap_mode'],
-                    compress=memory_dict['compress'],
-                    verbose=memory_dict['_verbose'],
-                    bytes_limit=memory_dict['bytes_limit'],
-                    backend_options=memory_dict['backend_options'])
-    memory.depth = memory_dict['depth']
-    memory.timestamp = memory_dict['timestamp']
-    return memory
+def deserialize_kdtree(model_dict):
+    assert model_dict['meta'] == 'kdtree'
+    return _deserialize_binary_tree(model_dict, KDTree)
+
+
+def serialize_balltree(tree: BallTree):
+    assert isinstance(tree, BallTree)
+    return _serialize_binary_tree(tree, meta='balltree')
+
+
+def deserialize_balltree(model_dict):
+    assert model_dict['meta'] == 'balltree'
+    return _deserialize_binary_tree(model_dict, BallTree)
+
+
+if _HAS_NNDESCENT:
+    def serialize_nndescent(model):
+        assert isinstance(model, NNDescent)
+        state = model.__getstate__()
+
+        # Compiled numba/Cython callables: not serializable, and __setstate__
+        # regenerates them all via _set_distance_func()/_init_search_function().
+        del state['_distance_func'], state['_tree_search']
+        del state['_search_function'], state['_deheap_function']
+        del state['_distance_correction']
+        state.pop('_rerank_function', None)
+
+        state['_input_dtype'] = np.dtype(state['_input_dtype']).name
+        if '_min_distance' in state:
+            state['_min_distance'] = float(state['_min_distance'])
+        state['_raw_data'] = state['_raw_data'].astype(float).tolist()
+        state['rng_state'] = state['rng_state'].astype(int).tolist()
+        state['search_rng_state'] = state['search_rng_state'].astype(int).tolist()
+        state['_search_graph'] = serialize_csr_matrix(state['_search_graph'])
+        state['_visited'] = state['_visited'].astype(int).tolist()
+        state['_vertex_order'] = state['_vertex_order'].astype(int).tolist()
+        state['_neighbor_graph'] = (state['_neighbor_graph'][0].tolist(),
+                                    state['_neighbor_graph'][1].astype(float).tolist())
+        state['_search_forest'] = ((state['_search_forest'][0][0].astype(float).tolist(),
+                                    state['_search_forest'][0][1].astype(float).tolist(),
+                                    state['_search_forest'][0][2].astype(int).tolist(),
+                                    state['_search_forest'][0][3].astype(int).tolist(),
+                                    state['_search_forest'][0][4]),)
+
+        return {'meta': 'nn-descent', 'params': state}
+
+
+    def deserialize_nndescent(model_dict):
+        assert model_dict['meta'] == 'nn-descent'
+        params = model_dict['params']
+
+        params['_input_dtype'] = np.dtype(params['_input_dtype']).type
+        if '_min_distance' in params:
+            params['_min_distance'] = np.float32(params['_min_distance'])
+        params['_raw_data'] = np.array(params['_raw_data'], dtype=np.float32)
+        params['rng_state'] = np.array(params['rng_state'], dtype=np.int64)
+        params['search_rng_state'] = np.array(params['search_rng_state'], dtype=np.int64)
+        params['_search_graph'] = deserialize_csr_matrix(params['_search_graph'])
+        params['_visited'] = np.array(params['_visited'], dtype=np.uint8)
+        params['_vertex_order'] = np.array(params['_vertex_order'], dtype=np.int32)
+        params['_neighbor_graph'] = (np.array(params['_neighbor_graph'][0]),
+                                     np.array(params['_neighbor_graph'][1], dtype=np.float32))
+        params['_search_forest'] = ((np.array(params['_search_forest'][0][0], dtype=np.float32),
+                                     np.array(params['_search_forest'][0][1], dtype=np.float32),
+                                     np.array(params['_search_forest'][0][2], dtype=np.int32),
+                                     np.array(params['_search_forest'][0][3], dtype=np.int32),
+                                     params['_search_forest'][0][4]),)
+
+        model = NNDescent(params['_raw_data'], metric=params['metric'], metric_kwds=params['metric_kwds'])
+        params['_distance_func'] = model._distance_func
+        params['_distance_correction'] = model._distance_correction
+        model.__setstate__(params)
+        return model
 
 
 def serialize_cfnode(model: _CFNode):
     assert isinstance(model, _CFNode)
-    # Get memory address
     mem = lambda x: hex(id(x)) if x is not None else None
-
     serialized_model = {
         'meta': 'cfnode',
         'threshold': model.threshold,
@@ -209,15 +543,13 @@ def serialize_cfnode(model: _CFNode):
         'prev_leaf_': mem(model.prev_leaf_),
         'next_leaf_': mem(model.next_leaf_),
     }
-
     if hasattr(model, 'centroids_'):
         serialized_model['centroids_'] = model.centroids_.tolist()
     serialized_model['dtype'] = str(model.init_sq_norm_.dtype)
-
     return serialized_model
 
 
-def deserialize_cfnode(model_dict: dict[str, Any]):
+def deserialize_cfnode(model_dict):
     assert model_dict['meta'] == 'cfnode'
     if sklearn.__version__ < '1.2.0':
         model = _CFNode(threshold=model_dict['threshold'],
@@ -230,11 +562,10 @@ def deserialize_cfnode(model_dict: dict[str, Any]):
                         is_leaf=model_dict['is_leaf'],
                         n_features=model_dict['n_features'],
                         dtype=np.dtype(model_dict['dtype']))
-
-    model.init_centroids_ = np.array(model_dict['init_centroids_'])
-    model.init_sq_norm_ = np.array(model_dict['init_sq_norm_'])
-    model.squared_norm_ = np.array(model_dict['squared_norm_'])
-    # To be modified by the Birch deserializer
+    model.init_centroids_ = recursive_deserialize(model_dict['init_centroids_'])
+    model.init_sq_norm_ = recursive_deserialize(model_dict['init_sq_norm_'])
+    model.squared_norm_ = recursive_deserialize(model_dict['squared_norm_']) if isinstance(model_dict['squared_norm_'], dict) else model_dict['squared_norm_']
+    # To be linked up by the Birch deserializer
     model.subclusters_ = model_dict['subclusters_']
     model.prev_leaf_ = model_dict['prev_leaf_']
     model.next_leaf_ = model_dict['next_leaf_']
@@ -243,21 +574,19 @@ def deserialize_cfnode(model_dict: dict[str, Any]):
 
 def serialize_cfsubcluster(model: _CFSubcluster):
     assert isinstance(model, _CFSubcluster)
-    # Get memory address
     mem = lambda x: hex(id(x)) if x is not None else None
-    serialized_model = {
+    return {
         'meta': 'cfsubcluster',
         'n_samples_': model.n_samples_,
         'squared_sum_': model.squared_sum_,
         'centroid_': model.centroid_.tolist(),
         'linear_sum_': model.linear_sum_.tolist(),
         'sq_norm_': model.sq_norm_,
-        'child_': mem(model.child_)
+        'child_': mem(model.child_),
     }
-    return serialized_model
 
 
-def deserialize_cfsubcluster(model_dict: dict[str, Any]):
+def deserialize_cfsubcluster(model_dict):
     assert model_dict['meta'] == 'cfsubcluster'
     model = _CFSubcluster()
     model.n_samples_ = model_dict['n_samples_']
@@ -265,288 +594,105 @@ def deserialize_cfsubcluster(model_dict: dict[str, Any]):
     model.centroid_ = np.array(model_dict['centroid_'])
     model.linear_sum_ = np.array(model_dict['linear_sum_'])
     model.sq_norm_ = model_dict['sq_norm_']
+    # To be linked up by the Birch deserializer
     model.child_ = model_dict['child_']
     return model
 
 
-def serialize_birch(model):
-    # Get memory address
-    mem = lambda x: hex(id(x)) if x is not None else None
-
-    # Define a recursive aggregator of _CFNodes and _CFSubclusters
-    def get_nodes_and_subclusters(node):
-        if node is None:
-            return [], []
-        nodes, subclusters = [(mem(node), node)], []
-        for subcluster in node.subclusters_:
-            subnodes, subsubclusters = get_nodes_and_subclusters(subcluster.child_)
-            nodes += subnodes
-            subclusters += [(mem(subcluster), subcluster)] + subsubclusters
-        return nodes, subclusters
-
-    # Obtain _CFNodes and _CFSubclusters
-    nodes, subclusters = get_nodes_and_subclusters(model.root_)
-    # Add the dummy_leaf to nodes
-    nodes = [(mem(model.dummy_leaf_) if model.dummy_leaf_ is not None else None, model.dummy_leaf_)] + nodes
-    # Serialize nodes
-    nodes = {uid: serialize_cfnode(node) for uid, node in nodes}
-    subclusters = {uid: serialize_cfsubcluster(subcluster) for uid, subcluster in subclusters}
-
-    serialized_model = {
-        'meta': 'birch',
-        'root_': mem(model.root_),
-        'dummy_leaf_': mem(model.dummy_leaf_),
-        'subcluster_centers_': model.subcluster_centers_.tolist(),
-        '_n_features_out': model._n_features_out,
-        '_subcluster_norms': model._subcluster_norms.tolist(),
-        'subcluster_labels_': model.subcluster_labels_.tolist(),
-        'labels_': model.labels_.tolist(),
-        'n_features_in_': model.n_features_in_,
-        'params': model.get_params(),
-        'nodes': nodes,
-        'subclusters': subclusters
-    }
-
-    if '_deprecated_fit' in model.__dict__:
-        serialized_model['_deprecated_fit'] = model._deprecated_fit
-        serialized_model['_deprecated_partial_fit'] = model._deprecated_partial_fit
-
-    return serialized_model
-
-
-def deserialize_birch(model_dict):
-    assert model_dict['meta'] == 'birch'
-    model = Birch(**model_dict['params'])
-    model.subcluster_centers_ = np.array(model_dict['subcluster_centers_'])
-    model._n_features_out = model_dict['_n_features_out']
-    model._subcluster_norms = np.array(model_dict['_subcluster_norms'])
-    model.subcluster_labels_ = np.array(model_dict['subcluster_labels_'])
-    model.labels_ = np.array(model_dict['labels_'])
-    model.n_features_in_ = model_dict['n_features_in_']
-    # Deserialize _CFNodes and _CFSubclusters
-    nodes = {uid: deserialize_cfnode(node) for uid, node in model_dict['nodes'].items()}
-    subclusters = {uid: deserialize_cfsubcluster(subcluster) for uid, subcluster in model_dict['subclusters'].items()}
-    # Link prev_leaf_ and next_leaf of _CFNodes to other _CFNodes
-    for node_uid in nodes.keys():
-        prev_leaf_uid = nodes[node_uid].prev_leaf_
-        next_leaf_uid = nodes[node_uid].next_leaf_
-        if prev_leaf_uid is not None:
-            nodes[node_uid].prev_leaf_ = nodes[prev_leaf_uid]
-        if next_leaf_uid is not None:
-            nodes[node_uid].next_leaf_ = nodes[next_leaf_uid]
-    # Link child_ of _CFSubclusters to _CFNodes
-    for subcluster_uid in subclusters.keys():
-        subclusters[subcluster_uid].child_ = subclusters[subcluster_uid]
-    # Link subclusters_ of _CFNodes to _CFSubclusters
-    for node_uid in nodes.keys():
-        old_uids = nodes[node_uid].subclusters_
-        if old_uids is not None:
-            nodes[node_uid].subclusters_ = [subclusters[old_uid] for old_uid in old_uids]
-    # Link root_ and dummy_leaf_ _CFNodes
-    model.dummy_leaf_ = nodes[model_dict['dummy_leaf_']]
-    model.root_ = nodes[model_dict['root_']]
-    if '_deprecated_fit' in model_dict:
-        model._deprecated_fit = model_dict['_deprecated_fit']
-        model._deprecated_partial_fit = model_dict['_deprecated_partial_fit']
-    return model
-
-
-def serialize_tree(tree: Tree):
-    assert isinstance(tree, Tree)
-    serialized_tree = tree.__getstate__()
-    dtypes = [serialized_tree['nodes'].dtype[i].str for i in range(len(serialized_tree['nodes'].dtype))]
-    serialized_tree['nodes'] = serialized_tree['nodes'].tolist()
-    serialized_tree['values'] = serialized_tree['values'].tolist()
-    return {'meta': 'tree', 'tree': serialized_tree, 'nodes_dtype': dtypes}
-
-
-def deserialize_tree(tree_dict: dict[str, Any], n_features: int, n_outputs: int):
-    assert tree_dict['meta'] == 'tree'
-    tree_dict['tree']['nodes'] = [tuple(lst) for lst in tree_dict['tree']['nodes']]
-    names = ['left_child', 'right_child', 'feature', 'threshold', 'impurity', 'n_node_samples', 'weighted_n_node_samples']
-    if sklearn.__version__ >= '1.3':
-        names.append('missing_go_to_left')
-    tree_dict['tree']['nodes'] = np.array(tree_dict['tree']['nodes'], dtype=np.dtype({'names': names, 'formats': tree_dict['nodes_dtype']}))
-    tree_dict['tree']['values'] = np.array(tree_dict['tree']['values'])
-    # Dummy classes
-    dummy_classes = np.array([1] * n_outputs, dtype=np.intp)
-    tree = Tree(n_features, dummy_classes, n_outputs)
-    tree.__setstate__(tree_dict['tree'])
-    return tree
-
-
-def serialize_cyloss(loss: CyAbsoluteError |CyExponentialLoss |CyHalfBinomialLoss |CyHalfGammaLoss |CyHalfMultinomialLoss |CyHalfPoissonLoss |CyHalfSquaredError |CyHalfTweedieLoss |CyHalfTweedieLossIdentity |CyHuberLoss |CyPinballLoss):
-    assert isinstance(loss, (CyAbsoluteError, CyExponentialLoss, CyHalfBinomialLoss, CyHalfGammaLoss, CyHalfMultinomialLoss, CyHalfPoissonLoss, CyHalfSquaredError, CyHalfTweedieLoss, CyHalfTweedieLossIdentity, CyHuberLoss, CyPinballLoss))
-    mode_dict = {'meta': 'cython_loss', 'type': type(loss).__name__}
+def serialize_cyloss(loss):
+    assert isinstance(loss, (CyAbsoluteError, CyExponentialLoss, CyHalfBinomialLoss, CyHalfGammaLoss,
+                             CyHalfMultinomialLoss, CyHalfPoissonLoss, CyHalfSquaredError, CyHalfTweedieLoss,
+                             CyHalfTweedieLossIdentity, CyHuberLoss, CyPinballLoss))
+    model_dict = {'meta': 'cython_loss', 'type': type(loss).__name__}
     if isinstance(loss, CyHuberLoss):
-        mode_dict['delta'] = loss.delta
+        model_dict['delta'] = loss.delta
     if isinstance(loss, (CyHalfTweedieLoss, CyHalfTweedieLossIdentity)):
-        mode_dict['power'] = loss.power
+        model_dict['power'] = loss.power
     if isinstance(loss, CyPinballLoss):
-        mode_dict['quantile'] = loss.quantile
-    return mode_dict
+        model_dict['quantile'] = loss.quantile
+    return model_dict
 
 
-def deserialize_cyloss(loss_dict: dict[str, Any]):
+def deserialize_cyloss(loss_dict):
     assert loss_dict['meta'] == 'cython_loss'
-    if loss_dict['meta'] == 'CyAbsoluteError':
+    loss_type = loss_dict['type']
+    if loss_type == 'CyAbsoluteError':
         return CyAbsoluteError()
-    if loss_dict['meta'] == 'CyExponentialLoss':
+    if loss_type == 'CyExponentialLoss':
         return CyExponentialLoss()
-    if loss_dict['meta'] == 'CyHalfBinomialLoss':
+    if loss_type == 'CyHalfBinomialLoss':
         return CyHalfBinomialLoss()
-    if loss_dict['meta'] == 'CyHalfGammaLoss':
+    if loss_type == 'CyHalfGammaLoss':
         return CyHalfGammaLoss()
-    if loss_dict['meta'] == 'CyHalfMultinomialLoss':
+    if loss_type == 'CyHalfMultinomialLoss':
         return CyHalfMultinomialLoss()
-    if loss_dict['meta'] == 'CyHalfPoissonLoss':
+    if loss_type == 'CyHalfPoissonLoss':
         return CyHalfPoissonLoss()
-    if loss_dict['meta'] == 'CyHalfSquaredError':
+    if loss_type == 'CyHalfSquaredError':
         return CyHalfSquaredError()
-    if loss_dict['meta'] == 'CyHalfTweedieLoss':
+    if loss_type == 'CyHalfTweedieLoss':
         return CyHalfTweedieLoss(loss_dict['power'])
-    if loss_dict['meta'] == 'CyHalfTweedieLossIdentity':
+    if loss_type == 'CyHalfTweedieLossIdentity':
         return CyHalfTweedieLossIdentity(loss_dict['power'])
-    if loss_dict['meta'] == 'CyHuberLoss':
+    if loss_type == 'CyHuberLoss':
         return CyHuberLoss(loss_dict['delta'])
-    if loss_dict['meta'] == 'CyPinballLoss':
+    if loss_type == 'CyPinballLoss':
         return CyPinballLoss(loss_dict['quantile'])
+    raise ModelNotSupported(f'Unknown Cython loss type: {loss_type!r}')
 
 
-def serialize_random_generator(generator: np.random.Generator):
-    assert isinstance(generator, np.random.Generator)
-    return {'meta': 'random_generator', 'bit_generator_type': type(generator.bit_generator).__name__, 'state': recursive_serialize(generator.bit_generator.state)}
+def serialize_sgd_loss_functions(loss):
+    assert any(loss is x for x in (Hinge, SquaredHinge, ModifiedHuber, EpsilonInsensitive, SquaredEpsilonInsensitive))
+    return {'meta': 'sgd_loss_functions', 'module': loss.__module__, 'type': loss.__name__}
 
 
-def deserialize_random_generator(generator_dict: dict[str, Any]):
-    assert generator_dict['meta'] == 'random_generator'
-    rng = getattr(importlib.import_module('numpy'), generator_dict['bit_generator_type'])()
-    rng.state = recursive_deserialize(generator_dict['state'])
-    return rng
-
-
-def serialize_sgd_loss_functions(loss: Hinge | SquaredHinge | CyHalfBinomialLoss | ModifiedHuber | EpsilonInsensitive | SquaredEpsilonInsensitive):
-    assert any(loss is x for x in (Hinge, SquaredHinge, CyHalfBinomialLoss, ModifiedHuber, EpsilonInsensitive, SquaredEpsilonInsensitive))
-    return {'meta': 'sgd_loss_functions', 'module': inspect.getmodule(loss).__name__, 'type': loss.__name__}
-
-
-def deserialize_sgd_loss_functions(loss_dict: dict[str, Any]):
+def deserialize_sgd_loss_functions(loss_dict):
     assert loss_dict['meta'] == 'sgd_loss_functions'
     return getattr(importlib.import_module(loss_dict['module']), loss_dict['type'])
 
 
-def remove_superfluous_attribute(model: Any):
-    if isinstance(model, BaseSGD) and hasattr(model, '_loss_function_'):
-        delattr(model, '_loss_function_')
+_CYLOSS_TYPES = (CyAbsoluteError, CyExponentialLoss, CyHalfBinomialLoss, CyHalfGammaLoss, CyHalfMultinomialLoss,
+                 CyHalfPoissonLoss, CyHalfSquaredError, CyHalfTweedieLoss, CyHalfTweedieLossIdentity, CyHuberLoss,
+                 CyPinballLoss)
 
+# Leaf types dispatched by isinstance, checked in order (most specific first).
+# Bunch subclasses dict, so it must be checked before recursive_serialize's
+# generic dict handling ever gets a chance to see it.
+__serialize_leaf_fn__ = [
+    (Bunch, serialize_bunch),
+    (np.ndarray, serialize_numpy_array),
+    (np.dtype, serialize_numpy_dtype),
+    (np.generic, serialize_numpy_scalar),
+    (RandomState, serialize_random_state),
+    (np.random.Generator, serialize_random_generator),
+    (Memory, serialize_memory),
+    (sp.sparse.csr_matrix, serialize_csr_matrix),
+    (_CYLOSS_TYPES, serialize_cyloss),
+    ((types.FunctionType, types.BuiltinFunctionType), serialize_function_reference),
+    (Tree, serialize_tree),
+    (KDTree, serialize_kdtree),
+    (BallTree, serialize_balltree),
+]
 
-def serialize_unfitted_model(model):
-    """Serialize an unfitted model.
+# Leaf types dispatched by their 'meta' tag on the way back.
+__deserialize_leaf_fn__ = {
+    'bunch': deserialize_bunch,
+    'numpy_array': deserialize_numpy_array,
+    'numpy_dtype': deserialize_numpy_dtype,
+    'numpy_scalar_type': deserialize_numpy_scalar_type,
+    'numpy_scalar': deserialize_numpy_scalar,
+    'random_state': deserialize_random_state,
+    'random_generator': deserialize_random_generator,
+    'memory': deserialize_memory,
+    'csr': deserialize_csr_matrix,
+    'cython_loss': deserialize_cyloss,
+    'tree': deserialize_tree,
+    'function_reference': deserialize_function_reference,
+    'class_reference': deserialize_class_reference,
+    'kdtree': deserialize_kdtree,
+    'balltree': deserialize_balltree,
+}
 
-    :param model: unfitted model
-    """
-    serialized_model = {
-        'meta': 'unfit_model',
-        'unfitted': True,
-        'type': (inspect.getmodule(model).__name__,
-                 type(model).__name__),
-        'params': model.get_params()
-    }
-    serialize_version(model, serialized_model)
-    return serialized_model
-
-
-def deserialize_unfitted_model(model_dict: dict[str, Any]):
-    """Deserialize an unfitted model.
-
-    :param model_dict: previously serialized unfitted model
-    """
-    assert model_dict['meta'] == 'unfit_model'
-    check_version(model_dict)
-    model = getattr(importlib.import_module(model_dict['type'][0]), model_dict['type'][1])(**model_dict['params'])
-    return model
-
-
-def serialize_version(model, model_dict):
-    """Add version(s) of the libraries required to instantiate the model.
-
-    :param model: model to check the dependencies of
-    :param model_dict: serialized model to add the dependencies' versions to
-    """
-    # Obtain library used to fit the model
-    module = inspect.getmodule(model)
-    if module is None:
-        return model_dict
-    module = sys.modules[module.__name__.partition('.')[0]]
-    version = module.__version__ if hasattr(module, '__version__') else ''
-    model_dict['versions'] = (module.__name__, version)
-    return model_dict
-
-
-def check_version(model_dict):
-    """Check if the versions of the installed libraries and those the model was fitted with correspond.
-
-    :param model_dict: serialized model
-    """
-    if 'versions' not in model_dict:
-        return
-    # Obtain module used to fit the model
-    module_name, version = model_dict['versions']
-    # Module is installed
-    installed = importlib.util.find_spec(module_name) is not None
-    if not installed:
-        raise ModuleNotFoundError(f'Module {module_name} could not be found. Is it installed?')
-    # Check version of the installed module
-    if version == '':
-        return
-    installed_version = importlib.import_module(module_name).__version__
-    if version != installed_version:
-        warnings.warn(f'Version of the current {module_name} library ({installed_version}) '
-                      f'does not match the version used to fit the serialized model ({version})')
-
-
-class ModelNotSupported(Exception):
-    """Custom class for unsupported model types."""
-    pass
-
-
-__serialize_obj_fn__ = {np.ndarray: serialize_numpy_array,
-                        RandomState: serialize_random_state,
-                        Memory: serialize_memory,
-                        sp.sparse.csr_matrix: serialize_csr_matrix,
-                        Bunch: serialize_bunch,
-                        Birch: serialize_birch,
-                        _CFNode: serialize_cfnode,
-                        _CFSubcluster: serialize_cfsubcluster,
-                        (np.int8, np.int16, np.int32, np.int64,
-                         np.byte, np.short, np.intc, np.int_, np.long, np.longlong,
-                         np.uint8, np.uint16, np.uint32, np.uint64,
-                         np.ubyte, np.ushort, np.uintc, np.uint, np.ulong, np.ulonglong,
-                         np.intp, np.uintp,
-                         np.float16, np.float32, np.float64, # float96's or float128's names are platform dependent
-                         np.half, np.single, np.double, np.longdouble,
-                         np.complex64, np.complex128, # complex192's or comple256's names are platform dependent
-                         np.csingle, np.cdouble, np.clongdouble): serialize_numpy_value,
-                        Tree: serialize_tree,
-                        (CyAbsoluteError, CyExponentialLoss, CyHalfBinomialLoss, CyHalfGammaLoss,
-                         CyHalfMultinomialLoss, CyHalfPoissonLoss, CyHalfSquaredError, CyHalfTweedieLoss,
-                         CyHalfTweedieLossIdentity, CyHuberLoss, CyPinballLoss): serialize_cyloss,
-                        np.random.Generator: serialize_random_generator,
-                        np.dtype: serialize_numpy_dtype,
-                        BaseSGD: remove_superfluous_attribute,
-                        }
-
-__serialize_obj_types__ = {(np.int8, np.int16, np.int32, np.int64,
-                            np.byte, np.short, np.intc, np.int_, np.long, np.longlong,
-                            np.uint8, np.uint16, np.uint32, np.uint64,
-                            np.ubyte, np.ushort, np.uintc, np.uint, np.ulong, np.ulonglong,
-                            np.intp, np.uintp,
-                            np.float16, np.float32, np.float64, # float96's or float128's names are platform dependent
-                            np.half, np.single, np.double, np.longdouble,
-                            np.complex64, np.complex128, # complex192's or comple256's names are platform dependent
-                            np.csingle, np.cdouble, np.clongdouble): serialize_numpy_type,
-                           (Hinge, SquaredHinge, ModifiedHuber, EpsilonInsensitive, SquaredEpsilonInsensitive,
-                            CyAbsoluteError, CyExponentialLoss, CyHalfBinomialLoss, CyHalfGammaLoss,
-                            CyHalfMultinomialLoss, CyHalfPoissonLoss, CyHalfSquaredError, CyHalfTweedieLoss,
-                            CyHalfTweedieLossIdentity, CyHuberLoss, CyPinballLoss): serialize_sgd_loss_functions,
-                           }
+if _HAS_NNDESCENT:
+    __serialize_leaf_fn__.append((NNDescent, serialize_nndescent))
+    __deserialize_leaf_fn__['nn-descent'] = deserialize_nndescent

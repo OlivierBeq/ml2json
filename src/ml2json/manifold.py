@@ -2,8 +2,7 @@
 
 import scipy
 import numpy as np
-from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
-                              MDS, SpectralEmbedding, TSNE)
+from sklearn.manifold import MDS, SpectralEmbedding, TSNE
 from sklearn.utils import check_random_state
 
 # Allow additional dependencies to be optional
@@ -30,7 +29,7 @@ try:
 except:
     pass
 
-from .decomposition import serialize_kernel_pca, deserialize_kernel_pca
+from . import _base
 from .neighbors import (serialize_nearest_neighbors, deserialize_nearest_neighbors,
                         __optionals__ as __neig_optionals__)
 from .utils.csr import serialize_csr_matrix, deserialize_csr_matrix
@@ -115,69 +114,19 @@ def deserialize_mds(model_dict):
 
 
 def serialize_isomap(model):
-    serialized_model = {
-        'meta': 'isomap',
-        'embedding_': model.embedding_.tolist(),
-        'dist_matrix_': model.dist_matrix_.tolist(),
-        'n_features_in_': model.n_features_in_,
-        '_n_features_out': model._n_features_out,
-        'kernel_pca_': serialize_kernel_pca(model.kernel_pca_),
-        'nbrs_': serialize_nearest_neighbors(model.nbrs_),
-        'params': model.get_params()
-    }
-
-    if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
-
-    return serialized_model
+    return _base.serialize_model_generic(model, meta='isomap')
 
 
 def deserialize_isomap(model_dict):
-    model = Isomap(**model_dict['params'])
-
-    model.embedding_ = np.array(model_dict['embedding_'])
-    model.dist_matrix_ = np.array(model_dict['dist_matrix_'])
-    model.n_features_in_ = model_dict['n_features_in_']
-    model._n_features_out = model_dict['_n_features_out']
-    model.kernel_pca_ = deserialize_kernel_pca(model_dict['kernel_pca_'])
-    model.nbrs_ = deserialize_nearest_neighbors(model_dict['nbrs_'])
-
-    if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
-
-    return model
+    return _base.deserialize_model_generic(model_dict)
 
 
 def serialize_locally_linear_embedding(model):
-    serialized_model = {
-        'meta': 'locally-linear-embedding',
-        'embedding_': model.embedding_.tolist(),
-        'n_features_in_': model.n_features_in_,
-        '_n_features_out': model._n_features_out,
-        'reconstruction_error_': float(model.reconstruction_error_),
-        'nbrs_': serialize_nearest_neighbors(model.nbrs_),
-        'params': model.get_params()
-    }
-
-    if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
-
-    return serialized_model
+    return _base.serialize_model_generic(model, meta='locally-linear-embedding')
 
 
 def deserialize_locally_linear_embedding(model_dict):
-    model = LocallyLinearEmbedding(**model_dict['params'])
-
-    model.embedding_ = np.array(model_dict['embedding_'])
-    model.n_features_in_ = model_dict['n_features_in_']
-    model._n_features_out = model_dict['_n_features_out']
-    model.reconstruction_error_ = np.float64(model_dict['reconstruction_error_'])
-    model.nbrs_ = deserialize_nearest_neighbors(model_dict['nbrs_'])
-
-    if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
-
-    return model
+    return _base.deserialize_model_generic(model_dict)
 
 
 def serialize_spectral_embedding(model):

@@ -52,7 +52,11 @@ from . import cross_decomposition as crdec
 from . import applicability_domain as ad
 from . import over_undersampling as ous
 from . import pipeline as ppl
+from numpy.random import RandomState
+
+from . import _base
 from .utils import is_model_fitted, recursive_inspection
+from .utils.random_state import serialize_random_state, deserialize_random_state
 
 # Make additional dependencies optional
 if 'XGBRegressor' in reg.__optionals__:
@@ -558,9 +562,13 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
         model_dict = ppl.serialize_pipeline(model)
         return serialize_version(model, model_dict)
 
-    # Otherwise
+    # Otherwise: fall back to generically walking the model's __dict__
     else:
-        raise ModelNotSupported('This model type is not currently supported. Email support@mlrequest.com to request a feature or report a bug.')
+        try:
+            model_dict = _base.serialize_model_generic(model)
+        except _base.ModelNotSupported:
+            raise ModelNotSupported('This model type is not currently supported. Email support@mlrequest.com to request a feature or report a bug.')
+        return serialize_version(model, model_dict)
 
 
 def deserialize_model(model_dict: Dict):
@@ -1020,7 +1028,11 @@ def deserialize_model(model_dict: Dict):
         check_version(model_dict)
         return ppl.deserialize_pipeline(model_dict)
 
-    # Otherwise
+    # Otherwise: fall back to the generic engine for anything it serialized
+    elif model_dict['meta'].startswith('generic_object:'):
+        check_version(model_dict)
+        return _base.deserialize_model_generic(model_dict)
+
     else:
         raise ModelNotSupported('Model type not supported or corrupt JSON file.')
 
@@ -1106,6 +1118,14 @@ def serialize_version(model, model_dict):
     :param model: model to check the dependencies of
     :param model_dict: serialized model to add the dependencies' versions to
     """
+    # A user-supplied RandomState instance (e.g. RandomForestClassifier(random_state=
+    # np.random.RandomState(0))) leaks straight through model.get_params() into
+    # 'params' unconverted by every hand-written serializer, which is not
+    # JSON-safe. Sanitize it here since every serialize_* branch funnels through
+    # this single function before returning.
+    if 'params' in model_dict:
+        model_dict['params'] = {key: (serialize_random_state(value) if isinstance(value, RandomState) else value)
+                                for key, value in model_dict['params'].items()}
     # Obtain library used to fit the model
     module = inspect.getmodule(model)
     if module is None:
@@ -1121,6 +1141,13 @@ def check_version(model_dict):
 
     :param model_dict: serialized model
     """
+    # Reverse of the RandomState sanitization done in serialize_version, so every
+    # deserialize_* branch (which calls SomeClass(**model_dict['params'])) receives
+    # back a real RandomState instance rather than its serialized dict form.
+    if 'params' in model_dict:
+        model_dict['params'] = {key: (deserialize_random_state(value)
+                                      if isinstance(value, dict) and value.get('meta') == 'random_state' else value)
+                                for key, value in model_dict['params'].items()}
     if 'versions' not in model_dict:
         return
     # Obtain module used to fit the model

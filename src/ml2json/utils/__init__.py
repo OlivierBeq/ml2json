@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 from sklearn.neighbors import KDTree
@@ -24,8 +25,16 @@ def is_model_fitted(model):
             return model.fitted_
     except ImportError:
         pass
-    #   1.2 Scikit-Learn or SciPy objects
+    #   1.3 Scikit-Learn or SciPy objects
     if isinstance(model, (sp.sparse.csr_matrix, KDTree, SparseCoder)):
+        return True
+    #   1.4 Any other non-estimator object (e.g. a scipy.stats distribution
+    #       nested inside a param_distributions dict): these have no
+    #       fitted/unfitted state and, since sklearn 1.6, check_is_fitted's
+    #       tag-based check crashes with AttributeError on non-BaseEstimator
+    #       objects rather than a catchable TypeError, so this must be
+    #       checked before calling it at all.
+    if not isinstance(model, BaseEstimator):
         return True
     # 2) Models that are estimators
     try:

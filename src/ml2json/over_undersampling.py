@@ -37,8 +37,7 @@ if 'imblearn' in __optionals__:
     def serialize_cluster_centroids(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'cluster-centroids',
-                            'params': {param: value
+        serialized_model = {'meta': 'cluster-centroids', 'params': {param: value
                                        for param, value in model.get_params().items()
                                        if not param.startswith('estimator')}
                             }
@@ -80,8 +79,7 @@ if 'imblearn' in __optionals__:
     def serialize_condensed_nearest_neighbours(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'condensed-nearest-neighbours',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'condensed-nearest-neighbours', 'params': model.get_params()
                             }
 
         if not isinstance(model.n_neighbors, int) and model.n_neighbors is not None:
@@ -127,8 +125,7 @@ if 'imblearn' in __optionals__:
     def serialize_edited_nearest_neighbours(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'edited-nearest-neighbours',
-                            'params': {param: value
+        serialized_model = {'meta': 'edited-nearest-neighbours', 'params': {param: value
                                        for param, value in model.get_params().items()
                                        if not param.startswith('n_neighbors__')}
                             }
@@ -176,8 +173,7 @@ if 'imblearn' in __optionals__:
     def serialize_repeated_edited_nearest_neighbours(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'repeated-edited-nearest-neighbours',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'repeated-edited-nearest-neighbours', 'params': model.get_params()
                             }
 
         if not isinstance(model.n_neighbors, int):
@@ -231,8 +227,7 @@ if 'imblearn' in __optionals__:
     def serialize_all_knn(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'all-knn',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'all-knn', 'params': model.get_params()
                             }
 
         if not isinstance(model.n_neighbors, int):
@@ -282,8 +277,7 @@ if 'imblearn' in __optionals__:
     def serialize_instance_hardness_threshold(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'instance-hardness-threshold',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'instance-hardness-threshold', 'params': model.get_params()
                             }
 
         if serialized_model['params']['estimator'] is not None:
@@ -329,8 +323,7 @@ if 'imblearn' in __optionals__:
     def serialize_near_miss(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'near-miss',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'near-miss', 'params': model.get_params()
                             }
 
         if not isinstance(model.n_neighbors, int):
@@ -380,8 +373,7 @@ if 'imblearn' in __optionals__:
     def serialize_neighbourhood_cleaning_rule(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'neighbourhood-cleaning-rule',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'neighbourhood-cleaning-rule', 'params': model.get_params()
                             }
 
         if model.edited_nearest_neighbours is not None:
@@ -439,8 +431,7 @@ if 'imblearn' in __optionals__:
     def serialize_one_sided_selection(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'one-sided-selection',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'one-sided-selection', 'params': model.get_params()
                             }
 
         if not isinstance(model.n_neighbors, int) and model.n_neighbors is not None:
@@ -488,8 +479,7 @@ if 'imblearn' in __optionals__:
 
 
     def serialize_random_under_sampler(model):
-        serialized_model = {'meta': 'random-under-sampler',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'random-under-sampler', 'params': model.get_params()
                             }
 
         if 'n_features_in_' in model.__dict__:
@@ -524,8 +514,7 @@ if 'imblearn' in __optionals__:
     def serialize_tomek_links(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'tomek-links',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'tomek-links', 'params': model.get_params()
                             }
 
         if 'n_features_in_' in model.__dict__:
@@ -558,8 +547,7 @@ if 'imblearn' in __optionals__:
 
 
     def serialize_random_over_sampler(model):
-        serialized_model = {'meta': 'random-over-sampler',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'random-over-sampler', 'params': model.get_params()
                             }
 
         if 'n_features_in_' in model.__dict__:
@@ -597,8 +585,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_smote(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'smote',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'smote', 'params': model.get_params()
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -639,8 +626,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_smotenc(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'smotenc',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'smotenc', 'params': model.get_params()
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -709,8 +695,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_smoten(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'smoten',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'smoten', 'params': model.get_params()
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -759,8 +744,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_adasyn(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'adasyn',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'adasyn', 'params': model.get_params()
                             }
 
         if not isinstance(model.n_neighbors, int) and model.n_neighbors is not None:
@@ -801,8 +785,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_borderline_smote(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'borderline-smote',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'borderline-smote', 'params': model.get_params()
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -857,8 +840,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_kmeans_smote(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'kmeans-smote',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'kmeans-smote', 'params': model.get_params()
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -911,8 +893,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_svm_smote(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'svm-smote',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'svm-smote', 'params': model.get_params()
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -973,8 +954,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_smote_enn(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'smote-enn',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'smote-enn', 'params': model.get_params()
                             }
 
         if model.enn is not None:
@@ -1023,8 +1003,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_smote_tomek(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'smote-tomek',
-                            'params': model.get_params()
+        serialized_model = {'meta': 'smote-tomek', 'params': model.get_params()
                             }
 
         if model.tomek is not None:
