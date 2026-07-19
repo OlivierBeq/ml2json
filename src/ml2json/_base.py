@@ -124,7 +124,13 @@ def serialize_numpy_array(array: np.ndarray):
         # them as live objects instead of a JSON-safe structure.
         return {'meta': 'numpy_array', 'dtype': 'object', 'shape': list(array.shape),
                 'values': [recursive_serialize(value) for value in array.ravel().tolist()]}
-    return {'meta': 'numpy_array', 'values': array.tolist(), 'dtype': str(array.dtype)}
+    # 'shape' is stored explicitly (not just inferred from the nested list
+    # structure of .tolist()) because any zero-length dimension collapses that
+    # structure down to [] regardless of the other dimensions - e.g. a (0, 0)
+    # array (SVR.support_vectors_ with kernel='precomputed') round-trips as
+    # (0,) without it.
+    return {'meta': 'numpy_array', 'values': array.tolist(), 'dtype': str(array.dtype),
+           'shape': list(array.shape)}
 
 
 def deserialize_numpy_array(model_dict):
@@ -139,8 +145,12 @@ def deserialize_numpy_array(model_dict):
     if dtype.names:
         # Structured/record dtype: .tolist() yields a list of plain tuples,
         # which np.array() needs re-wrapped as an actual tuple per row.
-        return np.array([tuple(row) for row in model_dict['values']], dtype=dtype)
-    return np.array(model_dict['values'], dtype=dtype)
+        array = np.array([tuple(row) for row in model_dict['values']], dtype=dtype)
+    else:
+        array = np.array(model_dict['values'], dtype=dtype)
+    if 'shape' in model_dict and list(array.shape) != list(model_dict['shape']):
+        array = array.reshape(model_dict['shape'])
+    return array
 
 
 def serialize_random_generator(generator: np.random.Generator):
@@ -158,9 +168,14 @@ def deserialize_random_generator(model_dict):
 
 def serialize_function_reference(func):
     """A plain module-level function used as a parameter value (e.g. sklearn's
-    `score_func=f_classif`). Unlike bound methods, these are importable by
-    (module, qualname) alone, with no enclosing instance state to capture."""
-    assert isinstance(func, (types.FunctionType, types.BuiltinFunctionType))
+    `score_func=f_classif`, or `TransformedTargetRegressor(func=np.log1p)`).
+    Unlike bound methods, these are importable by (module, qualname) alone,
+    with no enclosing instance state to capture. np.ufunc instances (e.g.
+    np.log1p) must go through here rather than the generic __dict__ walk:
+    calling inspect.signature() on one anywhere in the process (as sklearn's
+    own callable validation does) lazily caches an inspect.Signature object
+    into the ufunc's own __dict__, which the generic walk can't serialize."""
+    assert isinstance(func, (types.FunctionType, types.BuiltinFunctionType, np.ufunc))
     return {'meta': 'function_reference', 'module': func.__module__, 'name': func.__qualname__}
 
 
@@ -493,8 +508,23 @@ def _serialize_binary_tree(tree, meta):
         'n_splits': state[9],
         'n_calls': state[10],
         'dist_metric': serialize_class_reference(type(state[11])),
+        # DistanceMetric.__getstate__() carries the (p, vec, mat) triple that
+        # actually parametrizes non-default metrics (Minkowski's p, Mahalanobis'
+        # VI, ...); the class alone reconstructs only the parameter-less default.
+        'dist_metric_state': recursive_serialize(state[11].__getstate__()),
         'sample_weight_arr': recursive_serialize(state[12]) if state[12] is not None else None,
     }
+
+
+def _deserialize_dist_metric(model_dict):
+    dist_metric_cls = deserialize_class_reference(model_dict['dist_metric'])
+    if 'dist_metric_state' not in model_dict:
+        # Pre-fix payloads never carried metric parameters; only the
+        # parameter-less default (e.g. plain Euclidean) reconstructs correctly.
+        return dist_metric_cls()
+    dist_metric = dist_metric_cls.__new__(dist_metric_cls)
+    dist_metric.__setstate__(recursive_deserialize(model_dict['dist_metric_state']))
+    return dist_metric
 
 
 def _deserialize_binary_tree(model_dict, cls):
@@ -511,7 +541,7 @@ def _deserialize_binary_tree(model_dict, cls):
         model_dict['n_leaves'],
         model_dict['n_splits'],
         model_dict['n_calls'],
-        deserialize_class_reference(model_dict['dist_metric'])(),
+        _deserialize_dist_metric(model_dict),
         recursive_deserialize(model_dict['sample_weight_arr']) if model_dict['sample_weight_arr'] is not None else None,
     )
     tree.__setstate__(params)
@@ -789,7 +819,7 @@ __serialize_leaf_fn__ = [
     (Memory, serialize_memory),
     (sp.sparse.csr_matrix, serialize_csr_matrix),
     (_CYLOSS_TYPES, serialize_cyloss),
-    ((types.FunctionType, types.BuiltinFunctionType), serialize_function_reference),
+    ((types.FunctionType, types.BuiltinFunctionType, np.ufunc), serialize_function_reference),
     (functools.partial, serialize_functools_partial),
     (types.ModuleType, serialize_module_reference),
     (slice, serialize_slice),
