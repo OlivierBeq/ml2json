@@ -6,7 +6,9 @@ import unittest
 import numpy as np
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsOneClassifier, OneVsRestClassifier, OutputCodeClassifier
+from sklearn.svm import SVC
 
 from src import ml2json
 
@@ -44,3 +46,16 @@ class TestAPI(unittest.TestCase):
         self.check_model(OutputCodeClassifier(RandomForestClassifier(n_estimators=5, random_state=42),
                                                random_state=42),
                           'output-code-classifier.json')
+
+    def test_output_code_classifier_code_size(self):
+        self.check_model(OutputCodeClassifier(RandomForestClassifier(n_estimators=5, random_state=42),
+                                               code_size=4, random_state=42),
+                          'output-code-classifier-code-size.json')
+
+    def test_one_vs_rest_classifier_svc(self):
+        self.check_model(OneVsRestClassifier(SVC(probability=True, kernel='rbf', random_state=42)),
+                          'one-vs-rest-classifier-svc.json')
+
+    def test_one_vs_one_classifier_logistic_regression(self):
+        self.check_model(OneVsOneClassifier(LogisticRegression(max_iter=1000)),
+                          'one-vs-one-classifier-lr.json')
