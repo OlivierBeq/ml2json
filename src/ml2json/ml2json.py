@@ -867,7 +867,11 @@ def serialize_unfitted_model(model):
         # meta-estimator params (e.g. a Pipeline's per-step keys like
         # 'randomundersampler__random_state') into a dict that ClassName(**params)
         # can't reconstruct from - only the constructor's own top-level kwargs are valid.
-        'params': model.get_params(deep=False)
+        # Routed through recursive_serialize since a constructor param can itself be a
+        # non-JSON-safe object (e.g. OneVsRestClassifier's unfitted .estimator prototype
+        # holding kernel=RBF(...)) - to_dict/from_dict happens to work without this via
+        # in-memory object identity, but to_json/from_json needs the JSON-safe form.
+        'params': {key: _base.recursive_serialize(value) for key, value in model.get_params(deep=False).items()}
     }
     serialize_version(model, serialized_model)
     return serialized_model
@@ -879,7 +883,13 @@ def deserialize_unfitted_model(model_dict: Dict):
     :param model_dict: previously serialized unfitted model
     """
     check_version(model_dict)
-    model = getattr(importlib.import_module(model_dict['meta'][0]), model_dict['meta'][1])(**model_dict['params'])
+    # check_version() already restored RandomState/bare-type params in place (see
+    # its docstring) - only values still in wrapped-dict form need recursive_deserialize;
+    # re-running it on an already-restored value (e.g. a raw RandomState/type) would
+    # fail, since that's not a JSON-safe payload recursive_deserialize accepts.
+    params = {key: (_base.recursive_deserialize(value) if isinstance(value, dict) and 'meta' in value else value)
+             for key, value in model_dict['params'].items()}
+    model = getattr(importlib.import_module(model_dict['meta'][0]), model_dict['meta'][1])(**params)
     return model
 
 
