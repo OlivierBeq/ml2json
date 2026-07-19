@@ -132,6 +132,9 @@ def serialize_factor_analysis(model):
         'params': model.get_params(),
     }
 
+    if isinstance(serialized_model['params'].get('noise_variance_init'), np.ndarray):
+        serialized_model['params']['noise_variance_init'] = serialized_model['params']['noise_variance_init'].tolist()
+
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
 
@@ -165,9 +168,14 @@ def serialize_fast_ica(model):
         'params': model.get_params(),
     }
 
+    # `fun` accepts a custom callable, not just the built-in 'logcosh'/'exp'/
+    # 'cube' string names - a raw function isn't JSON-safe on its own.
+    if callable(serialized_model['params'].get('fun')):
+        serialized_model['params']['fun'] = _base.recursive_serialize(serialized_model['params']['fun'])
+
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
-        
+
     if '_whiten' in model.__dict__:
         serialized_model['_whiten'] = model._whiten
     else:
@@ -177,7 +185,10 @@ def serialize_fast_ica(model):
 
 
 def deserialize_fast_ica(model_dict):
-    model = FastICA(**model_dict['params'])
+    params = dict(model_dict['params'])
+    if isinstance(params.get('fun'), dict):
+        params['fun'] = _base.recursive_deserialize(params['fun'])
+    model = FastICA(**params)
 
     model.components_ = np.array(model_dict['components_'])
     model.mixing_ = np.array(model_dict['mixing_'])
@@ -192,7 +203,7 @@ def deserialize_fast_ica(model_dict):
     if '_whiten' in model_dict.keys():
         model._whiten = model_dict['_whiten']
     else:
-        model.whithen = model_dict['whiten']
+        model.whiten = model_dict['whiten']
 
     return model
 
