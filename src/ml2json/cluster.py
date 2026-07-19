@@ -4,6 +4,7 @@ import importlib
 import inspect
 
 import numpy as np
+import scipy as sp
 import sklearn
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
@@ -11,6 +12,8 @@ from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              SpectralClustering, SpectralBiclustering, SpectralCoclustering,
                              HDBSCAN as SklearnHDBSCAN)
 from sklearn.cluster._bisect_k_means import _BisectingTree
+
+from .utils.csr import serialize_csr_matrix, deserialize_csr_matrix
 
 # Allow additional dependencies to be optional
 __optionals__ = []
@@ -133,7 +136,6 @@ def deserialize_minibatch_kmeans(model_dict):
 def serialize_affinity_propagation(model):
     serialized_model = {
         'cluster_centers_indices_': model.cluster_centers_indices_.tolist(),
-        'cluster_centers_': model.cluster_centers_.tolist(),
         'labels_': model.labels_.tolist(),
         'affinity_matrix_': model.affinity_matrix_.tolist(),
         'n_iter_': model.n_iter_,
@@ -143,6 +145,11 @@ def serialize_affinity_propagation(model):
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
+    # cluster_centers_ is only computed when affinity != 'precomputed' - with a
+    # precomputed affinity matrix there's no original coordinate space to
+    # derive cluster centers from, so sklearn never sets the attribute.
+    if 'cluster_centers_' in model.__dict__:
+        serialized_model['cluster_centers_'] = model.cluster_centers_.tolist()
 
     return serialized_model
 
@@ -151,7 +158,6 @@ def deserialize_affinity_propagation(model_dict):
     model = AffinityPropagation(**model_dict['params'])
 
     model.cluster_centers_indices_ = np.array(model_dict['cluster_centers_indices_'], dtype=np.int64)
-    model.cluster_centers_ = np.array(model_dict['cluster_centers_'])
     model.labels_ = np.array(model_dict['labels_'], dtype=np.int64)
     model.affinity_matrix_ = np.array(model_dict['affinity_matrix_'])
     model.n_iter_ = model_dict['n_iter_']
@@ -159,19 +165,24 @@ def deserialize_affinity_propagation(model_dict):
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+    if 'cluster_centers_' in model_dict:
+        model.cluster_centers_ = np.array(model_dict['cluster_centers_'])
 
     return model
 
 
 def serialize_agglomerative_clustering(model):
+    params = model.get_params()
+    # distance_threshold-driven fits (n_clusters=None) leave n_clusters_ as a
+    # numpy int64 rather than the plain int an explicit n_clusters= produces.
     serialized_model = {
-        'n_clusters_': model.n_clusters_,
+        'n_clusters_': int(model.n_clusters_),
         'labels_': model.labels_.tolist(),
         'n_leaves_': model.n_leaves_,
         'n_connected_components_': model.n_connected_components_,
         'n_features_in_': model.n_features_in_,
         'children_': model.children_.tolist(),
-        'params': model.get_params(),
+        'params': params,
     }
 
     if 'feature_names_in_' in model.__dict__:
@@ -180,12 +191,24 @@ def serialize_agglomerative_clustering(model):
         serialized_model['distances_'] = model.distances_.tolist()
     if '_metric' in model.__dict__:
         serialized_model['_metric'] = model._metric
+    # connectivity= accepts an array-like or (typically sparse) precomputed
+    # connectivity graph, which isn't itself JSON-safe.
+    if sp.sparse.issparse(params['connectivity']):
+        serialized_model['params'] = {**params, 'connectivity': serialize_csr_matrix(params['connectivity'].tocsr())}
+    elif isinstance(params['connectivity'], np.ndarray):
+        serialized_model['params'] = {**params, 'connectivity': params['connectivity'].tolist()}
 
     return serialized_model
 
 
 def deserialize_agglomerative_clustering(model_dict):
-    model = AgglomerativeClustering(**model_dict['params'])
+    params = model_dict['params']
+    if isinstance(params.get('connectivity'), dict) and params['connectivity'].get('meta') == 'csr':
+        params = {**params, 'connectivity': deserialize_csr_matrix(params['connectivity'])}
+    elif isinstance(params.get('connectivity'), list):
+        params = {**params, 'connectivity': np.array(params['connectivity'])}
+
+    model = AgglomerativeClustering(**params)
 
     model.n_clusters_ = model_dict['n_clusters_']
     model.labels_ = np.array(model_dict['labels_'])
@@ -251,13 +274,16 @@ def serialize_optics(model):
         'ordering_': model.ordering_.tolist(),
         'core_distances_': model.core_distances_.tolist(),
         'predecessor_': model.predecessor_.tolist(),
-        'cluster_hierarchy_': model.cluster_hierarchy_.tolist(),
         'n_features_in_': model.n_features_in_,
         'params': model.get_params()
     }
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
+    # cluster_hierarchy_ is only populated when cluster_method='xi' (the
+    # default); with cluster_method='dbscan' sklearn never sets it.
+    if 'cluster_hierarchy_' in model.__dict__:
+        serialized_model['cluster_hierarchy_'] = model.cluster_hierarchy_.tolist()
 
     return serialized_model
 
@@ -270,18 +296,22 @@ def deserialize_optics(model_dict):
     model.ordering_ = np.array(model_dict['ordering_'])
     model.core_distances_ = np.array(model_dict['core_distances_'])
     model.predecessor_ = np.array(model_dict['predecessor_'])
-    model.cluster_hierarchy_ = np.array(model_dict['cluster_hierarchy_'])
     model.n_features_in_ = model_dict['n_features_in_']
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
+    if 'cluster_hierarchy_' in model_dict:
+        model.cluster_hierarchy_ = np.array(model_dict['cluster_hierarchy_'])
 
     return model
 
 
 def serialize_spectral_clustering(model):
+    affinity_matrix = model.affinity_matrix_
     serialized_model = {
-        'affinity_matrix_': model.affinity_matrix_.tolist(),
+        'affinity_matrix_': serialize_csr_matrix(affinity_matrix.tocsr()) if sp.sparse.issparse(affinity_matrix)
+                            else affinity_matrix.tolist(),
+        'affinity_matrix_is_sparse': bool(sp.sparse.issparse(affinity_matrix)),
         'labels_': model.labels_.tolist(),
         'n_features_in_': model.n_features_in_,
         'params': model.get_params()
@@ -296,7 +326,10 @@ def serialize_spectral_clustering(model):
 def deserialize_spectral_clustering(model_dict):
     model = SpectralClustering(**model_dict['params'])
 
-    model.affinity_matrix_ = np.array(model_dict['affinity_matrix_'])
+    if model_dict.get('affinity_matrix_is_sparse'):
+        model.affinity_matrix_ = deserialize_csr_matrix(model_dict['affinity_matrix_'])
+    else:
+        model.affinity_matrix_ = np.array(model_dict['affinity_matrix_'])
     model.labels_ = np.array(model_dict['labels_'])
     model.n_features_in_ = model_dict['n_features_in_']
 

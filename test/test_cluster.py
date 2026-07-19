@@ -321,3 +321,152 @@ class TestAPI(unittest.TestCase):
     def test_robust_single_linkage(self):
         if 'RobustSingleLinkage' in __optionals__:
             self.check_fitpredict_model(RobustSingleLinkage(), 'robust-single-linkage.json', self.X)
+
+    def test_agglomerative_clustering_linkage_metric(self):
+        for linkage, metric in [('ward', 'euclidean'), ('complete', 'euclidean'), ('complete', 'manhattan'),
+                                 ('complete', 'cosine'), ('average', 'euclidean'), ('average', 'manhattan'),
+                                 ('single', 'euclidean')]:
+            self.check_fitpredict_model(
+                AgglomerativeClustering(n_clusters=3, linkage=linkage, metric=metric),
+                'agglomerative-clustering.json', self.simple_X)
+
+    def test_agglomerative_clustering_distance_threshold(self):
+        self.check_fitpredict_model(
+            AgglomerativeClustering(n_clusters=None, distance_threshold=3.0),
+            'agglomerative-clustering.json', self.simple_X)
+
+    def test_agglomerative_clustering_connectivity(self):
+        from sklearn.neighbors import kneighbors_graph
+        connectivity = kneighbors_graph(self.simple_X, n_neighbors=2, include_self=False)
+        self.check_fitpredict_model(
+            AgglomerativeClustering(n_clusters=2, linkage='ward', connectivity=connectivity),
+            'agglomerative-clustering.json', self.simple_X)
+
+    def test_dbscan_algorithm(self):
+        for algorithm in ['auto', 'ball_tree', 'kd_tree', 'brute']:
+            self.check_fitpredict_model(DBSCAN(algorithm=algorithm), 'dbscan.json', self.simple_X)
+
+    def test_dbscan_manhattan(self):
+        self.check_fitpredict_model(DBSCAN(metric='manhattan'), 'dbscan.json', self.simple_X)
+
+    def test_dbscan_precomputed(self):
+        from sklearn.metrics import pairwise_distances
+        D = pairwise_distances(self.simple_X, metric='euclidean')
+        np.testing.assert_array_almost_equal(D, D.T)
+        self.check_fitpredict_model(DBSCAN(metric='precomputed', eps=3), 'dbscan.json', D)
+
+    def test_optics_algorithm(self):
+        for algorithm in ['auto', 'ball_tree', 'kd_tree', 'brute']:
+            self.check_fitpredict_model(OPTICS(algorithm=algorithm, min_samples=2), 'optics.json', self.simple_X)
+
+    def test_optics_min_samples_eps(self):
+        self.check_fitpredict_model(OPTICS(min_samples=3, eps=2.0, cluster_method='dbscan'), 'optics.json', self.simple_X)
+
+    def test_spectral_clustering_affinity(self):
+        for affinity in ['rbf', 'nearest_neighbors']:
+            self.check_fitpredict_model(
+                SpectralClustering(random_state=1234, n_clusters=2, affinity=affinity, n_neighbors=3),
+                'spectral.json', self.simple_X)
+
+    def test_spectral_clustering_precomputed(self):
+        from sklearn.metrics.pairwise import rbf_kernel
+        affinity = rbf_kernel(self.simple_X)
+        np.testing.assert_array_almost_equal(affinity, affinity.T)
+        self.check_fitpredict_model(
+            SpectralClustering(random_state=1234, n_clusters=2, affinity='precomputed'),
+            'spectral.json', affinity)
+
+    def test_spectral_clustering_assign_labels(self):
+        for assign_labels in ['kmeans', 'discretize', 'cluster_qr']:
+            self.check_fitpredict_model(
+                SpectralClustering(random_state=1234, n_clusters=2, assign_labels=assign_labels),
+                'spectral.json', self.simple_X)
+
+    def test_affinity_propagation_precomputed(self):
+        from sklearn.metrics.pairwise import euclidean_distances
+        S = -euclidean_distances(self.simple_X, squared=True)
+        np.testing.assert_array_almost_equal(S, S.T)
+        self.check_fitpredict_model(
+            AffinityPropagation(affinity='precomputed', random_state=1234), 'affinity-propagation.json', S)
+
+    def test_affinity_propagation_damping(self):
+        self.check_predict_model(AffinityPropagation(damping=0.9, random_state=1234), 'affinity-propagation.json', self.simple_X)
+
+    def test_meanshift_bandwidth(self):
+        from sklearn.cluster import estimate_bandwidth
+        bw = estimate_bandwidth(self.X, random_state=1234)
+        self.check_predict_model(MeanShift(bandwidth=bw), 'meanshift.json', self.X)
+
+    def test_meanshift_bin_seeding(self):
+        self.check_predict_model(MeanShift(bin_seeding=True), 'meanshift.json', self.simple_X)
+
+    def test_meanshift_cluster_all_false(self):
+        self.check_fitpredict_model(MeanShift(cluster_all=False), 'meanshift.json', self.simple_X)
+
+    def test_birch_threshold_branching(self):
+        self.check_fitpredict_and_predict_model(Birch(threshold=0.3, branching_factor=20), 'birch.json', self.X)
+
+    def test_birch_n_clusters_none(self):
+        self.check_fittransform_model(Birch(n_clusters=None), 'birch.json', self.X)
+
+    def test_birch_n_clusters_estimator(self):
+        self.check_fitpredict_and_predict_model(
+            Birch(n_clusters=AgglomerativeClustering(n_clusters=3)), 'birch.json', self.X)
+
+    def test_sklearn_hdbscan_cluster_selection_method(self):
+        for method in ['eom', 'leaf']:
+            self.check_fitpredict_model(SklearnHDBSCAN(cluster_selection_method=method), 'sklearn-hdbscan.json', self.X)
+
+    def test_sklearn_hdbscan_metric(self):
+        for metric in ['manhattan', 'chebyshev']:
+            self.check_fitpredict_model(SklearnHDBSCAN(metric=metric), 'sklearn-hdbscan.json', self.X)
+
+    def test_sklearn_hdbscan_algorithm(self):
+        for algorithm in ['auto', 'ball_tree', 'kd_tree', 'brute']:
+            self.check_fitpredict_model(SklearnHDBSCAN(algorithm=algorithm), 'sklearn-hdbscan.json', self.X)
+
+    def test_sklearn_hdbscan_store_centers(self):
+        for store_centers in ['centroid', 'medoid']:
+            self.check_fitpredict_model(SklearnHDBSCAN(store_centers=store_centers), 'sklearn-hdbscan.json', self.X)
+
+    def test_sklearn_hdbscan_allow_single_cluster(self):
+        self.check_fitpredict_model(SklearnHDBSCAN(allow_single_cluster=True), 'sklearn-hdbscan.json', self.X)
+
+    def test_hdbscan_cluster_selection_method(self):
+        if 'HDBSCAN' in __optionals__:
+            for method in ['eom', 'leaf']:
+                self.check_fitpredict_model(HDBSCAN(cluster_selection_method=method), 'hdbscan.json', self.X)
+
+    def test_hdbscan_algorithm(self):
+        if 'HDBSCAN' in __optionals__:
+            for algorithm in ['best', 'generic', 'prims_kdtree', 'prims_balltree', 'boruvka_kdtree', 'boruvka_balltree']:
+                self.check_fitpredict_model(HDBSCAN(algorithm=algorithm), 'hdbscan.json', self.X)
+
+    def test_hdbscan_metric(self):
+        if 'HDBSCAN' in __optionals__:
+            for metric in ['manhattan', 'chebyshev']:
+                self.check_fitpredict_model(HDBSCAN(metric=metric, algorithm='generic'), 'hdbscan.json', self.X)
+
+    def test_spectral_biclustering_method_svd(self):
+        n_clusters = (3, 2)
+        for method in ['bistochastic', 'scale', 'log']:
+            self.check_spectral_model(
+                SpectralBiclustering(n_clusters=n_clusters, method=method, random_state=1234),
+                'spectral-biclus.json', n_clusters)
+        for svd_method in ['randomized', 'arpack']:
+            self.check_spectral_model(
+                SpectralBiclustering(n_clusters=n_clusters, method='log', svd_method=svd_method, random_state=1234),
+                'spectral-biclus.json', n_clusters)
+
+    def test_spectral_coclustering_svd_method(self):
+        n_clusters = 4
+        for svd_method in ['randomized', 'arpack']:
+            self.check_spectral_model(
+                SpectralCoclustering(n_clusters=n_clusters, svd_method=svd_method, random_state=1234),
+                'spectral-coclus.json', n_clusters)
+
+    def test_float32_input(self):
+        X32 = self.simple_X.astype(np.float32)
+        self.check_fitpredict_model(KMeans(n_clusters=self.n_centers, random_state=1234, n_init=10), 'kmeans.json', self.X.astype(np.float32))
+        self.check_fitpredict_model(DBSCAN(), 'dbscan.json', X32)
+        self.check_fitpredict_model(AgglomerativeClustering(n_clusters=2), 'agglomerative-clustering.json', X32)
