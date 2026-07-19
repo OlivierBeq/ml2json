@@ -53,11 +53,12 @@ class TestAPI(unittest.TestCase):
     def test_dict_vectorization(self):
         self.check_model(DictVectorizer(), 'dict-vectorizer.json')
         self.check_model(DictVectorizer(sparse=False), 'dict-vectorizer.json')
+        self.check_model(DictVectorizer(separator=':'), 'dict-vectorizer.json')
+        self.check_model(DictVectorizer(sort=False), 'dict-vectorizer.json')
+        self.check_model(DictVectorizer(dtype=np.float32), 'dict-vectorizer.json')
+        self.check_model(DictVectorizer(dtype=np.int64), 'dict-vectorizer.json')
 
-    def test_feature_hasher(self):
-        data = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'd': 1}, {'b': 1, 'e': 5}]
-
-        model = FeatureHasher(n_features=8)
+    def check_feature_hasher(self, model, data):
         expected_t = model.transform(data)
 
         serialized_model = ml2json.to_dict(model)
@@ -73,3 +74,23 @@ class TestAPI(unittest.TestCase):
 
         actual_t = deserialized_model.transform(data)
         np.testing.assert_array_equal(expected_t.toarray(), actual_t.toarray())
+
+    def test_feature_hasher(self):
+        data = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'd': 1}, {'b': 1, 'e': 5}]
+        self.check_feature_hasher(FeatureHasher(n_features=8), data)
+
+    def test_feature_hasher_alternate_sign_false(self):
+        data = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'd': 1}, {'b': 1, 'e': 5}]
+        self.check_feature_hasher(FeatureHasher(n_features=8, alternate_sign=False), data)
+
+    def test_feature_hasher_pair_input(self):
+        data = [[('a', 1), ('b', 2), ('c', 3)], [('a', 4), ('d', 1)], [('b', 1), ('e', 5)]]
+        self.check_feature_hasher(FeatureHasher(n_features=8, input_type='pair'), data)
+
+    def test_feature_hasher_string_input(self):
+        data = [['a', 'b', 'c'], ['a', 'd'], ['b', 'e']]
+        self.check_feature_hasher(FeatureHasher(n_features=8, input_type='string'), data)
+
+    def test_feature_hasher_int32_dtype(self):
+        data = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'd': 1}, {'b': 1, 'e': 5}]
+        self.check_feature_hasher(FeatureHasher(n_features=8, dtype=np.int32), data)
