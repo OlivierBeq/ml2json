@@ -487,3 +487,102 @@ class TestAPI(unittest.TestCase):
 
     def test_radius_neighbors_regressor(self):
         self.check_model(RadiusNeighborsRegressor(radius=1e6), 'radius-neighbors-regressor.json')
+
+    def test_lasso_ridge_elasticnet_get_params_roundtrip(self):
+        # Regression test: deserialize_{lasso,ridge,elastic}_regressor used to call
+        # Cls(model_dict['params']) (positional) instead of Cls(**model_dict['params']),
+        # which silently set `alpha` to the whole params dict (Lasso/Ridge) or wrapped
+        # it in a 0-d ndarray (ElasticNet). predict() didn't catch this since coef_/
+        # intercept_ are set directly, but get_params()/repr()/re-fitting were broken.
+        for model in [Lasso(alpha=0.1), Ridge(alpha=0.5), ElasticNet(alpha=0.1, l1_ratio=0.3)]:
+            model.fit(self.X, self.y)
+            deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+            self.assertEqual(model.get_params(), deserialized_model.get_params())
+            self.assertIsInstance(deserialized_model.alpha, float)
+
+    def test_ridge_every_solver(self):
+        for solver in ['auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga', 'lbfgs']:
+            kwargs = {'positive': True} if solver == 'lbfgs' else {}
+            self.check_model(Ridge(alpha=0.5, solver=solver, **kwargs), 'ridge-solver.json')
+
+    def test_ridge_singular_matrix(self):
+        # More features than samples: X^T X is rank-deficient/non-invertible.
+        rng = np.random.RandomState(0)
+        X_wide = rng.rand(10, 30)
+        y_wide = rng.rand(10)
+        for solver in ['auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg']:
+            model = Ridge(alpha=1.0, solver=solver)
+            model.fit(X_wide, y_wide)
+            expected = model.predict(X_wide)
+            deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+            np.testing.assert_array_almost_equal(expected, deserialized_model.predict(X_wide))
+
+    def test_lasso_elasticnet_l1_ratio_and_positive(self):
+        for l1_ratio in [0.0, 0.3, 1.0]:
+            self.check_model(ElasticNet(alpha=0.1, l1_ratio=l1_ratio), 'elasticnet-l1ratio.json')
+        self.check_positive_model(Lasso(alpha=0.1, positive=True), 'lasso-positive.json')
+        self.check_positive_model(ElasticNet(alpha=0.1, positive=True), 'elasticnet-positive.json')
+
+    def test_sgd_regressor_loss_penalty_sweep(self):
+        for loss in ['squared_error', 'huber', 'epsilon_insensitive', 'squared_epsilon_insensitive']:
+            for penalty in ['l2', 'l1', 'elasticnet', None]:
+                self.check_model(SGDRegressor(loss=loss, penalty=penalty, random_state=0, max_iter=2000),
+                                 'sgd-regressor-sweep.json')
+
+    def test_svr_every_kernel(self):
+        for kernel in ['linear', 'poly', 'rbf', 'sigmoid']:
+            self.check_model(SVR(kernel=kernel), 'svr-kernel.json')
+
+    def test_svr_precomputed_kernel(self):
+        # A precomputed (symmetric Gram matrix) kernel.
+        gram = self.X @ self.X.T
+        model = SVR(kernel='precomputed')
+        model.fit(gram, self.y)
+        expected = model.predict(gram)
+        deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+        np.testing.assert_array_almost_equal(expected, deserialized_model.predict(gram))
+
+    def test_nu_svr_every_kernel(self):
+        for kernel in ['linear', 'poly', 'rbf', 'sigmoid']:
+            self.check_model(NuSVR(kernel=kernel), 'nu-svr-kernel.json')
+
+    def test_linear_svr_loss_variants(self):
+        for loss in ['epsilon_insensitive', 'squared_epsilon_insensitive']:
+            self.check_model(LinearSVR(random_state=0, max_iter=5000, loss=loss), 'linear-svr-loss.json')
+
+    def test_float32_dtype(self):
+        X32 = self.X.astype(np.float32)
+        y32 = self.y.astype(np.float32)
+        for model in [Ridge(alpha=0.5), Lasso(alpha=0.1), RandomForestRegressor(n_estimators=10, random_state=0)]:
+            model.fit(X32, y32)
+            expected = model.predict(X32)
+            deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+            np.testing.assert_array_almost_equal(expected, deserialized_model.predict(X32))
+
+    def test_int_dtype_input(self):
+        X_int = (self.X * 100).astype(np.int64)
+        y_int = (self.y).astype(np.int64)
+        model = Ridge(alpha=0.5)
+        model.fit(X_int, y_int)
+        expected = model.predict(X_int)
+        deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+        np.testing.assert_array_almost_equal(expected, deserialized_model.predict(X_int))
+
+    def test_gradient_boosting_regressor_loss_variants(self):
+        for loss in ['squared_error', 'absolute_error', 'huber', 'quantile']:
+            self.check_model(GradientBoostingRegressor(n_estimators=10, loss=loss, random_state=0),
+                             'gbr-loss.json')
+
+    def test_tree_ensemble_ccp_alpha(self):
+        self.check_model(DecisionTreeRegressor(ccp_alpha=0.01), 'dtr-ccp-alpha.json')
+        self.check_model(RandomForestRegressor(n_estimators=10, ccp_alpha=0.01, random_state=0), 'rfr-ccp-alpha.json')
+
+    def test_hist_gradient_boosting_regression_loss_variants(self):
+        for loss in ['squared_error', 'absolute_error', 'poisson', 'quantile']:
+            y_ = self.y_pos if loss == 'poisson' else self.y
+            kwargs = {'quantile': 0.5} if loss == 'quantile' else {}
+            model = HistGradientBoostingRegressor(max_iter=10, loss=loss, random_state=0, **kwargs)
+            model.fit(self.X, y_)
+            expected = model.predict(self.X)
+            deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+            np.testing.assert_array_almost_equal(expected, deserialized_model.predict(self.X))

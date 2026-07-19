@@ -36,9 +36,13 @@ from .utils import csr
 
 
 def serialize_linear_regressor(model):
+    # coef_/intercept_ keep the dtype of the training data (e.g. float32) - a bare
+    # .tolist()/np.array() round-trip always upcasts back to float64, which then
+    # changes predict()'s output slightly for float32-fitted models since numpy
+    # promotes the float32 X to float64 during the dot product.
     serialized_model = {
-        'coef_': model.coef_.tolist(),
-        'intercept_': model.intercept_.tolist(),
+        'coef_': _base.serialize_numpy_array(model.coef_),
+        'intercept_': _base.serialize_numpy_array(np.asarray(model.intercept_)),
         'params': model.get_params()
     }
 
@@ -48,15 +52,17 @@ def serialize_linear_regressor(model):
 def deserialize_linear_regressor(model_dict):
     model = LinearRegression(**model_dict['params'])
 
-    model.coef_ = np.array(model_dict['coef_'])
-    model.intercept_ = np.array(model_dict['intercept_'])
+    model.coef_ = _base.deserialize_numpy_array(model_dict['coef_'])
+    model.intercept_ = _base.deserialize_numpy_array(model_dict['intercept_'])
 
     return model
 
 
 def serialize_lasso_regressor(model):
+    # See serialize_linear_regressor: preserve coef_'s dtype (e.g. float32) instead
+    # of always upcasting to float64 on deserialize.
     serialized_model = {
-        'coef_': model.coef_.tolist(),
+        'coef_': _base.serialize_numpy_array(model.coef_),
         'params': model.get_params()
     }
 
@@ -74,9 +80,9 @@ def serialize_lasso_regressor(model):
 
 
 def deserialize_lasso_regressor(model_dict):
-    model = Lasso(model_dict['params'])
+    model = Lasso(**model_dict['params'])
 
-    model.coef_ = np.array(model_dict['coef_'])
+    model.coef_ = _base.deserialize_numpy_array(model_dict['coef_'])
 
     if isinstance(model_dict['n_iter_'], list):
         model.n_iter_ = np.array(model_dict['n_iter_'])
@@ -92,8 +98,10 @@ def deserialize_lasso_regressor(model_dict):
 
 
 def serialize_elastic_regressor(model):
+    # See serialize_linear_regressor: preserve coef_'s dtype (e.g. float32) instead
+    # of always upcasting to float64 on deserialize.
     serialized_model = {
-        'coef_': model.coef_.tolist(),
+        'coef_': _base.serialize_numpy_array(model.coef_),
         'alpha': model.alpha,
         'params': model.get_params()
     }
@@ -110,10 +118,9 @@ def serialize_elastic_regressor(model):
 
 
 def deserialize_elastic_regressor(model_dict):
-    model = ElasticNet(model_dict['params'])
+    model = ElasticNet(**model_dict['params'])
 
-    model.coef_ = np.array(model_dict['coef_'])
-    model.alpha = np.array(model_dict['alpha'])
+    model.coef_ = _base.deserialize_numpy_array(model_dict['coef_'])
 
     if isinstance(model_dict['n_iter_'], list):
         model.n_iter_ = np.array(model_dict['n_iter_'])
@@ -127,8 +134,10 @@ def deserialize_elastic_regressor(model_dict):
 
 
 def serialize_ridge_regressor(model):
+    # See serialize_linear_regressor: preserve coef_'s dtype (e.g. float32) instead
+    # of always upcasting to float64 on deserialize.
     serialized_model = {
-        'coef_': model.coef_.tolist(),
+        'coef_': _base.serialize_numpy_array(model.coef_),
         'params': model.get_params()
     }
 
@@ -144,9 +153,9 @@ def serialize_ridge_regressor(model):
 
 
 def deserialize_ridge_regressor(model_dict):
-    model = Ridge(model_dict['params'])
+    model = Ridge(**model_dict['params'])
 
-    model.coef_ = np.array(model_dict['coef_'])
+    model.coef_ = _base.deserialize_numpy_array(model_dict['coef_'])
 
     if 'n_iter_' in model_dict:
         model.n_iter_ = np.array(model_dict['n_iter_'])
@@ -173,17 +182,20 @@ def serialize_svr(model):
     if isinstance(model.support_vectors_, sp.sparse.csr_matrix):
         serialized_model['support_vectors_'] = csr.serialize_csr_matrix(model.support_vectors_)
     elif isinstance(model.support_vectors_, np.ndarray):
-        serialized_model['support_vectors_'] = model.support_vectors_.tolist()
+        # .tolist() collapses a (0, 0) array (e.g. kernel='precomputed', which never
+        # populates support_vectors_) down to [], losing the second dimension - the
+        # shape-preserving generic array serializer keeps it reconstructible.
+        serialized_model['support_vectors_'] = _base.serialize_numpy_array(model.support_vectors_)
 
     if isinstance(model.dual_coef_, sp.sparse.csr_matrix):
         serialized_model['dual_coef_'] = csr.serialize_csr_matrix(model.dual_coef_)
     elif isinstance(model.dual_coef_, np.ndarray):
-        serialized_model['dual_coef_'] = model.dual_coef_.tolist()
+        serialized_model['dual_coef_'] = _base.serialize_numpy_array(model.dual_coef_)
 
     if isinstance(model._dual_coef_, sp.sparse.csr_matrix):
         serialized_model['_dual_coef_'] = csr.serialize_csr_matrix(model._dual_coef_)
     elif isinstance(model._dual_coef_, np.ndarray):
-        serialized_model['_dual_coef_'] = model._dual_coef_.tolist()
+        serialized_model['_dual_coef_'] = _base.serialize_numpy_array(model._dual_coef_)
 
     if hasattr(model, 'class_weight_') and sklearn.__version__ < '1.2.0':
             serialized_model['class_weight_'] = model.class_weight_.tolist(),
@@ -212,18 +224,18 @@ def deserialize_svr(model_dict):
         model.support_vectors_ = csr.deserialize_csr_matrix(model_dict['support_vectors_'])
         model._sparse = True
     else:
-        model.support_vectors_ = np.array(model_dict['support_vectors_']).astype(np.float64)
+        model.support_vectors_ = _base.deserialize_numpy_array(model_dict['support_vectors_'])
         model._sparse = False
 
     if 'meta' in model_dict['dual_coef_'] and model_dict['dual_coef_']['meta'] == 'csr':
         model.dual_coef_ = csr.deserialize_csr_matrix(model_dict['dual_coef_'])
     else:
-        model.dual_coef_ = np.array(model_dict['dual_coef_']).astype(np.float64)
+        model.dual_coef_ = _base.deserialize_numpy_array(model_dict['dual_coef_'])
 
     if 'meta' in model_dict['_dual_coef_'] and model_dict['_dual_coef_']['meta'] == 'csr':
         model._dual_coef_ = csr.deserialize_csr_matrix(model_dict['_dual_coef_'])
     else:
-        model._dual_coef_ = np.array(model_dict['_dual_coef_']).astype(np.float64)
+        model._dual_coef_ = _base.deserialize_numpy_array(model_dict['_dual_coef_'])
 
     if 'class_weight_' in model_dict:
         model.class_weight_ = np.array(model_dict['class_weight_']).astype(np.float64)
