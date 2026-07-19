@@ -113,20 +113,63 @@ class TestAPI(unittest.TestCase):
             np.testing.assert_array_equal(expected_fp, actual_fp)
 
     def test_cca(self):
-        self.check_transform_model(CCA(), 'cca.json', self.X, self.y)
-        self.check_fittransform_model(CCA(), 'cca.json', self.X, self.y)
-        self.check_predict_model(CCA(), 'cca.json', self.X, self.y)
+        for model in [CCA(), CCA(n_components=1), CCA(n_components=4),
+                     CCA(scale=False), CCA(max_iter=5000, tol=1e-9)]:
+            self.check_transform_model(model, 'cca.json', self.X, self.y)
+            self.check_fittransform_model(model, 'cca.json', self.X, self.y)
+            self.check_predict_model(model, 'cca.json', self.X, self.y)
 
     def test_pls_canonical(self):
-        self.check_transform_model(PLSCanonical(), 'pls-canonical.json', self.X, self.y)
-        self.check_fittransform_model(PLSCanonical(), 'pls-canonical.json', self.X, self.y)
-        self.check_predict_model(PLSCanonical(), 'pls-canonical.json', self.X, self.y)
+        for model in [PLSCanonical(), PLSCanonical(algorithm='svd'),
+                     PLSCanonical(algorithm='nipals'), PLSCanonical(n_components=1),
+                     PLSCanonical(n_components=4), PLSCanonical(scale=False)]:
+            self.check_transform_model(model, 'pls-canonical.json', self.X, self.y)
+            self.check_fittransform_model(model, 'pls-canonical.json', self.X, self.y)
+            self.check_predict_model(model, 'pls-canonical.json', self.X, self.y)
 
     def test_pls_regression(self):
-        self.check_transform_model(PLSRegression(), 'pls-regression.json', self.X, self.y)
-        self.check_fittransform_model(PLSRegression(), 'pls-regression.json', self.X, self.y)
-        self.check_predict_model(PLSRegression(), 'pls-regression.json', self.X, self.y)
+        for model in [PLSRegression(), PLSRegression(scale=False),
+                     PLSRegression(n_components=1), PLSRegression(n_components=4),
+                     PLSRegression(max_iter=5000, tol=1e-9)]:
+            self.check_transform_model(model, 'pls-regression.json', self.X, self.y)
+            self.check_fittransform_model(model, 'pls-regression.json', self.X, self.y)
+            self.check_predict_model(model, 'pls-regression.json', self.X, self.y)
+
+        # single-target y still produces 2D internal arrays but exercises the
+        # coef_ shape (n_features, 1) path
+        self.check_transform_model(PLSRegression(), 'pls-regression.json', self.X, self.y[:, 0])
+        self.check_predict_model(PLSRegression(), 'pls-regression.json', self.X, self.y[:, 0])
 
     def test_pls_svd(self):
-        self.check_transform_model(PLSSVD(), 'pls-svd.json', self.X, self.y)
-        self.check_fittransform_model(PLSSVD(), 'pls-svd.json', self.X, self.y)
+        for model in [PLSSVD(), PLSSVD(n_components=1), PLSSVD(n_components=4),
+                     PLSSVD(scale=False)]:
+            self.check_transform_model(model, 'pls-svd.json', self.X, self.y)
+            self.check_fittransform_model(model, 'pls-svd.json', self.X, self.y)
+
+    def test_wide_data_rank_deficient(self):
+        # More features than samples forces a rank-deficient X^T Y cross-covariance
+        # matrix - exercise the non-invertible-matrix path for each estimator.
+        rng = np.random.RandomState(0)
+        n_samples, n_features = 8, 20
+        X_wide = rng.normal(size=(n_samples, n_features))
+        y_wide = rng.normal(size=(n_samples, 3))
+
+        for model, name in [(CCA(n_components=2), 'cca-wide.json'),
+                            (PLSCanonical(n_components=2), 'pls-canonical-wide.json'),
+                            (PLSRegression(n_components=2), 'pls-regression-wide.json')]:
+            self.check_transform_model(model, name, X_wide, y_wide)
+            self.check_predict_model(model, name, X_wide, y_wide)
+
+        self.check_transform_model(PLSSVD(n_components=2), 'pls-svd-wide.json', X_wide, y_wide)
+
+    def test_float32_input(self):
+        X32 = self.X.astype(np.float32)
+        y32 = self.y.astype(np.float32)
+
+        for model, name in [(CCA(), 'cca-f32.json'),
+                            (PLSCanonical(), 'pls-canonical-f32.json'),
+                            (PLSRegression(), 'pls-regression-f32.json')]:
+            self.check_transform_model(model, name, X32, y32)
+            self.check_predict_model(model, name, X32, y32)
+
+        self.check_transform_model(PLSSVD(), 'pls-svd-f32.json', X32, y32)
