@@ -521,6 +521,204 @@ class TestAPI(unittest.TestCase):
         self.check_model(NearestCentroid(), 'nearest-centroid.json')
         self.check_sparse_model(NearestCentroid(), 'nearest-centroid.json')
 
+    def test_logistic_regression_solvers(self):
+        for solver, penalty in [('lbfgs', 'l2'), ('lbfgs', None),
+                                ('newton-cg', 'l2'), ('newton-cg', None),
+                                ('newton-cholesky', 'l2'), ('newton-cholesky', None),
+                                ('sag', 'l2'), ('sag', None),
+                                ('saga', 'l1'), ('saga', 'l2'), ('saga', None)]:
+            model = LogisticRegression(solver=solver, penalty=penalty, max_iter=2000)
+            self.check_model(model, 'lr-solver.json')
+
+    def test_logistic_regression_liblinear_binary(self):
+        # liblinear doesn't support multiclass (n_classes >= 3), unlike every
+        # other solver above - exercised separately on a binary subset.
+        binary_mask = self.y != 2
+        X_binary, y_binary = self.X[binary_mask], self.y[binary_mask]
+        for penalty in ['l1', 'l2']:
+            model = LogisticRegression(solver='liblinear', penalty=penalty, max_iter=2000)
+            model.fit(X_binary, y_binary)
+            expected = model.predict(X_binary)
+
+            deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+            np.testing.assert_array_equal(expected, deserialized_model.predict(X_binary))
+
+    def test_logistic_regression_elasticnet(self):
+        for l1_ratio in [0.0, 0.25, 0.5, 0.75, 1.0]:
+            model = LogisticRegression(solver='saga', penalty='elasticnet', l1_ratio=l1_ratio, max_iter=2000)
+            self.check_model(model, 'lr-elasticnet.json')
+
+    def test_logistic_regression_class_weight(self):
+        for class_weight in ['balanced', {0: 1.0, 1: 2.0, 2: 0.5}]:
+            model = LogisticRegression(class_weight=class_weight, max_iter=2000)
+            self.check_model(model, 'lr-class-weight.json')
+
+    def test_logistic_regression_dtypes(self):
+        for dtype in [np.float32, np.float64, np.int64]:
+            model = LogisticRegression(max_iter=2000)
+            model.fit(self.X.astype(dtype), self.y)
+            expected = model.predict(self.X.astype(dtype))
+            deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+            np.testing.assert_array_equal(expected, deserialized_model.predict(self.X.astype(dtype)))
+
+    def test_lda_solvers(self):
+        for solver, shrinkage in [('svd', None), ('lsqr', None), ('lsqr', 'auto'), ('lsqr', 0.5),
+                                  ('eigen', None), ('eigen', 'auto'), ('eigen', 0.5)]:
+            model = discriminant_analysis.LinearDiscriminantAnalysis(solver=solver, shrinkage=shrinkage,
+                                                                      store_covariance=True)
+            self.check_model(model, 'lda-solver.json')
+
+    def test_lda_singular_covariance(self):
+        # More features than samples-per-class forces a singular/non-invertible
+        # within-class scatter matrix; shrinkage regularizes it back to
+        # invertible. svd doesn't support shrinkage so it's excluded here.
+        rng = np.random.RandomState(0)
+        X = rng.randn(9, 15)
+        y = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2])
+        for solver, shrinkage in [('lsqr', 'auto'), ('eigen', 'auto'), ('lsqr', 1.0), ('eigen', 1.0)]:
+            model = discriminant_analysis.LinearDiscriminantAnalysis(solver=solver, shrinkage=shrinkage,
+                                                                      store_covariance=True)
+            model.fit(X, y)
+            expected = model.predict(X)
+
+            deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+            np.testing.assert_array_equal(expected, deserialized_model.predict(X))
+
+            # covariance_ is symmetric by construction - confirm the round-trip
+            # preserves both that symmetry and the exact values.
+            np.testing.assert_array_almost_equal(model.covariance_, model.covariance_.T)
+            np.testing.assert_array_almost_equal(model.covariance_, deserialized_model.covariance_)
+
+    def test_qda_reg_param(self):
+        for reg_param in [0.0, 0.1, 0.5, 1.0]:
+            model = discriminant_analysis.QuadraticDiscriminantAnalysis(reg_param=reg_param, store_covariance=True)
+            self.check_model(model, 'qda-reg.json')
+
+    def test_qda_near_singular_covariance(self):
+        # Unlike LDA, QDA (both solvers) requires n_samples_per_class > n_features
+        # outright - it raises LinAlgError rather than leaning on reg_param when
+        # that's violated, even at reg_param=1.0. So this uses the smallest
+        # n_samples_per_class QDA still accepts (n_features + 1) to exercise a
+        # near-singular, ill-conditioned per-class covariance instead.
+        rng = np.random.RandomState(0)
+        X = rng.randn(12, 3)
+        y = np.array([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2])
+        model = discriminant_analysis.QuadraticDiscriminantAnalysis(reg_param=0.5, store_covariance=True)
+        model.fit(X, y)
+        expected = model.predict(X)
+
+        deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+        np.testing.assert_array_equal(expected, deserialized_model.predict(X))
+
+        for cov, cov2 in zip(model.covariance_, deserialized_model.covariance_):
+            np.testing.assert_array_almost_equal(cov, cov.T)
+            np.testing.assert_array_almost_equal(cov, cov2)
+
+    def test_nb_sample_weight_and_priors(self):
+        sample_weight = np.abs(np.random.RandomState(0).randn(len(self.y))) + 0.1
+        self.check_model(GaussianNB(priors=[0.2, 0.3, 0.5]), 'gnb-priors.json')
+
+        model = BernoulliNB()
+        model.fit(self.X, self.y, sample_weight=sample_weight)
+        expected = model.predict(self.X)
+        deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+        np.testing.assert_array_equal(expected, deserialized_model.predict(self.X))
+
+        model = MultinomialNB(alpha=0.0)
+        model.fit(np.absolute(self.X), self.y)
+        expected = model.predict(np.absolute(self.X))
+        deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+        np.testing.assert_array_equal(expected, deserialized_model.predict(np.absolute(self.X)))
+
+    def test_svm_kernels(self):
+        for kernel in ['linear', 'poly', 'rbf', 'sigmoid']:
+            model = svm.SVC(kernel=kernel, gamma='scale')
+            self.check_model(model, 'svm-kernel.json')
+
+    def test_svm_precomputed_kernel(self):
+        # A precomputed Gram matrix is symmetric by construction.
+        gram = self.X @ self.X.T
+        model = svm.SVC(kernel='precomputed')
+        model.fit(gram, self.y)
+        expected = model.predict(gram)
+
+        deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+        np.testing.assert_array_equal(expected, deserialized_model.predict(gram))
+
+    def test_svm_probability_and_decision_shape(self):
+        for kwargs in [{'probability': True}, {'decision_function_shape': 'ovo'},
+                      {'class_weight': 'balanced'}, {'class_weight': {0: 1.0, 1: 2.0, 2: 0.5}}]:
+            model = svm.SVC(**kwargs)
+            model.fit(self.X, self.y)
+            expected_pred = model.predict(self.X)
+            expected_dec = model.decision_function(self.X)
+
+            deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+            np.testing.assert_array_equal(expected_pred, deserialized_model.predict(self.X))
+            np.testing.assert_array_almost_equal(expected_dec, deserialized_model.decision_function(self.X))
+
+            if kwargs.get('probability'):
+                np.testing.assert_array_almost_equal(model.predict_proba(self.X),
+                                                      deserialized_model.predict_proba(self.X))
+
+    def test_perceptron_penalties(self):
+        for penalty in ['l1', 'l2', 'elasticnet', None]:
+            model = Perceptron(penalty=penalty)
+            self.check_model(model, 'perceptron-penalty.json')
+
+    def test_mlp_activations_and_solvers(self):
+        for activation in ['identity', 'logistic', 'tanh', 'relu']:
+            model = MLPClassifier(solver='lbfgs', activation=activation, hidden_layer_sizes=(5,), random_state=1,
+                                  max_iter=500)
+            self.check_model(model, 'mlp-activation.json')
+
+        for solver in ['lbfgs', 'sgd', 'adam']:
+            model = MLPClassifier(solver=solver, hidden_layer_sizes=(5,), random_state=1, max_iter=500)
+            self.check_model(model, 'mlp-solver.json')
+
+        model = MLPClassifier(solver='sgd', hidden_layer_sizes=(5, 3), early_stopping=True,
+                              validation_fraction=0.2, random_state=1, max_iter=500)
+        self.check_model(model, 'mlp-early-stopping.json')
+
+    def test_decision_tree_ccp_alpha_and_class_weight(self):
+        for kwargs in [{'ccp_alpha': 0.01}, {'class_weight': 'balanced'},
+                      {'class_weight': {0: 1.0, 1: 2.0, 2: 0.5}}]:
+            model = DecisionTreeClassifier(random_state=0, **kwargs)
+            self.check_model(model, 'dt-ccp.json')
+
+    def test_random_forest_float32_input(self):
+        model = RandomForestClassifier(n_estimators=10, max_depth=5, random_state=0)
+        model.fit(self.X.astype(np.float32), self.y)
+        expected = model.predict(self.X.astype(np.float32))
+
+        deserialized_model = ml2json.from_dict(ml2json.to_dict(model))
+        np.testing.assert_array_equal(expected, deserialized_model.predict(self.X.astype(np.float32)))
+
+    def test_xgboost_classifier_objectives(self):
+        if 'XGBClassifier' in __optionals__:
+            for kwargs in [{'booster': 'gbtree'}, {'booster': 'dart'}, {'booster': 'gblinear'},
+                          {'tree_method': 'hist'}]:
+                self.check_model(XGBClassifier(**kwargs), 'xgb-classifier-obj.json')
+
+    def test_lightgbm_classifier_boosting_type(self):
+        if 'LGBMClassifier' in __optionals__:
+            for boosting_type in ['gbdt', 'dart']:
+                self.check_model(LGBMClassifier(boosting_type=boosting_type, n_estimators=10, verbosity=-1),
+                                 'lightgbm-classifier-boost.json')
+
+    def test_catboost_classifier_multiclass(self):
+        if 'CatBoostClassifier' in __optionals__:
+            X, y = make_classification(n_samples=60, n_features=4, n_classes=4, n_informative=4, n_redundant=0,
+                                       random_state=0)
+            model = CatBoostClassifier(allow_writing_files=False, verbose=False, loss_function='MultiClass')
+            model.fit(X, y)
+            pool = Pool(data=X, label=y, feature_names=list(range(X.shape[1])))
+
+            serialized_model = ml2json.to_dict(model, pool)
+            deserialized_model = ml2json.from_dict(serialized_model)
+
+            np.testing.assert_array_almost_equal(model.predict(X), deserialized_model.predict(X))
+
     def test_bernoulli_rbm(self):
         model = BernoulliRBM(n_components=5, random_state=0)
         model.fit(np.absolute(self.X))

@@ -60,7 +60,7 @@ def serialize_logistic_regression(model):
 
 
 def deserialize_logistic_regression(model_dict):
-    model = LogisticRegression(model_dict['params'])
+    model = LogisticRegression(**model_dict['params'])
 
     model.classes_ = np.array(model_dict['classes_'])
     model.coef_ = np.array(model_dict['coef_'])
@@ -205,14 +205,20 @@ def serialize_lda(model):
     serialized_model = {
         'coef_': model.coef_.tolist(),
         'intercept_': model.intercept_.tolist(),
-        'explained_variance_ratio_': model.explained_variance_ratio_.tolist(),
         'means_': model.means_.tolist(),
         'priors_': model.priors_.tolist(),
-        'scalings_': model.scalings_.tolist(),
-        'xbar_': model.xbar_.tolist(),
         'classes_': model.classes_.tolist(),
         'params': model.get_params()
     }
+    # xbar_ is only set for solver='svd'; scalings_/explained_variance_ratio_ only
+    # for solver in ('svd', 'eigen') - solver='lsqr' computes none of the three.
+    if 'xbar_' in model.__dict__:
+        serialized_model['xbar_'] = model.xbar_.tolist()
+    if 'scalings_' in model.__dict__:
+        serialized_model['scalings_'] = model.scalings_.tolist()
+    if 'explained_variance_ratio_' in model.__dict__:
+        serialized_model['explained_variance_ratio_'] = model.explained_variance_ratio_.tolist()
+
     if 'covariance_' in model.__dict__:
         serialized_model['covariance_'] = model.covariance_.tolist()
 
@@ -227,12 +233,17 @@ def deserialize_lda(model_dict):
 
     model.coef_ = np.array(model_dict['coef_']).astype(np.float64)
     model.intercept_ = np.array(model_dict['intercept_']).astype(np.float64)
-    model.explained_variance_ratio_ = np.array(model_dict['explained_variance_ratio_']).astype(np.float64)
+    if 'explained_variance_ratio_' in model_dict:
+        model.explained_variance_ratio_ = np.array(model_dict['explained_variance_ratio_']).astype(np.float64)
     model.means_ = np.array(model_dict['means_']).astype(np.float64)
     model.priors_ = np.array(model_dict['priors_']).astype(np.float64)
-    model.scalings_ = np.array(model_dict['scalings_']).astype(np.float64)
-    model.xbar_ = np.array(model_dict['xbar_']).astype(np.float64)
+    if 'scalings_' in model_dict:
+        model.scalings_ = np.array(model_dict['scalings_']).astype(np.float64)
+    if 'xbar_' in model_dict:
+        model.xbar_ = np.array(model_dict['xbar_']).astype(np.float64)
     model.classes_ = np.array(model_dict['classes_']).astype(np.int64)
+    if 'covariance_' in model_dict:
+        model.covariance_ = np.array(model_dict['covariance_']).astype(np.float64)
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
@@ -250,7 +261,8 @@ def serialize_qda(model):
         'params': model.get_params()
     }
     if 'covariance_' in model.__dict__:
-        serialized_model['covariance_'] = model.covariance_.tolist()
+        # A list of one (n_features, n_features) array per class, not a single array.
+        serialized_model['covariance_'] = [array.tolist() for array in model.covariance_]
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
@@ -266,6 +278,8 @@ def deserialize_qda(model_dict):
     model.scalings_ = np.array(model_dict['scalings_']).astype(np.float64)
     model.rotations_ = np.array(model_dict['rotations_']).astype(np.float64)
     model.classes_ = np.array(model_dict['classes_']).astype(np.int64)
+    if 'covariance_' in model_dict:
+        model.covariance_ = [np.array(array).astype(np.float64) for array in model_dict['covariance_']]
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
@@ -291,17 +305,20 @@ def serialize_svm(model):
     if isinstance(model.support_vectors_, sp.sparse.csr_matrix):
         serialized_model['support_vectors_'] = csr.serialize_csr_matrix(model.support_vectors_)
     elif isinstance(model.support_vectors_, np.ndarray):
-        serialized_model['support_vectors_'] = model.support_vectors_.tolist()
+        # .tolist() collapses a (0, 0) array (e.g. kernel='precomputed', which never
+        # populates support_vectors_) down to [], losing the second dimension - the
+        # shape-preserving generic array serializer keeps it reconstructible.
+        serialized_model['support_vectors_'] = _base.serialize_numpy_array(model.support_vectors_)
 
     if isinstance(model.dual_coef_, sp.sparse.csr_matrix):
         serialized_model['dual_coef_'] = csr.serialize_csr_matrix(model.dual_coef_)
     elif isinstance(model.dual_coef_, np.ndarray):
-        serialized_model['dual_coef_'] = model.dual_coef_.tolist()
+        serialized_model['dual_coef_'] = _base.serialize_numpy_array(model.dual_coef_)
 
     if isinstance(model._dual_coef_, sp.sparse.csr_matrix):
         serialized_model['_dual_coef_'] = csr.serialize_csr_matrix(model._dual_coef_)
     elif isinstance(model._dual_coef_, np.ndarray):
-        serialized_model['_dual_coef_'] = model._dual_coef_.tolist()
+        serialized_model['_dual_coef_'] = _base.serialize_numpy_array(model._dual_coef_)
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
@@ -328,18 +345,18 @@ def deserialize_svm(model_dict):
         model.support_vectors_ = csr.deserialize_csr_matrix(model_dict['support_vectors_'])
         model._sparse = True
     else:
-        model.support_vectors_ = np.array(model_dict['support_vectors_']).astype(np.float64)
+        model.support_vectors_ = _base.deserialize_numpy_array(model_dict['support_vectors_'])
         model._sparse = False
 
     if 'meta' in model_dict['dual_coef_'] and model_dict['dual_coef_']['meta'] == 'csr':
         model.dual_coef_ = csr.deserialize_csr_matrix(model_dict['dual_coef_'])
     else:
-        model.dual_coef_ = np.array(model_dict['dual_coef_']).astype(np.float64)
+        model.dual_coef_ = _base.deserialize_numpy_array(model_dict['dual_coef_'])
 
     if 'meta' in model_dict['_dual_coef_'] and model_dict['_dual_coef_']['meta'] == 'csr':
         model._dual_coef_ = csr.deserialize_csr_matrix(model_dict['_dual_coef_'])
     else:
-        model._dual_coef_ = np.array(model_dict['_dual_coef_']).astype(np.float64)
+        model._dual_coef_ = _base.deserialize_numpy_array(model_dict['_dual_coef_'])
 
     if 'feature_names_in_' in model_dict.keys():
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
