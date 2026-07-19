@@ -174,6 +174,20 @@ if 'CatBoostPool' in __optionals__:
                 "public accessor to recover the original raw values for those columns "
                 "from a constructed Pool."
             )
+        if pool.get_group_id_hash() is not None:
+            raise ValueError(
+                "Cannot serialize this catboost.Pool: it has group_id (and/or "
+                "group_weight/subgroup_id, which are only ever set alongside group_id) "
+                "set, and CatBoost's Python API only exposes a hash of group_id "
+                "(get_group_id_hash()), not the original values - there is no public "
+                "accessor to recover them from a constructed Pool."
+            )
+        if pool.num_pairs():
+            raise ValueError(
+                "Cannot serialize this catboost.Pool: it has pairs set, and CatBoost's "
+                "Python API exposes no public accessor to recover them from a "
+                "constructed Pool."
+            )
         baseline = pool.get_baseline()
         feature_names = pool.get_feature_names()
         return {
