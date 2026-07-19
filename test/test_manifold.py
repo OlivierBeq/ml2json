@@ -7,6 +7,9 @@ import numpy as np
 from sklearn.datasets import load_iris, load_digits, fetch_california_housing
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
+from sklearn.metrics import pairwise_distances
+from sklearn.metrics.pairwise import rbf_kernel
+from sklearn.neighbors import kneighbors_graph
 
 # Allow testing of additional optional dependencies
 __optionals__ = []
@@ -84,6 +87,62 @@ class TestAPI(unittest.TestCase):
     def test_spectral_embedding(self):
         self.check_model(SpectralEmbedding(affinity='nearest_neighbors', random_state=1234, n_jobs=-1), 'spectral-embedding.json', self.digit_data)
         self.check_model(SpectralEmbedding(affinity='rbf', random_state=1234, n_jobs=-1), 'spectral-embedding.json', self.iris_data)
+
+    def test_isomap_more_params(self):
+        self.check_model(Isomap(n_neighbors=20, n_components=3, eigen_solver='dense',
+                                path_method='D', p=1), 'isomap.json', self.iris_data)
+        self.check_model(Isomap(n_neighbors=20, n_components=3, eigen_solver='arpack',
+                                path_method='FW', metric='manhattan'), 'isomap.json', self.iris_data)
+        dist = pairwise_distances(self.iris_data)
+        self.check_model(Isomap(n_neighbors=20, n_components=3, metric='precomputed'),
+                         'isomap.json', dist)
+
+    def test_locally_linear_embedding_methods(self):
+        for method in ['standard', 'hessian', 'modified', 'ltsa']:
+            self.check_model(LocallyLinearEmbedding(n_neighbors=15, n_components=2, method=method,
+                                                     eigen_solver='dense'),
+                             'locally-linear-embedding.json', self.iris_data)
+        self.check_model(LocallyLinearEmbedding(n_neighbors=15, n_components=2, method='standard',
+                                                 eigen_solver='arpack', random_state=1234),
+                         'locally-linear-embedding.json', self.iris_data)
+
+    def test_mds_variants(self):
+        self.check_model(MDS(random_state=1234, metric_mds=False), 'mds.json', self.iris_data)
+        dist = pairwise_distances(self.iris_data)
+        self.check_model(MDS(random_state=1234, metric='precomputed'), 'mds.json', dist)
+        self.check_model(MDS(random_state=1234, normalized_stress=False), 'mds.json', self.iris_data)
+
+    def test_spectral_embedding_more_params(self):
+        affinity = rbf_kernel(self.iris_data)
+        self.check_model(SpectralEmbedding(affinity='precomputed', random_state=1234),
+                         'spectral-embedding.json', affinity)
+        nn_graph = kneighbors_graph(self.iris_data, n_neighbors=10, mode='distance', include_self=True)
+        self.check_model(SpectralEmbedding(affinity='precomputed_nearest_neighbors',
+                                           random_state=1234, n_neighbors=10),
+                         'spectral-embedding.json', nn_graph)
+        self.check_model(SpectralEmbedding(affinity='rbf', eigen_solver='arpack', random_state=1234),
+                         'spectral-embedding.json', self.iris_data)
+        self.check_model(SpectralEmbedding(affinity='rbf', eigen_solver='lobpcg', random_state=1234),
+                         'spectral-embedding.json', self.iris_data)
+
+    def test_tsne_more_params(self):
+        self.check_model(TSNE(init='pca', learning_rate='auto', method='exact', random_state=1234),
+                         'tsne.json', self.iris_data)
+        self.check_model(TSNE(init='pca', learning_rate='auto', metric='manhattan', random_state=1234),
+                         'tsne.json', self.iris_data)
+        dist = pairwise_distances(self.iris_data)
+        self.check_model(TSNE(init='random', learning_rate='auto', metric='precomputed', random_state=1234),
+                         'tsne.json', dist)
+        self.check_model(TSNE(init='pca', learning_rate='auto', angle=0.8, random_state=1234),
+                         'tsne.json', self.iris_data)
+
+    def test_manifold_float32_input(self):
+        data32 = self.iris_data.astype(np.float32)
+        self.check_model(Isomap(n_neighbors=20, n_components=3), 'isomap.json', data32)
+        self.check_model(LocallyLinearEmbedding(neighbors_algorithm='auto'), 'locally-linear-embedding.json', data32)
+        self.check_model(MDS(random_state=1234), 'mds.json', data32)
+        self.check_model(SpectralEmbedding(affinity='rbf', random_state=1234), 'spectral-embedding.json', data32)
+        self.check_model(TSNE(init='pca', learning_rate='auto', random_state=1234), 'tsne.json', data32)
 
     def test_umap(self):
         if 'UMAP' in __optionals__:
