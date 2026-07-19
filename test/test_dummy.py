@@ -36,6 +36,22 @@ class TestAPI(unittest.TestCase):
         self.check_model(DummyClassifier(strategy='stratified', random_state=1234), 'dummy-classifier.json', self.X_clf, self.y_clf)
         self.check_model(DummyClassifier(strategy='most_frequent'), 'dummy-classifier.json', self.X_clf, self.y_clf)
 
+    def test_dummy_classifier_strategies(self):
+        self.check_model(DummyClassifier(strategy='prior'), 'dummy-classifier.json', self.X_clf, self.y_clf)
+        self.check_model(DummyClassifier(strategy='uniform', random_state=1234), 'dummy-classifier.json', self.X_clf, self.y_clf)
+        self.check_model(DummyClassifier(strategy='constant', constant=self.y_clf[0]), 'dummy-classifier.json', self.X_clf, self.y_clf)
+
     def test_dummy_regressor(self):
         self.check_model(DummyRegressor(strategy='mean'), 'dummy-regressor.json', self.X_reg, self.y_reg)
         self.check_model(DummyRegressor(strategy='median'), 'dummy-regressor.json', self.X_reg, self.y_reg)
+
+    def test_dummy_regressor_strategies(self):
+        self.check_model(DummyRegressor(strategy='quantile', quantile=0.25), 'dummy-regressor.json', self.X_reg, self.y_reg)
+        self.check_model(DummyRegressor(strategy='quantile', quantile=0.75), 'dummy-regressor.json', self.X_reg, self.y_reg)
+        self.check_model(DummyRegressor(strategy='constant', constant=self.y_reg[0]), 'dummy-regressor.json', self.X_reg, self.y_reg)
+
+    def test_dummy_float32_input(self):
+        self.check_model(DummyClassifier(strategy='most_frequent'), 'dummy-classifier.json',
+                         self.X_clf.astype(np.float32), self.y_clf)
+        self.check_model(DummyRegressor(strategy='mean'), 'dummy-regressor.json',
+                         self.X_reg.astype(np.float32), self.y_reg)

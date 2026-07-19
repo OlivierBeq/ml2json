@@ -45,3 +45,38 @@ class TestAPI(unittest.TestCase):
 
         actual_predictions = deserialized_dict_model.predict(query)
         np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
+
+    def check_roundtrip(self, model, query):
+        model.fit(self.x, self.y)
+        expected_predictions = model.predict(query)
+
+        serialized_dict_model = ml2json.to_dict(model)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
+        actual_predictions = deserialized_dict_model.predict(query)
+        np.testing.assert_array_almost_equal(expected_predictions, actual_predictions)
+        return deserialized_dict_model
+
+    def test_isotonic_regression_increasing(self):
+        self.check_roundtrip(IsotonicRegression(increasing=True), self.x)
+        self.check_roundtrip(IsotonicRegression(increasing=False), self.x)
+        self.check_roundtrip(IsotonicRegression(increasing='auto'), self.x)
+
+    def test_isotonic_regression_out_of_bounds_nan(self):
+        deserialized = self.check_roundtrip(IsotonicRegression(out_of_bounds='nan'), np.array([-5.0, 5.0, 20.0]))
+        self.assertTrue(np.isnan(deserialized.predict(np.array([-5.0]))[0]))
+
+    def test_isotonic_regression_out_of_bounds_raise(self):
+        model = IsotonicRegression(out_of_bounds='raise')
+        model.fit(self.x, self.y)
+
+        serialized_dict_model = ml2json.to_dict(model)
+        deserialized_dict_model = ml2json.from_dict(serialized_dict_model)
+
+        query = np.array([-5.0, 20.0])
+        with self.assertRaises(ValueError):
+            model.predict(query)
+        with self.assertRaises(ValueError):
+            deserialized_dict_model.predict(query)
+
+    def test_isotonic_regression_y_min_max(self):
+        self.check_roundtrip(IsotonicRegression(y_min=0.0, y_max=5.0), self.x)
