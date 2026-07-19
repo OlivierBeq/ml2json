@@ -33,7 +33,12 @@ def serialize_pipeline(model):
                    for param, value in model.get_params().items()
                    if param in ['steps', 'memory', 'verbose']},
     }
-    serialized_model['params']['steps'] = [(name, serialize_model(estimator)) for name, estimator in model.steps]
+    # A step can be the literal sentinel 'passthrough' (or None) rather than a
+    # fitted estimator - not JSON-serializable via serialize_model, which
+    # expects an actual model instance.
+    serialized_model['params']['steps'] = [(name, estimator if estimator is None or isinstance(estimator, str)
+                                            else serialize_model(estimator))
+                                           for name, estimator in model.steps]
     if not isinstance(serialized_model['params']['memory'], str) and serialized_model['params']['memory'] is not None:
         serialized_model['params']['memory'] = serialize_memory(serialized_model['params']['memory'])
     if 'classes_' in model.__dict__:
@@ -48,7 +53,9 @@ def serialize_pipeline(model):
 def deserialize_pipeline(model_dict):
     from .ml2json import deserialize_model
 
-    model_dict['params']['steps'] = [(name, deserialize_model(estimator)) for name, estimator in model_dict['params']['steps']]
+    model_dict['params']['steps'] = [(name, estimator if estimator is None or isinstance(estimator, str)
+                                      else deserialize_model(estimator))
+                                     for name, estimator in model_dict['params']['steps']]
     if model_dict['params']['memory'] is not None and isinstance(model_dict['params']['memory'], dict):
         model_dict['params']['memory'] = deserialize_memory(model_dict['params']['memory'])
     model = Pipeline(**model_dict['params'])
@@ -84,7 +91,9 @@ if 'imblearn' in __optionals__:
                        for param, value in model.get_params().items()
                        if param in ['steps', 'memory', 'verbose']},
         }
-        serialized_model['params']['steps'] = [(name, serialize_model(estimator)) for name, estimator in model.steps]
+        serialized_model['params']['steps'] = [(name, estimator if estimator is None or isinstance(estimator, str)
+                                                else serialize_model(estimator))
+                                               for name, estimator in model.steps]
         if not isinstance(serialized_model['params']['memory'], str) and serialized_model['params']['memory'] is not None:
             serialized_model['params']['memory'] = serialize_memory(serialized_model['params']['memory'])
         if 'classes_' in model.__dict__:
@@ -99,7 +108,9 @@ if 'imblearn' in __optionals__:
     def deserialize_imblearn_pipeline(model_dict):
         from .ml2json import deserialize_model
 
-        model_dict['params']['steps'] = [(name, deserialize_model(estimator)) for name, estimator in model_dict['params']['steps']]
+        model_dict['params']['steps'] = [(name, estimator if estimator is None or isinstance(estimator, str)
+                                          else deserialize_model(estimator))
+                                         for name, estimator in model_dict['params']['steps']]
         if model_dict['params']['memory'] is not None and isinstance(model_dict['params']['memory'], dict):
             model_dict['params']['memory'] = deserialize_memory(model_dict['params']['memory'])
         model = ImblearnPipeline(**model_dict['params'])

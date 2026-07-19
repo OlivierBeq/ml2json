@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
 
 from src import ml2json
@@ -56,3 +57,33 @@ class TestAPI(unittest.TestCase):
         model = RegressorChain(RandomForestRegressor(n_estimators=5, random_state=42))
         model.fit(self.X_reg, self.y_reg_multi)
         self.check_model(model, 'regressor-chain.json', self.X_reg)
+
+    def test_classifier_chain_order(self):
+        model = ClassifierChain(RandomForestClassifier(n_estimators=5, random_state=42), order=[1, 0])
+        model.fit(self.X_cls, self.y_cls_multi)
+        self.check_model(model, 'classifier-chain-order.json', self.X_cls)
+
+    def test_regressor_chain_order(self):
+        model = RegressorChain(RandomForestRegressor(n_estimators=5, random_state=42), order=[1, 0])
+        model.fit(self.X_reg, self.y_reg_multi)
+        self.check_model(model, 'regressor-chain-order.json', self.X_reg)
+
+    def test_classifier_chain_linear_estimator(self):
+        model = ClassifierChain(LogisticRegression(), cv=3, random_state=42)
+        model.fit(self.X_cls, self.y_cls_multi)
+        self.check_model(model, 'classifier-chain-linear.json', self.X_cls)
+
+    def test_regressor_chain_linear_estimator(self):
+        model = RegressorChain(Ridge(), cv=3, random_state=42)
+        model.fit(self.X_reg, self.y_reg_multi)
+        self.check_model(model, 'regressor-chain-linear.json', self.X_reg)
+
+    def test_multioutput_classifier_linear_estimator(self):
+        model = MultiOutputClassifier(LogisticRegression())
+        model.fit(self.X_cls, self.y_cls_multi)
+        self.check_model(model, 'multioutput-classifier-linear.json', self.X_cls)
+
+    def test_multioutput_regressor_linear_estimator(self):
+        model = MultiOutputRegressor(Ridge())
+        model.fit(self.X_reg, self.y_reg_multi)
+        self.check_model(model, 'multioutput-regressor-linear.json', self.X_reg)
