@@ -67,7 +67,7 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_almost_equal(expected_ft, actual_ft)
 
-    def check_predict_model(self, model, model_name, data, labels):
+    def check_predict_model(self, model, model_name, data, labels, almost=False):
         model.fit(data, labels)
         expected_p = model.predict(data)
 
@@ -88,7 +88,14 @@ class TestAPI(unittest.TestCase):
 
             actual_p = deserialized_model.predict(data)
 
-            np.testing.assert_array_equal(expected_p, actual_p)
+            if almost:
+                # Rank-deficient cross-covariance matrices make the underlying
+                # eigen/SVD decomposition ill-conditioned: re-fitting can pick up
+                # last-bit differences from multithreaded BLAS reduction order,
+                # so exact equality is too strict here (unlike the well-conditioned cases).
+                np.testing.assert_array_almost_equal(expected_p, actual_p)
+            else:
+                np.testing.assert_array_equal(expected_p, actual_p)
 
     def check_fitpredict_model(self, model, model_name, data, labels):
         expected_fp = model.fit_predict(data, labels)
@@ -158,7 +165,7 @@ class TestAPI(unittest.TestCase):
                             (PLSCanonical(n_components=2), 'pls-canonical-wide.json'),
                             (PLSRegression(n_components=2), 'pls-regression-wide.json')]:
             self.check_transform_model(model, name, X_wide, y_wide)
-            self.check_predict_model(model, name, X_wide, y_wide)
+            self.check_predict_model(model, name, X_wide, y_wide, almost=True)
 
         self.check_transform_model(PLSSVD(n_components=2), 'pls-svd-wide.json', X_wide, y_wide)
 
