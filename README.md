@@ -133,11 +133,11 @@ ml2json requires scikit-learn >= 1.4.0.
 | Scikit-Learn       | Ensemble Methods                           | ensemble.HistGradientBoostingClassifier              |  :heavy_check_mark: |
 | Scikit-Learn       | Feature Extraction                         | feature_extraction.DictVectorizer                    |  :heavy_check_mark: |
 | Scikit-Learn       | Feature Extraction                         | feature_extraction.FeatureHasher                     |  :heavy_check_mark: |
-| Scikit-Learn       | Feature Extraction                         | feature_extraction.image.PatchExtractor              |                 :x: |
-| Scikit-Learn       | Feature Extraction                         | feature_extraction.text.CountVectorizer              |                 :x: |
-| Scikit-Learn       | Feature Extraction                         | feature_extraction.text.HashingVectorizer            |                 :x: |
-| Scikit-Learn       | Feature Extraction                         | feature_extraction.text.TfidfTransformer             |                 :x: |
-| Scikit-Learn       | Feature Extraction                         | feature_extraction.text.TfidfVectorizer              |                 :x: |
+| Scikit-Learn       | Feature Extraction                         | feature_extraction.image.PatchExtractor              |  :heavy_check_mark: |
+| Scikit-Learn       | Feature Extraction                         | feature_extraction.text.CountVectorizer              |  :heavy_check_mark: |
+| Scikit-Learn       | Feature Extraction                         | feature_extraction.text.HashingVectorizer            |  :heavy_check_mark: |
+| Scikit-Learn       | Feature Extraction                         | feature_extraction.text.TfidfTransformer             |  :heavy_check_mark: |
+| Scikit-Learn       | Feature Extraction                         | feature_extraction.text.TfidfVectorizer              |  :heavy_check_mark: |
 | Scikit-Learn       | Feature Selection                          | feature_selection.GenericUnivariateSelect            |  :heavy_check_mark: |
 | Scikit-Learn       | Feature Selection                          | feature_selection.SelectPercentile                   |  :heavy_check_mark: |
 | Scikit-Learn       | Feature Selection                          | feature_selection.SelectKBest                        |  :heavy_check_mark: |

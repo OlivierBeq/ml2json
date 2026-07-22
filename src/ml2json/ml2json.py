@@ -11,6 +11,8 @@ from typing import Dict
 
 from sklearn import svm, discriminant_analysis, dummy
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer, HashingVectorizer
+from sklearn.feature_extraction.image import PatchExtractor
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor, ExtraTreeClassifier, ExtraTreeRegressor
 from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor, BaggingClassifier, BaggingRegressor,
@@ -436,6 +438,11 @@ _REGISTRY = [
 
     # Feature extraction additions
     (FeatureHasher, ext.serialize_feature_hasher, ext.deserialize_feature_hasher),
+    (CountVectorizer, ext.serialize_count_vectorizer, ext.deserialize_count_vectorizer),
+    (TfidfTransformer, ext.serialize_tfidf_transformer, ext.deserialize_tfidf_transformer),
+    (TfidfVectorizer, ext.serialize_tfidf_vectorizer, ext.deserialize_tfidf_vectorizer),
+    (HashingVectorizer, ext.serialize_hashing_vectorizer, ext.deserialize_hashing_vectorizer),
+    (PatchExtractor, ext.serialize_patch_extractor, ext.deserialize_patch_extractor),
 
     # Calibration
     (CalibratedClassifierCV, calib.serialize_calibrated_classifier_cv, calib.deserialize_calibrated_classifier_cv),
