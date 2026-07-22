@@ -286,6 +286,46 @@ def deserialize_slice(model_dict):
     return slice(model_dict['start'], model_dict['stop'], model_dict['step'])
 
 
+def serialize_scipy_frozen_dist(value):
+    # e.g. RandomizedSearchCV/ParameterSampler's `param_distributions` commonly
+    # hold scipy.stats frozen distributions (scipy.stats.uniform(0, 1)). The
+    # underlying `.dist` is a shared module-level singleton (one instance per
+    # distribution family, reused across every frozen wrapper) whose __dict__
+    # caches bound methods and np.vectorize wrappers built at class-definition
+    # time - not serializable and not meaningful per-instance state. Captured
+    # by distribution name + args/kwds instead, exactly like a class reference.
+    from scipy.stats._distn_infrastructure import rv_frozen
+    assert isinstance(value, rv_frozen)
+    return {'meta': 'scipy_frozen_dist', 'name': value.dist.name,
+           'args': recursive_serialize(list(value.args)), 'kwds': recursive_serialize(value.kwds)}
+
+
+def deserialize_scipy_frozen_dist(model_dict):
+    assert model_dict['meta'] == 'scipy_frozen_dist'
+    import scipy.stats as st
+    args = recursive_deserialize(model_dict['args'])
+    kwds = recursive_deserialize(model_dict['kwds'])
+    return getattr(st, model_dict['name'])(*args, **kwds)
+
+
+def serialize_masked_array(array: np.ma.MaskedArray):
+    # e.g. GridSearchCV's `cv_results_['param_*']` entries are MaskedArrays
+    # (masked wherever that candidate's param grid didn't set the given key).
+    # MaskedArray is an np.ndarray subclass, so it must be checked ahead of the
+    # plain ndarray leaf entry - .tolist() on the plain array would silently
+    # drop the mask, and reconstructing via plain np.array() would lose it too.
+    assert isinstance(array, np.ma.MaskedArray)
+    return {'meta': 'masked_array', 'data': serialize_numpy_array(np.ma.getdata(array)),
+           'mask': recursive_serialize(np.ma.getmaskarray(array).tolist())}
+
+
+def deserialize_masked_array(model_dict):
+    assert model_dict['meta'] == 'masked_array'
+    data = deserialize_numpy_array(model_dict['data'])
+    mask = recursive_deserialize(model_dict['mask'])
+    return np.ma.MaskedArray(data=data, mask=mask)
+
+
 # ---------------------------------------------------------------------------
 # Generic recursive engine
 #
@@ -842,6 +882,7 @@ _CYLOSS_TYPES = (CyAbsoluteError, CyExponentialLoss, CyHalfBinomialLoss, CyHalfG
 # generic dict handling ever gets a chance to see it.
 __serialize_leaf_fn__ = [
     (Bunch, serialize_bunch),
+    (np.ma.MaskedArray, serialize_masked_array),
     (np.ndarray, serialize_numpy_array),
     (np.dtype, serialize_numpy_dtype),
     (np.generic, serialize_numpy_scalar),
@@ -859,6 +900,12 @@ __serialize_leaf_fn__ = [
     (KDTree, serialize_kdtree),
     (BallTree, serialize_balltree),
 ]
+
+try:
+    from scipy.stats._distn_infrastructure import rv_frozen
+    __serialize_leaf_fn__.append((rv_frozen, serialize_scipy_frozen_dist))
+except ImportError:
+    pass
 
 # Leaf types dispatched by their 'meta' tag on the way back.
 __deserialize_leaf_fn__ = {
@@ -882,6 +929,8 @@ __deserialize_leaf_fn__ = {
     'namedtuple': deserialize_namedtuple,
     'kdtree': deserialize_kdtree,
     'balltree': deserialize_balltree,
+    'scipy_frozen_dist': deserialize_scipy_frozen_dist,
+    'masked_array': deserialize_masked_array,
 }
 
 if _HAS_NNDESCENT:

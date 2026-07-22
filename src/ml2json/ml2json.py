@@ -73,6 +73,12 @@ from sklearn.semi_supervised import LabelPropagation, LabelSpreading, SelfTraini
 from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.experimental import enable_iterative_imputer  # noqa: F401
 from sklearn.impute import SimpleImputer, MissingIndicator, KNNImputer, IterativeImputer
+from sklearn.experimental import enable_halving_search_cv  # noqa: F401
+from sklearn.model_selection import (KFold, StratifiedKFold, GroupKFold, StratifiedGroupKFold, RepeatedKFold,
+                                     RepeatedStratifiedKFold, LeaveOneOut, LeavePOut, LeaveOneGroupOut,
+                                     LeavePGroupsOut, ShuffleSplit, StratifiedShuffleSplit, GroupShuffleSplit,
+                                     TimeSeriesSplit, PredefinedSplit, ParameterGrid, ParameterSampler,
+                                     GridSearchCV, RandomizedSearchCV, HalvingGridSearchCV, HalvingRandomSearchCV)
 
 from . import classification as clf
 from . import regression as reg
@@ -102,6 +108,7 @@ from . import multioutput as mout
 from . import semi_supervised as ssup
 from . import compose as comp
 from . import impute as imp
+from . import model_selection as msel
 from numpy.random import RandomState
 
 from . import _base
@@ -454,6 +461,29 @@ _REGISTRY = [
     # Compose
     (ColumnTransformer, comp.serialize_column_transformer, comp.deserialize_column_transformer),
     (TransformedTargetRegressor, comp.serialize_transformed_target_regressor, comp.deserialize_transformed_target_regressor),
+
+    # Model selection
+    (KFold, msel.serialize_kfold, msel.deserialize_kfold),
+    (StratifiedKFold, msel.serialize_stratified_kfold, msel.deserialize_stratified_kfold),
+    (GroupKFold, msel.serialize_group_kfold, msel.deserialize_group_kfold),
+    (StratifiedGroupKFold, msel.serialize_stratified_group_kfold, msel.deserialize_stratified_group_kfold),
+    (RepeatedKFold, msel.serialize_repeated_kfold, msel.deserialize_repeated_kfold),
+    (RepeatedStratifiedKFold, msel.serialize_repeated_stratified_kfold, msel.deserialize_repeated_stratified_kfold),
+    (LeaveOneOut, msel.serialize_leave_one_out, msel.deserialize_leave_one_out),
+    (LeavePOut, msel.serialize_leave_p_out, msel.deserialize_leave_p_out),
+    (LeaveOneGroupOut, msel.serialize_leave_one_group_out, msel.deserialize_leave_one_group_out),
+    (LeavePGroupsOut, msel.serialize_leave_p_groups_out, msel.deserialize_leave_p_groups_out),
+    (ShuffleSplit, msel.serialize_shuffle_split, msel.deserialize_shuffle_split),
+    (StratifiedShuffleSplit, msel.serialize_stratified_shuffle_split, msel.deserialize_stratified_shuffle_split),
+    (GroupShuffleSplit, msel.serialize_group_shuffle_split, msel.deserialize_group_shuffle_split),
+    (TimeSeriesSplit, msel.serialize_time_series_split, msel.deserialize_time_series_split),
+    (PredefinedSplit, msel.serialize_predefined_split, msel.deserialize_predefined_split),
+    (ParameterGrid, msel.serialize_parameter_grid, msel.deserialize_parameter_grid),
+    (ParameterSampler, msel.serialize_parameter_sampler, msel.deserialize_parameter_sampler),
+    (GridSearchCV, msel.serialize_grid_search_cv, msel.deserialize_grid_search_cv),
+    (RandomizedSearchCV, msel.serialize_randomized_search_cv, msel.deserialize_randomized_search_cv),
+    (HalvingGridSearchCV, msel.serialize_halving_grid_search_cv, msel.deserialize_halving_grid_search_cv),
+    (HalvingRandomSearchCV, msel.serialize_halving_randomized_search_cv, msel.deserialize_halving_randomized_search_cv),
 ]
 
 # Optional dependencies: registered the same way, guarded by the same
