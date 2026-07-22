@@ -246,6 +246,31 @@ def deserialize_module_reference(model_dict):
     return importlib.import_module(model_dict['name'])
 
 
+def serialize_namedtuple(value):
+    # e.g. IterativeImputer's `imputation_sequence_` stores a list of
+    # `_ImputerTriplet` namedtuples - a tuple subclass whose type name isn't
+    # 'tuple', so it must be special-cased ahead of the plain tuple/list/set
+    # container branch (which would otherwise stamp it with a meta tag equal
+    # to the namedtuple's own class name and later fail to round-trip it as a
+    # tuple).
+    cls = type(value)
+    return {
+        'meta': 'namedtuple',
+        'module': cls.__module__,
+        'name': cls.__qualname__,
+        'items': [recursive_serialize(item) for item in value],
+    }
+
+
+def deserialize_namedtuple(model_dict):
+    assert model_dict['meta'] == 'namedtuple'
+    obj = importlib.import_module(model_dict['module'])
+    for part in model_dict['name'].split('.'):
+        obj = getattr(obj, part)
+    items = [recursive_deserialize(item) for item in model_dict['items']]
+    return obj(*items)
+
+
 def serialize_slice(value: slice):
     # e.g. ColumnTransformer's `output_indices_` dict (built by
     # HistGradientBoostingClassifier/Regressor's internal categorical-feature
@@ -287,6 +312,12 @@ def recursive_serialize(obj):
     for obj_type, serialize_fn in __serialize_leaf_fn__:
         if isinstance(obj, obj_type):
             return serialize_fn(obj)
+
+    # namedtuple instances (tuple subclasses with a `_fields` attribute) must
+    # be checked ahead of the plain tuple branch below, since their type name
+    # isn't 'tuple'
+    if isinstance(obj, tuple) and hasattr(obj, '_fields'):
+        return serialize_namedtuple(obj)
 
     # Containers
     if isinstance(obj, (list, tuple, set)):
@@ -848,6 +879,7 @@ __deserialize_leaf_fn__ = {
     'class_reference': deserialize_class_reference,
     'module_reference': deserialize_module_reference,
     'slice': deserialize_slice,
+    'namedtuple': deserialize_namedtuple,
     'kdtree': deserialize_kdtree,
     'balltree': deserialize_balltree,
 }

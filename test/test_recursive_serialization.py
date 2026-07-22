@@ -302,19 +302,20 @@ class TestSklearn(unittest.TestCase):
         """Classes not in ml2json's hand-written dispatch chain should now be
         serializable via the generic engine's fallback path, with predictions
         from the deserialized model matching the original exactly."""
-        from sklearn.impute import SimpleImputer, MissingIndicator
+        from sklearn.model_selection import FixedThresholdClassifier, TunedThresholdClassifierCV
+        from sklearn.linear_model import LogisticRegression
 
-        X_ = np.array(self.X_cls, copy=True)
-        X_[0, 0] = np.nan
+        X_cls_, y_cls_ = self.X_cls, self.y_cls
 
-        for model in [SimpleImputer(), MissingIndicator()]:
-            model.fit(X_)
-            expected = model.transform(X_)
+        for model in [FixedThresholdClassifier(LogisticRegression(max_iter=500), threshold=0.6),
+                      TunedThresholdClassifierCV(LogisticRegression(max_iter=500), cv=3)]:
+            model.fit(X_cls_, y_cls_)
+            expected = model.predict(X_cls_)
 
             model_dict = ml2json.to_dict(model)
             self.assertTrue(model_dict['meta'].startswith('generic_object:'))
             deserialized = ml2json.from_dict(model_dict)
-            actual = deserialized.transform(X_)
+            actual = deserialized.predict(X_cls_)
             np.testing.assert_array_equal(np.asarray(expected), np.asarray(actual))
 
     def test_random_state_instance_as_constructor_param(self):

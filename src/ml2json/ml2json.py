@@ -71,6 +71,8 @@ from sklearn.multiclass import OneVsOneClassifier, OneVsRestClassifier, OutputCo
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
 from sklearn.semi_supervised import LabelPropagation, LabelSpreading, SelfTrainingClassifier
 from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
+from sklearn.experimental import enable_iterative_imputer  # noqa: F401
+from sklearn.impute import SimpleImputer, MissingIndicator, KNNImputer, IterativeImputer
 
 from . import classification as clf
 from . import regression as reg
@@ -99,6 +101,7 @@ from . import multiclass as mcls
 from . import multioutput as mout
 from . import semi_supervised as ssup
 from . import compose as comp
+from . import impute as imp
 from numpy.random import RandomState
 
 from . import _base
@@ -421,6 +424,12 @@ _REGISTRY = [
     (SelectKBest, fsel.serialize_select_kbest, fsel.deserialize_select_kbest),
     (SelectPercentile, fsel.serialize_select_percentile, fsel.deserialize_select_percentile),
     (VarianceThreshold, fsel.serialize_variance_threshold, fsel.deserialize_variance_threshold),
+
+    # Impute
+    (SimpleImputer, imp.serialize_simple_imputer, imp.deserialize_simple_imputer),
+    (MissingIndicator, imp.serialize_missing_indicator, imp.deserialize_missing_indicator),
+    (KNNImputer, imp.serialize_knn_imputer, imp.deserialize_knn_imputer),
+    (IterativeImputer, imp.serialize_iterative_imputer, imp.deserialize_iterative_imputer),
 
     # Gaussian process
     (GaussianProcessClassifier, gp.serialize_gaussian_process_classifier, gp.deserialize_gaussian_process_classifier),

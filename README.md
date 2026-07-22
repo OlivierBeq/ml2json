@@ -151,10 +151,10 @@ ml2json requires scikit-learn >= 1.4.0.
 | Scikit-Learn       | Feature Selection                          | feature_selection.VarianceThreshold                  |  :heavy_check_mark: |
 | Scikit-Learn       | Gaussian Processes                         | gaussian_process.GaussianProcessClassifier           |  :heavy_check_mark: |
 | Scikit-Learn       | Gaussian Processes                         | gaussian_process.GaussianProcessRegressor            |  :heavy_check_mark: |
-| Scikit-Learn       | Impute                                     | impute.SimpleImputer                                 |                 :x: |
-| Scikit-Learn       | Impute                                     | impute.IterativeImputer                              |                 :x: |
-| Scikit-Learn       | Impute                                     | impute.MissingIndicator                              |                 :x: |
-| Scikit-Learn       | Impute                                     | impute.KNNImputer                                    |                 :x: |
+| Scikit-Learn       | Impute                                     | impute.SimpleImputer                                 |  :heavy_check_mark: |
+| Scikit-Learn       | Impute                                     | impute.IterativeImputer                              |  :heavy_check_mark: |
+| Scikit-Learn       | Impute                                     | impute.MissingIndicator                              |  :heavy_check_mark: |
+| Scikit-Learn       | Impute                                     | impute.KNNImputer                                    |  :heavy_check_mark: |
 | Scikit-Learn       | Isotonic regression                        | isotonic.IsotonicRegression                          |  :heavy_check_mark: |
 | Scikit-Learn       | Kernel Approximation                       | kernel_approximation.AdditiveChi2Sampler             |  :heavy_check_mark: |
 | Scikit-Learn       | Kernel Approximation                       | kernel_approximation.Nystroem                        |  :heavy_check_mark: |
