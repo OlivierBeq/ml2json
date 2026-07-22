@@ -41,6 +41,12 @@ try:
     __optionals__.extend(['CatBoostClassifier', 'CatBoost'])
 except:
     pass
+try:
+    from imblearn.ensemble import (EasyEnsembleClassifier, RUSBoostClassifier, BalancedBaggingClassifier,
+                                   BalancedRandomForestClassifier)
+    __optionals__.append('imblearn')
+except:
+    pass
 
 from src import ml2json
 
@@ -346,6 +352,30 @@ class TestAPI(unittest.TestCase):
     def test_bagging_classifier(self):
         self.check_model(BaggingClassifier(n_estimators=25), 'bagging-cls.json')
         self.check_sparse_model(BaggingClassifier(n_estimators=25), 'bagging-cls.json')
+
+    def test_easy_ensemble_classifier(self):
+        if 'imblearn' in __optionals__:
+            self.check_model(EasyEnsembleClassifier(n_estimators=10, random_state=1234), 'easy-ensemble-cls.json')
+            self.check_sparse_model(EasyEnsembleClassifier(n_estimators=10, random_state=1234), 'easy-ensemble-cls.json')
+
+    def test_rusboost_classifier(self):
+        if 'imblearn' in __optionals__:
+            self.check_model(RUSBoostClassifier(n_estimators=10, random_state=1234), 'rusboost-cls.json')
+            self.check_sparse_model(RUSBoostClassifier(n_estimators=10, random_state=1234), 'rusboost-cls.json')
+
+    def test_balanced_bagging_classifier(self):
+        if 'imblearn' in __optionals__:
+            self.check_model(BalancedBaggingClassifier(n_estimators=10, random_state=1234), 'balanced-bagging-cls.json')
+            self.check_sparse_model(BalancedBaggingClassifier(n_estimators=10, random_state=1234), 'balanced-bagging-cls.json')
+
+    def test_balanced_random_forest_classifier(self):
+        if 'imblearn' in __optionals__:
+            self.check_model(BalancedRandomForestClassifier(n_estimators=10, sampling_strategy='all',
+                                                             replacement=True, bootstrap=False, random_state=1234),
+                              'balanced-random-forest-cls.json')
+            self.check_sparse_model(BalancedRandomForestClassifier(n_estimators=10, sampling_strategy='all',
+                                                                    replacement=True, bootstrap=False, random_state=1234),
+                                     'balanced-random-forest-cls.json')
 
     def test_extratrees_classifier(self):
         self.check_model(ExtraTreesClassifier(n_estimators=100, max_depth=5, random_state=1234), 'extra-trees-cls.json')

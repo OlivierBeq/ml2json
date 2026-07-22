@@ -313,10 +313,10 @@ ml2json requires scikit-learn >= 1.4.0.
 | Imbalanced-Learn   | Over-sampling                             | SVMSMOTE                                            | :heavy_check_mark: |
 | Imbalanced-Learn   | Combined over & under sampling            | SMOTEENN                                            | :heavy_check_mark: |
 | Imbalanced-Learn   | Combined over & under sampling            | SMOTETomek                                          | :heavy_check_mark: |
-| Imbalanced-Learn   | Ensemble Methods                          | EasyEnsembleClassifier                              |        :x:         |
-| Imbalanced-Learn   | Ensemble Methods                          | RUSBoostClassifier                                  |        :x:         |
-| Imbalanced-Learn   | Ensemble Methods                          | BalancedBaggingClassifier                           |        :x:         |
-| Imbalanced-Learn   | Ensemble Methods                          | BalancedRandomForestClassifier                      |        :x:         |
+| Imbalanced-Learn   | Ensemble Methods                          | EasyEnsembleClassifier                              | :heavy_check_mark: |
+| Imbalanced-Learn   | Ensemble Methods                          | RUSBoostClassifier                                  | :heavy_check_mark: |
+| Imbalanced-Learn   | Ensemble Methods                          | BalancedBaggingClassifier                           | :heavy_check_mark: |
+| Imbalanced-Learn   | Ensemble Methods                          | BalancedRandomForestClassifier                      | :heavy_check_mark: |
 | XGBoost            | Ensemble Methods                          | XGBRegressor                                        | :heavy_check_mark: |
 | XGBoost            | Ensemble Methods                          | XGBClassifier                                       | :heavy_check_mark: |
 | XGBoost            | Ensemble Methods                          | XGBRanker                                           | :heavy_check_mark: |
