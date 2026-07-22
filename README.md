@@ -1,36 +1,58 @@
-# ml2json
-Export scikit-learn model files to JSON for sharing or deploying predictive models with peace of mind.
+# 🧪 ml2json
 
-This is the continuation of the work hosted at [OlivierBeq/sklearn-json](https://github.com/OlivierBeq/sklearn-json).
+<!-- Badges -->
+<div align="center">
 
-# Why ml2json?
-Other methods for exporting scikit-learn models require Pickle or Joblib (based on Pickle).
-- Serializing model files with Pickle provides a simple attack vector for malicious users - they give an attacker the ability to execute arbitrary code wherever the file is deserialized. For an example see: https://www.smartfile.com/blog/python-pickle-security-problems-and-solutions/.
-- Internal designs of Pickle and Joblib files make the binary files not mandatorily supported across Python versions.  
+[![PyPI version](https://img.shields.io/pypi/v/ml2json.svg)](https://pypi.org/project/ml2json/)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/ml2json.svg)](https://pypi.org/project/ml2json/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://github.com/OlivierBeq/ml2json/actions/workflows/python-package.yml/badge.svg)](https://github.com/OlivierBeq/ml2json/actions/workflows/python-package.yml)
+<br>
+</div>
 
-ml2json is a safe and transparent solution for exporting scikit-learn model files to text files both machine and human readable.
+A safe, transparent way to export fitted scikit-learn (and friends) models to **plain JSON**, so you can share or deploy predictive models with peace of mind — no Pickle, no arbitrary code execution on load.
 
-### Safe
-Export model files to 100% JSON which cannot execute code on deserialization.
+This is the continuation of the work originally hosted at [OlivierBeq/sklearn-json](https://github.com/OlivierBeq/sklearn-json).
 
-### Transparent
-Model files are serialized in JSON (i.e., not binary), so you have the ability to see exactly what's inside.
+## ✨ Features
 
-# Getting Started
+- 🛡️ **Safe** — models are serialized to 100% JSON, which cannot execute code on deserialization, unlike Pickle or Joblib.
+- 🔍 **Transparent** — model files are plain text, not binary, so you can always inspect exactly what's inside.
+- 🔁 **Round-trip faithful** — deserialized models reproduce the same `predict`/`transform`/`fit_predict` output as the original, fitted estimator.
+- 📦 **290+ estimators supported** across scikit-learn and 12 companion libraries (XGBoost, LightGBM, CatBoost, imbalanced-learn, HDBSCAN, UMAP, Prince, MLChemAD, openTSNE, and more) — see the [compatibility matrix](#-supported-models) below.
+- 🧩 **Composable** — `Pipeline`, `ColumnTransformer`, `VotingClassifier`/`Regressor`, `StackingClassifier`/`Regressor` and other meta-estimators are serialized recursively, nested estimators included.
+- 🌍 **Portable** — JSON files are not tied to a Python or scikit-learn version the way Pickle/Joblib binaries are.
 
-ml2json makes exporting model files to JSON simple.
+## ✍️ Why ml2json?
 
-## Install
-```
+Other methods for exporting scikit-learn models rely on Pickle or Joblib (itself built on Pickle):
+
+- **Pickle is unsafe.** Deserializing a Pickle file can execute arbitrary code, making it a straightforward attack vector for anyone who can get a malicious file loaded — see [this write-up](https://www.smartfile.com/blog/python-pickle-security-problems-and-solutions/) for an example.
+- **Pickle/Joblib are not portable.** Their internal binary format is not guaranteed to be compatible across Python or library versions.
+
+ml2json avoids both problems by serializing exclusively to JSON: human-readable, machine-readable, and safe to load from an untrusted source.
+
+## 📦 Installation
+
+```bash
 pip install ml2json
 ```
 
-To install other all dependencies (e.g. XGBoost, HDBSCAN), use:
+Or from source:
 
+```bash
+git clone https://github.com/OlivierBeq/ml2json.git
+pip install ./ml2json
 ```
-pip install ml2json[full]
-```
-## Example Usage
+
+### 🛠️ Requirements
+
+- Python 3.9+
+- scikit-learn >= 1.4.0
+
+## 💡 Usage
+
+### Basic example
 
 ```python
 import ml2json
@@ -44,9 +66,72 @@ deserialized_model = ml2json.from_json(file_name)
 deserialized_model.predict(X)
 ```
 
-# Features
-The list of supported models is rapidly growing.
-In addition of the support for scikit-learn models, ml2json supports the following libraries:
+### In-memory (dict) round-trip
+
+Skip the file entirely and work with a plain, JSON-safe `dict` — useful for storing a model alongside other metadata (e.g. in a database document) instead of a standalone file:
+
+```python
+model_dict = ml2json.to_dict(model)
+deserialized_model = ml2json.from_dict(model_dict)
+```
+
+### Pipelines and nested estimators
+
+`Pipeline`, `ColumnTransformer` and ensemble meta-estimators (`VotingClassifier`, `StackingRegressor`, etc.) are serialized recursively — every nested, fitted estimator is preserved:
+
+```python
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("classifier", LogisticRegression()),
+]).fit(X, y)
+
+ml2json.to_json(pipeline, "pipeline.json")
+deserialized_pipeline = ml2json.from_json("pipeline.json")
+```
+
+### CatBoost models
+
+CatBoost stores some information (e.g. categorical feature values) on the training `Pool` rather than on the fitted model itself. Pass it explicitly to recover it on serialization:
+
+```python
+ml2json.to_json(catboost_model, "model.json", catboost_data=train_pool)
+```
+
+## 📚 API Documentation
+
+```python
+def to_json(model, outfile, catboost_data=None):
+def from_json(infile):
+```
+
+Serialize a fitted (or unfitted) model to/from a JSON file.
+
+- ***model*** — the scikit-learn-compatible estimator to serialize.
+- ***outfile / infile*** — path of the JSON file to write to / read from.
+- ***catboost_data*** — optional `catboost.Pool` used to train `model`, required to recover certain CatBoost-specific attributes.
+
+```python
+def to_dict(model, catboost_data=None):
+def from_dict(model_dict):
+```
+
+Equivalent to `to_json`/`from_json`, but round-trips through an in-memory, JSON-safe `dict` instead of a file.
+
+```python
+def dict_to_json(model_dict, outfile):
+def json_to_dict(infile):
+```
+
+Lower-level helpers to write an already-serialized `dict` to a JSON file, or read one back, without touching the model itself.
+
+## 🧬 Supported models</h2>
+
+ml2json supports scikit-learn as well as the following companion libraries:
+
 - scikit-learn-extra
 - XGBoost
 - LightGBM
@@ -60,9 +145,8 @@ In addition of the support for scikit-learn models, ml2json supports the followi
 - MLChemAD
 - openTSNE
 
-ml2json requires scikit-learn >= 1.4.0.
-
-## Supported scikit-learn Models
+<details>
+<summary><strong>Full compatibility matrix (292 classes)</strong> — click to expand</summary>
 
 |       Library      |                  Category                 |                        Class                        |     Supported?     |
 |:------------------:|:-----------------------------------------:|:---------------------------------------------------:|:------------------:|
@@ -362,5 +446,15 @@ ml2json requires scikit-learn >= 1.4.0.
 | MLChemAD           | Applicability Domain                      | StandardizationApproachApplicabilityDomain          | :heavy_check_mark: |
 | openTSNE           | Manifold Learning                         | openTSNE.TSNE                                       | :heavy_check_mark: |
 | openTSNE           | Manifold Learning                         | openTSNE.sklearn.TSNE                               | :heavy_check_mark: |
-| openTSNE           | Manifold Learning                         | openTSNE.TSNE                                       | :heavy_check_mark: |
-| openTSNE           | Manifold Learning                         | openTSNE.sklearn.TSNE                               | :heavy_check_mark: |
+
+</details>
+
+The list of supported models is rapidly growing — if something you need is missing, please [open an issue](https://github.com/OlivierBeq/ml2json/issues).
+
+## ✍️ Attribution
+
+ml2json is the continuation of [OlivierBeq/sklearn-json](https://github.com/OlivierBeq/sklearn-json), originally authored by Mathieu Rodrigue.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/OlivierBeq/ml2json/blob/master/LICENSE) file for details.
