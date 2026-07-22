@@ -47,7 +47,7 @@ pip install ./ml2json
 
 ### 🛠️ Requirements
 
-- Python 3.9+
+- Python 3.11+
 - scikit-learn >= 1.4.0
 
 ## 💡 Usage

@@ -7,7 +7,7 @@ name = "ml2json"
 dynamic = ["version"]
 description = "A safe, transparent way to share and deploy scikit-learn models."
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
