@@ -63,12 +63,8 @@ full = [
     "scikit-learn-extra",
     "prince",
 ]
-docs = [
-    "sphinx",
-    "sphinx-rtd-theme",
-    "sphinx-autodoc-typehints",
-]
 testing = [
+    "ml2json[full]",
     "pytest",
 ]
 
