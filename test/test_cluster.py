@@ -24,6 +24,11 @@ try:
     __optionals__.extend(['HDBSCAN', 'RobustSingleLinkage'])
 except:
     pass
+try:
+    from sklearn_extra.cluster import KMedoids, CommonNNClustering
+    __optionals__.extend(['KMedoids', 'CommonNNClustering'])
+except:
+    pass
 
 from src import ml2json
 
@@ -436,6 +441,27 @@ class TestAPI(unittest.TestCase):
         if 'HDBSCAN' in __optionals__:
             for method in ['eom', 'leaf']:
                 self.check_fitpredict_model(HDBSCAN(cluster_selection_method=method), 'hdbscan.json', self.X)
+
+    def test_kmedoids(self):
+        if 'KMedoids' in __optionals__:
+            self.check_predict_model(KMedoids(n_clusters=self.n_centers, random_state=1234), 'kmedoids.json', self.X)
+
+    def test_kmedoids_method_init(self):
+        if 'KMedoids' in __optionals__:
+            for method, init in [('alternate', 'random'), ('pam', 'heuristic'), ('pam', 'k-medoids++')]:
+                self.check_predict_model(
+                    KMedoids(n_clusters=self.n_centers, method=method, init=init, random_state=1234),
+                    'kmedoids.json', self.X)
+
+    def test_kmedoids_metric(self):
+        if 'KMedoids' in __optionals__:
+            self.check_predict_model(
+                KMedoids(n_clusters=self.n_centers, metric='manhattan', random_state=1234),
+                'kmedoids.json', self.X)
+
+    def test_common_nn_clustering(self):
+        if 'CommonNNClustering' in __optionals__:
+            self.check_fitpredict_model(CommonNNClustering(eps=2.0, min_samples=3), 'common-nn-clustering.json', self.simple_X)
 
     def test_hdbscan_algorithm(self):
         if 'HDBSCAN' in __optionals__:

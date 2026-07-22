@@ -28,6 +28,25 @@ try:
     __optionals__.extend(['HDBSCAN', 'RobustSingleLinkage'])
 except:
     pass
+try:
+    from sklearn_extra.cluster import KMedoids, CommonNNClustering
+    __optionals__.extend(['KMedoids', 'CommonNNClustering'])
+
+    # scikit-learn-extra 0.3.0 (its latest release) calls the estimator method
+    # BaseEstimator._validate_data(), which scikit-learn removed in favour of
+    # the free function sklearn.utils.validation.validate_data() around 1.6.
+    # CommonNNClustering.fit() still calls the old method form, so restore it
+    # as a thin shim rather than leaving the class permanently broken on any
+    # scikit-learn newer than the one scikit-learn-extra was released against.
+    if not hasattr(sklearn.base.BaseEstimator, '_validate_data'):
+        from sklearn.utils.validation import validate_data as _validate_data_fn
+
+        def _validate_data_shim(self, *args, **kwargs):
+            return _validate_data_fn(self, *args, **kwargs)
+
+        sklearn.base.BaseEstimator._validate_data = _validate_data_shim
+except:
+    pass
 
 
 from . import _base
@@ -726,6 +745,24 @@ if 'RobustSingleLinkage' in __optionals__:
 
     def deserialize_robust_single_linkage(model_dict):
         return _base.deserialize_model_generic(model_dict)
+
+if 'KMedoids' in __optionals__:
+    def serialize_kmedoids(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_kmedoids(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+if 'CommonNNClustering' in __optionals__:
+    def serialize_common_nn_clustering(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_common_nn_clustering(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
 
 # hdbscan.BranchDetector is intentionally not supported: fitting one requires
 # its clusterer to be fit with branch_detection_data=True, which populates

@@ -331,11 +331,11 @@ ml2json requires scikit-learn >= 1.4.0.
 | CatBoost           | Ensemble Methods                          | CatBoost                                            | :heavy_check_mark: |
 | kmodes             | Clustering                                | KModes                                              | :heavy_check_mark: |
 | kmodes             | Clustering                                | KPrototypes                                         | :heavy_check_mark: |
-| Scikit-Learn-extra | Clustering                                | cluster.KMedoids                                    |        :x:         |
-| Scikit-Learn-extra | Clustering                                | cluster.CommonNNClustering                          |        :x:         |
-| Scikit-Learn-extra | Kernel approximation                      | kernel_approximation.Fastfood                       |        :x:         |
-| Scikit-Learn-extra | EigenPro                                  | kernel_methods.EigenProRegressor                    |        :x:         |
-| Scikit-Learn-extra | Robust                                    | kernel_methods.EigenProClassifier                   |        :x:         |
+| Scikit-Learn-extra | Clustering                                | cluster.KMedoids                                    |  :heavy_check_mark: |
+| Scikit-Learn-extra | Clustering                                | cluster.CommonNNClustering                          |  :heavy_check_mark: |
+| Scikit-Learn-extra | Kernel approximation                      | kernel_approximation.Fastfood                       |  :heavy_check_mark: |
+| Scikit-Learn-extra | EigenPro                                  | kernel_methods.EigenProRegressor                    |  :heavy_check_mark: |
+| Scikit-Learn-extra | EigenPro                                  | kernel_methods.EigenProClassifier                   |  :heavy_check_mark: |
 | Scikit-Learn-extra | Robust                                    | robust.RobustWeightedClassifier                     |        :x:         |
 | Scikit-Learn-extra | Robust                                    | robust.RobustWeightedRegressor                      |        :x:         |
 | Scikit-Learn-extra | Robust                                    | robust.RobustWeightedKMeans                         |        :x:         |

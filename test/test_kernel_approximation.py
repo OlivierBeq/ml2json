@@ -8,6 +8,14 @@ from sklearn.datasets import load_iris
 from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem, PolynomialCountSketch, RBFSampler,
                                           SkewedChi2Sampler)
 
+# Allow testing of additional optional dependencies
+__optionals__ = []
+try:
+    from sklearn_extra.kernel_approximation import Fastfood
+    __optionals__.append('Fastfood')
+except:
+    pass
+
 from src import ml2json
 
 
@@ -103,6 +111,15 @@ class TestAPI(unittest.TestCase):
         for skewedness in [0.5, 2.0]:
             self.check_model(SkewedChi2Sampler(skewedness=skewedness, n_components=10, random_state=1234),
                              'skewed-chi2-sampler-params.json')
+
+    def test_fastfood(self):
+        if 'Fastfood' in __optionals__:
+            self.check_model(Fastfood(n_components=10, random_state=1234), 'fastfood.json')
+
+    def test_fastfood_sigma(self):
+        if 'Fastfood' in __optionals__:
+            for sigma in [0.5, 1.0, 5.0]:
+                self.check_model(Fastfood(sigma=sigma, n_components=10, random_state=1234), 'fastfood-sigma.json')
 
     def test_dtypes(self):
         for dtype in [np.float32, np.float64]:

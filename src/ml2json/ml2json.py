@@ -109,6 +109,8 @@ from . import semi_supervised as ssup
 from . import compose as comp
 from . import impute as imp
 from . import model_selection as msel
+from . import kernel_methods as kmeth
+from . import robust as rob
 from numpy.random import RandomState
 
 from . import _base
@@ -140,6 +142,22 @@ if 'HDBSCAN' in clus.__optionals__:
     from hdbscan import HDBSCAN
 if 'RobustSingleLinkage' in clus.__optionals__:
     from hdbscan import RobustSingleLinkage
+if 'KMedoids' in clus.__optionals__:
+    from sklearn_extra.cluster import KMedoids
+if 'CommonNNClustering' in clus.__optionals__:
+    from sklearn_extra.cluster import CommonNNClustering
+if 'Fastfood' in kapp.__optionals__:
+    from sklearn_extra.kernel_approximation import Fastfood
+if 'EigenProRegressor' in kmeth.__optionals__:
+    from sklearn_extra.kernel_methods import EigenProRegressor
+if 'EigenProClassifier' in kmeth.__optionals__:
+    from sklearn_extra.kernel_methods import EigenProClassifier
+if 'RobustWeightedClassifier' in rob.__optionals__:
+    from sklearn_extra.robust import RobustWeightedClassifier
+if 'RobustWeightedRegressor' in rob.__optionals__:
+    from sklearn_extra.robust import RobustWeightedRegressor
+if 'RobustWeightedKMeans' in rob.__optionals__:
+    from sklearn_extra.robust import RobustWeightedKMeans
 if 'NNDescent' in nei.__optionals__:
     from pynndescent import NNDescent
 if 'PyNNDescentTransformer' in nei.__optionals__:
@@ -522,6 +540,22 @@ if 'HDBSCAN' in clus.__optionals__:
     _REGISTRY.append((HDBSCAN, clus.serialize_hdbscan, clus.deserialize_hdbscan))
 if 'RobustSingleLinkage' in clus.__optionals__:
     _REGISTRY.append((RobustSingleLinkage, clus.serialize_robust_single_linkage, clus.deserialize_robust_single_linkage))
+if 'KMedoids' in clus.__optionals__:
+    _REGISTRY.append((KMedoids, clus.serialize_kmedoids, clus.deserialize_kmedoids))
+if 'CommonNNClustering' in clus.__optionals__:
+    _REGISTRY.append((CommonNNClustering, clus.serialize_common_nn_clustering, clus.deserialize_common_nn_clustering))
+if 'Fastfood' in kapp.__optionals__:
+    _REGISTRY.append((Fastfood, kapp.serialize_fastfood, kapp.deserialize_fastfood))
+if 'EigenProRegressor' in kmeth.__optionals__:
+    _REGISTRY.append((EigenProRegressor, kmeth.serialize_eigenpro_regressor, kmeth.deserialize_eigenpro_regressor))
+if 'EigenProClassifier' in kmeth.__optionals__:
+    _REGISTRY.append((EigenProClassifier, kmeth.serialize_eigenpro_classifier, kmeth.deserialize_eigenpro_classifier))
+if 'RobustWeightedClassifier' in rob.__optionals__:
+    _REGISTRY.append((RobustWeightedClassifier, rob.serialize_robust_weighted_classifier, rob.deserialize_robust_weighted_classifier))
+if 'RobustWeightedRegressor' in rob.__optionals__:
+    _REGISTRY.append((RobustWeightedRegressor, rob.serialize_robust_weighted_regressor, rob.deserialize_robust_weighted_regressor))
+if 'RobustWeightedKMeans' in rob.__optionals__:
+    _REGISTRY.append((RobustWeightedKMeans, rob.serialize_robust_weighted_kmeans, rob.deserialize_robust_weighted_kmeans))
 
 if 'UMAP' in man.__optionals__:
     _REGISTRY.append((UMAP, man.serialize_umap, man.deserialize_umap))
