@@ -9,6 +9,15 @@ from . import _base
 from .preprocessing import serialize_kernel_centerer, deserialize_kernel_centerer
 from .utils.random_state import serialize_random_state, deserialize_random_state
 
+# Allow additional dependencies to be optional
+__optionals__ = []
+try:
+    from prince import PCA as PrincePCA, CA as PrinceCA, MCA as PrinceMCA, MFA as PrinceMFA, \
+        FAMD as PrinceFAMD, GPA as PrinceGPA, PGA as PrincePGA
+    __optionals__.append('Prince')
+except ImportError:
+    pass
+
 
 def serialize_pca(model):
     serialized_model = {
@@ -570,3 +579,65 @@ def serialize_bernoulli_rbm(model):
 
 def deserialize_bernoulli_rbm(model_dict):
     return _base.deserialize_model_generic(model_dict)
+
+
+# Prince's factor-analysis family (PCA, CA, MCA, MFA, FAMD, GPA, PGA) are all
+# plain sklearn.base.BaseEstimator subclasses whose fitted state is nothing
+# but numpy arrays/scalars, pandas Index/Series/DataFrame objects and nested
+# fitted sub-estimators (e.g. MFA/PGA embedding a per-group/tangent-space
+# PCA) - all of which the generic recursive engine already knows how to walk.
+if 'Prince' in __optionals__:
+    def serialize_prince_pca(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_pca(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_ca(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_ca(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_mca(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_mca(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_mfa(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_mfa(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_famd(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_famd(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_gpa(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_gpa(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_pga(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_pga(model_dict):
+        return _base.deserialize_model_generic(model_dict)

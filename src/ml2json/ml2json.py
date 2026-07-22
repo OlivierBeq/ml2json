@@ -194,6 +194,9 @@ if 'imblearn' in ous.__optionals__:
                                    BalancedRandomForestClassifier)
 if 'imblearn' in ppl.__optionals__:
     from imblearn.pipeline import Pipeline as ImblearnPipeline
+if 'Prince' in dec.__optionals__:
+    from prince import PCA as PrincePCA, CA as PrinceCA, MCA as PrinceMCA, MFA as PrinceMFA, \
+        FAMD as PrinceFAMD, GPA as PrinceGPA, PGA as PrincePGA
 
 
 # ---------------------------------------------------------------------------
@@ -614,6 +617,17 @@ if 'imblearn' in ous.__optionals__:
 
 if 'imblearn' in ppl.__optionals__:
     _REGISTRY.append((ImblearnPipeline, ppl.serialize_imblearn_pipeline, ppl.deserialize_imblearn_pipeline))
+
+if 'Prince' in dec.__optionals__:
+    _REGISTRY.extend([
+        (PrincePCA, dec.serialize_prince_pca, dec.deserialize_prince_pca),
+        (PrinceCA, dec.serialize_prince_ca, dec.deserialize_prince_ca),
+        (PrinceMCA, dec.serialize_prince_mca, dec.deserialize_prince_mca),
+        (PrinceMFA, dec.serialize_prince_mfa, dec.deserialize_prince_mfa),
+        (PrinceFAMD, dec.serialize_prince_famd, dec.deserialize_prince_famd),
+        (PrinceGPA, dec.serialize_prince_gpa, dec.deserialize_prince_gpa),
+        (PrincePGA, dec.serialize_prince_pga, dec.deserialize_prince_pga),
+    ])
 
 if 'imblearn' in clf.__optionals__:
     _REGISTRY.extend([

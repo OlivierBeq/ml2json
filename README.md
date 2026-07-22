@@ -342,12 +342,13 @@ ml2json requires scikit-learn >= 1.4.0.
 | HDBSCAN            | Clustering                                | HDBSCAN                                             | :heavy_check_mark: |
 | UMAP               | Manifold Learning                         | UMAP                                                | :heavy_check_mark: |
 | PyNNDescent        | Nearest Neighbors                         | NNDescent                                           | :heavy_check_mark: |
-| Prince             | Decomposition                             | PCA                                                 |        :x:         |
-| Prince             | Decomposition                             | CA                                                  |        :x:         |
-| Prince             | Decomposition                             | MCA                                                 |        :x:         |
-| Prince             | Decomposition                             | MFA                                                 |        :x:         |
-| Prince             | Decomposition                             | FAMD                                                |        :x:         |
-| Prince             | Decomposition                             | GPA                                                 |        :x:         |
+| Prince             | Decomposition                             | PCA                                                  | :heavy_check_mark: |
+| Prince             | Decomposition                             | CA                                                   | :heavy_check_mark: |
+| Prince             | Decomposition                             | MCA                                                  | :heavy_check_mark: |
+| Prince             | Decomposition                             | MFA                                                  | :heavy_check_mark: |
+| Prince             | Decomposition                             | FAMD                                                 | :heavy_check_mark: |
+| Prince             | Decomposition                             | GPA                                                  | :heavy_check_mark: |
+| Prince             | Decomposition                             | PGA                                                  | :heavy_check_mark: |
 | MLChemAD           | Applicability Domain                      | BoundingBoxApplicabilityDomain                      | :heavy_check_mark: |
 | MLChemAD           | Applicability Domain                      | ConvexHullApplicabilityDomain                       | :heavy_check_mark: |
 | MLChemAD           | Applicability Domain                      | PCABoundingBoxApplicabilityDomain                   | :heavy_check_mark: |

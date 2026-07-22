@@ -26,6 +26,7 @@ before.
 """
 
 import ast
+import enum
 import functools
 import importlib
 import sys
@@ -58,6 +59,12 @@ try:
     _HAS_NNDESCENT = True
 except ImportError:
     _HAS_NNDESCENT = False
+
+try:
+    import pandas as pd
+    _HAS_PANDAS = True
+except ImportError:
+    _HAS_PANDAS = False
 
 # Deep (but bounded) recursion for large trees/pipelines. Left far below
 # sys.maxsize on purpose: a genuinely unbounded limit turns a bug (e.g. an
@@ -324,6 +331,124 @@ def deserialize_masked_array(model_dict):
     data = deserialize_numpy_array(model_dict['data'])
     mask = recursive_deserialize(model_dict['mask'])
     return np.ma.MaskedArray(data=data, mask=mask)
+
+
+def serialize_enum(value: enum.Enum):
+    # e.g. prince.mfa.GroupType.NUMERICAL, stashed on a fitted MFA/FAMD as
+    # part of its group-preprocessing bookkeeping. Members are process-wide
+    # singletons that downstream code compares by identity (`is
+    # GroupType.NUMERICAL`); reconstructing via object.__new__(cls) (the
+    # generic __dict__-walk fallback) would mint a lookalike instance that
+    # fails those identity checks, so this must round-trip through the
+    # enum's own member lookup instead.
+    cls = type(value)
+    return {'meta': 'enum', 'module': cls.__module__, 'name': cls.__qualname__, 'member': value.name}
+
+
+def deserialize_enum(model_dict):
+    assert model_dict['meta'] == 'enum'
+    obj = importlib.import_module(model_dict['module'])
+    for part in model_dict['name'].split('.'):
+        obj = getattr(obj, part)
+    return obj[model_dict['member']]
+
+
+if _HAS_PANDAS:
+    def serialize_pandas_index(index: 'pd.Index'):
+        # e.g. prince's fitted CA/MCA/MFA stash pandas Index/MultiIndex
+        # objects (active_rows_, active_cols_, _column_index_) as bookkeeping
+        # for their row/column labels.
+        assert isinstance(index, pd.Index)
+        if isinstance(index, pd.MultiIndex):
+            return {
+                'meta': 'pandas_index',
+                'kind': 'multi',
+                'values': [recursive_serialize(list(t)) for t in index.tolist()],
+                'names': list(index.names),
+            }
+        if isinstance(index, pd.RangeIndex):
+            return {
+                'meta': 'pandas_index',
+                'kind': 'range',
+                'start': index.start,
+                'stop': index.stop,
+                'step': index.step,
+                'name': index.name,
+            }
+        return {
+            'meta': 'pandas_index',
+            'kind': 'index',
+            'values': recursive_serialize(index.tolist()),
+            'dtype': str(index.dtype),
+            'name': index.name,
+        }
+
+
+    def deserialize_pandas_index(model_dict):
+        assert model_dict['meta'] == 'pandas_index'
+        kind = model_dict['kind']
+        if kind == 'multi':
+            tuples = [tuple(recursive_deserialize(t)) for t in model_dict['values']]
+            return pd.MultiIndex.from_tuples(tuples, names=model_dict['names'])
+        if kind == 'range':
+            return pd.RangeIndex(model_dict['start'], model_dict['stop'], model_dict['step'], name=model_dict['name'])
+        values = recursive_deserialize(model_dict['values'])
+        return pd.Index(values, dtype=model_dict['dtype'], name=model_dict['name'])
+
+
+    def serialize_pandas_extension_array(array):
+        # e.g. prince's fitted FAMD stashes per-column pandas string/categorical
+        # extension arrays (categories_) that plain .tolist()/np.array() can't
+        # round-trip back into the same extension dtype.
+        assert isinstance(array, pd.api.extensions.ExtensionArray)
+        return {'meta': 'pandas_extension_array', 'dtype': str(array.dtype),
+               'values': recursive_serialize(list(array))}
+
+
+    def deserialize_pandas_extension_array(model_dict):
+        assert model_dict['meta'] == 'pandas_extension_array'
+        values = recursive_deserialize(model_dict['values'])
+        return pd.array(values, dtype=model_dict['dtype'])
+
+
+    def serialize_pandas_series(series: 'pd.Series'):
+        assert isinstance(series, pd.Series)
+        return {
+            'meta': 'pandas_series',
+            'index': serialize_pandas_index(series.index),
+            'name': series.name,
+            'dtype': str(series.dtype),
+            'values': recursive_serialize(series.tolist()),
+        }
+
+
+    def deserialize_pandas_series(model_dict):
+        assert model_dict['meta'] == 'pandas_series'
+        index = deserialize_pandas_index(model_dict['index'])
+        values = recursive_deserialize(model_dict['values'])
+        return pd.Series(values, index=index, name=model_dict['name'], dtype=model_dict['dtype'])
+
+
+    def serialize_pandas_dataframe(df: 'pd.DataFrame'):
+        assert isinstance(df, pd.DataFrame)
+        return {
+            'meta': 'pandas_dataframe',
+            'index': serialize_pandas_index(df.index),
+            'columns': serialize_pandas_index(df.columns),
+            'dtypes': [str(dt) for dt in df.dtypes],
+            'data': [recursive_serialize(df.iloc[:, i].tolist()) for i in range(df.shape[1])],
+        }
+
+
+    def deserialize_pandas_dataframe(model_dict):
+        assert model_dict['meta'] == 'pandas_dataframe'
+        index = deserialize_pandas_index(model_dict['index'])
+        columns = deserialize_pandas_index(model_dict['columns'])
+        arrays = [pd.array(recursive_deserialize(values), dtype=dtype)
+                 for dtype, values in zip(model_dict['dtypes'], model_dict['data'])]
+        df = pd.DataFrame({i: arr for i, arr in enumerate(arrays)}, index=index)
+        df.columns = columns
+        return df
 
 
 # ---------------------------------------------------------------------------
@@ -899,6 +1024,7 @@ __serialize_leaf_fn__ = [
     (TreePredictor, serialize_tree_predictor),
     (KDTree, serialize_kdtree),
     (BallTree, serialize_balltree),
+    (enum.Enum, serialize_enum),
 ]
 
 try:
@@ -931,8 +1057,22 @@ __deserialize_leaf_fn__ = {
     'balltree': deserialize_balltree,
     'scipy_frozen_dist': deserialize_scipy_frozen_dist,
     'masked_array': deserialize_masked_array,
+    'enum': deserialize_enum,
 }
 
 if _HAS_NNDESCENT:
     __serialize_leaf_fn__.append((NNDescent, serialize_nndescent))
     __deserialize_leaf_fn__['nn-descent'] = deserialize_nndescent
+
+if _HAS_PANDAS:
+    # DataFrame/Series checked ahead of the generic ExtensionArray entry (not
+    # a subtype relationship, just registry order) and Index last: Index
+    # covers both plain and MultiIndex via serialize_pandas_index itself.
+    __serialize_leaf_fn__.append((pd.DataFrame, serialize_pandas_dataframe))
+    __serialize_leaf_fn__.append((pd.Series, serialize_pandas_series))
+    __serialize_leaf_fn__.append((pd.api.extensions.ExtensionArray, serialize_pandas_extension_array))
+    __serialize_leaf_fn__.append((pd.Index, serialize_pandas_index))
+    __deserialize_leaf_fn__['pandas_dataframe'] = deserialize_pandas_dataframe
+    __deserialize_leaf_fn__['pandas_series'] = deserialize_pandas_series
+    __deserialize_leaf_fn__['pandas_extension_array'] = deserialize_pandas_extension_array
+    __deserialize_leaf_fn__['pandas_index'] = deserialize_pandas_index
