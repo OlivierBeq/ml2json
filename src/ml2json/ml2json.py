@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import re
 import sys
 import json
 import inspect
@@ -9,7 +10,9 @@ import warnings
 from typing import Dict
 
 from sklearn import svm, discriminant_analysis, dummy
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer, FeatureHasher
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer, HashingVectorizer
+from sklearn.feature_extraction.image import PatchExtractor
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor, ExtraTreeClassifier, ExtraTreeRegressor
 from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor, BaggingClassifier, BaggingRegressor,
@@ -18,18 +21,28 @@ from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor, BaggingClas
                               RandomForestRegressor, StackingClassifier, StackingRegressor, VotingClassifier,
                               VotingRegressor, HistGradientBoostingClassifier, HistGradientBoostingRegressor,
                               RandomTreesEmbedding)
-from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB
-from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
-from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB, ComplementNB, CategoricalNB
+from sklearn.linear_model import (LinearRegression, Lasso, Ridge, ElasticNet, ARDRegression, BayesianRidge,
+                                  ElasticNetCV, LassoCV, MultiTaskElasticNet, MultiTaskElasticNetCV, MultiTaskLasso,
+                                  MultiTaskLassoCV, GammaRegressor, PoissonRegressor, TweedieRegressor,
+                                  HuberRegressor, Lars, LarsCV, LassoLars, LassoLarsCV, LassoLarsIC,
+                                  LogisticRegressionCV, OrthogonalMatchingPursuit, OrthogonalMatchingPursuitCV,
+                                  PassiveAggressiveClassifier, PassiveAggressiveRegressor, QuantileRegressor,
+                                  RANSACRegressor, RidgeCV, RidgeClassifier, RidgeClassifierCV, SGDClassifier,
+                                  SGDRegressor, SGDOneClassSVM, TheilSenRegressor)
+from sklearn.neural_network import MLPClassifier, MLPRegressor, BernoulliRBM
 from sklearn.preprocessing import (LabelEncoder, LabelBinarizer, MultiLabelBinarizer,
                                    MinMaxScaler, StandardScaler, KernelCenterer,
                                    OneHotEncoder, RobustScaler, MaxAbsScaler,
-                                   OrdinalEncoder, Normalizer)
-from sklearn.svm import SVR
+                                   OrdinalEncoder, Normalizer, Binarizer, PowerTransformer,
+                                   QuantileTransformer, KBinsDiscretizer, PolynomialFeatures,
+                                   SplineTransformer, TargetEncoder)
+from sklearn.svm import SVR, LinearSVC, LinearSVR, NuSVC, NuSVR, OneClassSVM
 from sklearn.cluster import (AffinityPropagation, AgglomerativeClustering,
                              Birch, DBSCAN, FeatureAgglomeration, KMeans,
                              BisectingKMeans, MiniBatchKMeans, MeanShift, OPTICS,
-                             SpectralClustering, SpectralBiclustering, SpectralCoclustering)
+                             SpectralClustering, SpectralBiclustering, SpectralCoclustering,
+                             HDBSCAN as SklearnHDBSCAN)
 from sklearn.cross_decomposition import (CCA, PLSCanonical,
                                          PLSRegression, PLSSVD)
 from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAnalysis, FastICA, IncrementalPCA,
@@ -37,8 +50,37 @@ from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAna
                                    MiniBatchNMF, SparsePCA, SparseCoder, TruncatedSVD)
 from sklearn.manifold import (Isomap, LocallyLinearEmbedding,
                               MDS, SpectralEmbedding, TSNE)
-from sklearn.neighbors import NearestNeighbors, KDTree, KNeighborsClassifier, KNeighborsRegressor, KernelDensity
+from sklearn.neighbors import (NearestNeighbors, KDTree, BallTree, KNeighborsClassifier, KNeighborsRegressor,
+                               KernelDensity, RadiusNeighborsClassifier, RadiusNeighborsRegressor,
+                               KNeighborsTransformer, RadiusNeighborsTransformer, LocalOutlierFactor,
+                               NeighborhoodComponentsAnalysis, NearestCentroid)
 from sklearn.pipeline import FeatureUnion, Pipeline
+from sklearn.mixture import GaussianMixture, BayesianGaussianMixture
+from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.covariance import (EllipticEnvelope, EmpiricalCovariance, GraphicalLasso, GraphicalLassoCV,
+                                LedoitWolf, MinCovDet, OAS, ShrunkCovariance)
+from sklearn.kernel_approximation import (AdditiveChi2Sampler, Nystroem, PolynomialCountSketch, RBFSampler,
+                                          SkewedChi2Sampler)
+from sklearn.kernel_ridge import KernelRidge
+from sklearn.isotonic import IsotonicRegression
+from sklearn.random_projection import GaussianRandomProjection, SparseRandomProjection
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.feature_selection import (SelectFromModel, RFE, RFECV, SequentialFeatureSelector,
+                                       GenericUnivariateSelect, SelectFdr, SelectFpr, SelectFwe,
+                                       SelectKBest, SelectPercentile, VarianceThreshold)
+from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
+from sklearn.multiclass import OneVsOneClassifier, OneVsRestClassifier, OutputCodeClassifier
+from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
+from sklearn.semi_supervised import LabelPropagation, LabelSpreading, SelfTrainingClassifier
+from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
+from sklearn.experimental import enable_iterative_imputer  # noqa: F401
+from sklearn.impute import SimpleImputer, MissingIndicator, KNNImputer, IterativeImputer
+from sklearn.experimental import enable_halving_search_cv  # noqa: F401
+from sklearn.model_selection import (KFold, StratifiedKFold, GroupKFold, StratifiedGroupKFold, RepeatedKFold,
+                                     RepeatedStratifiedKFold, LeaveOneOut, LeavePOut, LeaveOneGroupOut,
+                                     LeavePGroupsOut, ShuffleSplit, StratifiedShuffleSplit, GroupShuffleSplit,
+                                     TimeSeriesSplit, PredefinedSplit, ParameterGrid, ParameterSampler,
+                                     GridSearchCV, RandomizedSearchCV, HalvingGridSearchCV, HalvingRandomSearchCV)
 
 from . import classification as clf
 from . import regression as reg
@@ -52,7 +94,30 @@ from . import cross_decomposition as crdec
 from . import applicability_domain as ad
 from . import over_undersampling as ous
 from . import pipeline as ppl
+from . import mixture as mix
+from . import dummy as dum
+from . import covariance as cov
+from . import kernel_approximation as kapp
+from . import kernel_ridge as kr
+from . import isotonic as iso
+from . import random_projection as rp
+from . import boosting as boost
+from . import calibration as calib
+from . import feature_selection as fsel
+from . import gaussian_process as gp
+from . import multiclass as mcls
+from . import multioutput as mout
+from . import semi_supervised as ssup
+from . import compose as comp
+from . import impute as imp
+from . import model_selection as msel
+from . import kernel_methods as kmeth
+from . import robust as rob
+from numpy.random import RandomState
+
+from . import _base
 from .utils import is_model_fitted, recursive_inspection
+from .utils.random_state import serialize_random_state, deserialize_random_state
 
 # Make additional dependencies optional
 if 'XGBRegressor' in reg.__optionals__:
@@ -64,13 +129,41 @@ if 'CatBoostRegressor' in reg.__optionals__:
 else:
     from typing import TypeVar
     Pool = TypeVar('Pool')
+if 'CatBoost' in clf.__optionals__:
+    from catboost import CatBoost
+if 'XGBBooster' in boost.__optionals__:
+    from xgboost import Booster as XGBBooster
+if 'LGBMBooster' in boost.__optionals__:
+    from lightgbm import Booster as LGBMBooster, Dataset as LGBMDataset
+if 'CatBoostPool' in boost.__optionals__:
+    from catboost import Pool as CatBoostPool
 if 'KModes' in clus.__optionals__:
     from kmodes.kmodes import KModes
     from kmodes.kprototypes import KPrototypes
 if 'HDBSCAN' in clus.__optionals__:
     from hdbscan import HDBSCAN
+if 'RobustSingleLinkage' in clus.__optionals__:
+    from hdbscan import RobustSingleLinkage
+if 'KMedoids' in clus.__optionals__:
+    from sklearn_extra.cluster import KMedoids
+if 'CommonNNClustering' in clus.__optionals__:
+    from sklearn_extra.cluster import CommonNNClustering
+if 'Fastfood' in kapp.__optionals__:
+    from sklearn_extra.kernel_approximation import Fastfood
+if 'EigenProRegressor' in kmeth.__optionals__:
+    from sklearn_extra.kernel_methods import EigenProRegressor
+if 'EigenProClassifier' in kmeth.__optionals__:
+    from sklearn_extra.kernel_methods import EigenProClassifier
+if 'RobustWeightedClassifier' in rob.__optionals__:
+    from sklearn_extra.robust import RobustWeightedClassifier
+if 'RobustWeightedRegressor' in rob.__optionals__:
+    from sklearn_extra.robust import RobustWeightedRegressor
+if 'RobustWeightedKMeans' in rob.__optionals__:
+    from sklearn_extra.robust import RobustWeightedKMeans
 if 'NNDescent' in nei.__optionals__:
     from pynndescent import NNDescent
+if 'PyNNDescentTransformer' in nei.__optionals__:
+    from pynndescent import PyNNDescentTransformer
 if 'UMAP' in man.__optionals__:
     from umap import UMAP
 if 'OpenTSNE' in man.__optionals__:
@@ -89,6 +182,8 @@ if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
                                                 CentroidDistanceApplicabilityDomain,
                                                 KNNApplicabilityDomain,
                                                 StandardizationApproachApplicabilityDomain)
+if 'LocalOutlierFactorApplicabilityDomain' in ad.__optionals__:
+    from mlchemad.applicability_domains import LocalOutlierFactorApplicabilityDomain
 if 'imblearn' in ous.__optionals__:
     from imblearn.under_sampling import (ClusterCentroids, CondensedNearestNeighbour, EditedNearestNeighbours,
                                          RepeatedEditedNearestNeighbours, AllKNN, InstanceHardnessThreshold,
@@ -99,6 +194,684 @@ if 'imblearn' in ous.__optionals__:
     from imblearn.combine import SMOTEENN, SMOTETomek
     from imblearn.ensemble import (EasyEnsembleClassifier, RUSBoostClassifier, BalancedBaggingClassifier,
                                    BalancedRandomForestClassifier)
+if 'imblearn' in ppl.__optionals__:
+    from imblearn.pipeline import Pipeline as ImblearnPipeline
+if 'Prince' in dec.__optionals__:
+    from prince import PCA as PrincePCA, CA as PrinceCA, MCA as PrinceMCA, MFA as PrinceMFA, \
+        FAMD as PrinceFAMD, GPA as PrinceGPA, PGA as PrincePGA
+
+
+# ---------------------------------------------------------------------------
+# Registry-driven dispatch
+#
+# Every supported class is registered once as (class, serialize_fn,
+# deserialize_fn). The 'meta' tag used to identify it on the wire is derived
+# automatically from the class itself - its source library (top-level import
+# package) plus its kebab-cased class name - rather than hand-picked, so two
+# classes that happen to share a name across different libraries (e.g. a
+# future addition clashing with sklearn's TSNE) can never collide: the
+# library prefix keeps them apart.
+# ---------------------------------------------------------------------------
+
+def _kebab(name: str) -> str:
+    """CamelCase/acronym class name -> kebab-case (UMAP -> umap, XGBClassifier -> xgb-classifier)."""
+    s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1-\2', name)
+    s2 = re.sub(r'([a-z0-9])([A-Z])', r'\1-\2', s1)
+    return s2.lower()
+
+
+def _meta_for(cls: type) -> str:
+    library = inspect.getmodule(cls).__name__.partition('.')[0]
+    return f'{library}.{_kebab(cls.__name__)}'
+
+
+_REGISTRY = [
+    # Classification
+    (LogisticRegression, clf.serialize_logistic_regression, clf.deserialize_logistic_regression),
+    (BernoulliNB, clf.serialize_bernoulli_nb, clf.deserialize_bernoulli_nb),
+    (GaussianNB, clf.serialize_gaussian_nb, clf.deserialize_gaussian_nb),
+    (MultinomialNB, clf.serialize_multinomial_nb, clf.deserialize_multinomial_nb),
+    (ComplementNB, clf.serialize_complement_nb, clf.deserialize_complement_nb),
+    (discriminant_analysis.LinearDiscriminantAnalysis, clf.serialize_lda, clf.deserialize_lda),
+    (discriminant_analysis.QuadraticDiscriminantAnalysis, clf.serialize_qda, clf.deserialize_qda),
+    (svm.SVC, clf.serialize_svm, clf.deserialize_svm),
+    (Perceptron, clf.serialize_perceptron, clf.deserialize_perceptron),
+    (DecisionTreeClassifier, clf.serialize_decision_tree, clf.deserialize_decision_tree),
+    (GradientBoostingClassifier, clf.serialize_gradient_boosting, clf.deserialize_gradient_boosting),
+    (RandomForestClassifier, clf.serialize_random_forest, clf.deserialize_random_forest),
+    (HistGradientBoostingClassifier, clf.serialize_hist_gradient_boosting_classifier, clf.deserialize_hist_gradient_boosting_classifier),
+    (MLPClassifier, clf.serialize_mlp, clf.deserialize_mlp),
+    (AdaBoostClassifier, clf.serialize_adaboost_classifier, clf.deserialize_adaboost_classifier),
+    (BaggingClassifier, clf.serialize_bagging_classifier, clf.deserialize_bagging_classifier),
+    (ExtraTreeClassifier, clf.serialize_extra_tree_classifier, clf.deserialize_extra_tree_classifier),
+    (ExtraTreesClassifier, clf.serialize_extratrees_classifier, clf.deserialize_extratrees_classifier),
+    (IsolationForest, clf.serialize_isolation_forest, clf.deserialize_isolation_forest),
+    (RandomTreesEmbedding, clf.serialize_random_trees_embedding, clf.deserialize_random_trees_embedding),
+    (KNeighborsClassifier, clf.serialize_nearest_neighbour_classifier, clf.deserialize_nearest_neighbour_classifier),
+    (StackingClassifier, clf.serialize_stacking_classifier, clf.deserialize_stacking_classifier),
+    (VotingClassifier, clf.serialize_voting_classifier, clf.deserialize_voting_classifier),
+
+    # Regression
+    (LinearRegression, reg.serialize_linear_regressor, reg.deserialize_linear_regressor),
+    (Lasso, reg.serialize_lasso_regressor, reg.deserialize_lasso_regressor),
+    (ElasticNet, reg.serialize_elastic_regressor, reg.deserialize_elastic_regressor),
+    (Ridge, reg.serialize_ridge_regressor, reg.deserialize_ridge_regressor),
+    (SVR, reg.serialize_svr, reg.deserialize_svr),
+    (ExtraTreeRegressor, reg.serialize_extra_tree_regressor, reg.deserialize_extra_tree_regressor),
+    (DecisionTreeRegressor, reg.serialize_decision_tree_regressor, reg.deserialize_decision_tree_regressor),
+    (GradientBoostingRegressor, reg.serialize_gradient_boosting_regressor, reg.deserialize_gradient_boosting_regressor),
+    (RandomForestRegressor, reg.serialize_random_forest_regressor, reg.deserialize_random_forest_regressor),
+    (HistGradientBoostingRegressor, reg.serialize_hist_gradient_boosting_regressor, reg.deserialize_hist_gradient_boosting_regressor),
+    (ExtraTreesRegressor, reg.serialize_extratrees_regressor, reg.deserialize_extratrees_regressor),
+    (MLPRegressor, reg.serialize_mlp_regressor, reg.deserialize_mlp_regressor),
+    (AdaBoostRegressor, reg.serialize_adaboost_regressor, reg.deserialize_adaboost_regressor),
+    (BaggingRegressor, reg.serialize_bagging_regressor, reg.deserialize_bagging_regressor),
+    (KNeighborsRegressor, reg.serialize_nearest_neighbour_regressor, reg.deserialize_nearest_neighbour_regressor),
+    (StackingRegressor, reg.serialize_stacking_regressor, reg.deserialize_stacking_regressor),
+    (VotingRegressor, reg.serialize_voting_regressor, reg.deserialize_voting_regressor),
+
+    # Clustering
+    (FeatureAgglomeration, clus.serialize_feature_agglomeration, clus.deserialize_feature_agglomeration),
+    (AffinityPropagation, clus.serialize_affinity_propagation, clus.deserialize_affinity_propagation),
+    (AgglomerativeClustering, clus.serialize_agglomerative_clustering, clus.deserialize_agglomerative_clustering),
+    (DBSCAN, clus.serialize_dbscan, clus.deserialize_dbscan),
+    (MeanShift, clus.serialize_meanshift, clus.deserialize_meanshift),
+    (BisectingKMeans, clus.serialize_bisecting_kmeans, clus.deserialize_bisecting_kmeans),
+    (MiniBatchKMeans, clus.serialize_minibatch_kmeans, clus.deserialize_minibatch_kmeans),
+    (KMeans, clus.serialize_kmeans, clus.deserialize_kmeans),
+    (OPTICS, clus.serialize_optics, clus.deserialize_optics),
+    (SpectralClustering, clus.serialize_spectral_clustering, clus.deserialize_spectral_clustering),
+    (SpectralBiclustering, clus.serialize_spectral_biclustering, clus.deserialize_spectral_biclustering),
+    (SpectralCoclustering, clus.serialize_spectral_coclustering, clus.deserialize_spectral_coclustering),
+    (Birch, clus.serialize_birch, clus.deserialize_birch),
+    (SklearnHDBSCAN, clus.serialize_sklearn_hdbscan, clus.deserialize_sklearn_hdbscan),
+
+    # Cross-decomposition
+    (CCA, crdec.serialize_cca, crdec.deserialize_cca),
+    (PLSCanonical, crdec.serialize_pls_canonical, crdec.deserialize_pls_canonical),
+    (PLSRegression, crdec.serialize_pls_regression, crdec.deserialize_pls_regression),
+    (PLSSVD, crdec.serialize_pls_svd, crdec.deserialize_pls_svd),
+
+    # Decomposition
+    (PCA, dec.serialize_pca, dec.deserialize_pca),
+    (KernelPCA, dec.serialize_kernel_pca, dec.deserialize_kernel_pca),
+    (IncrementalPCA, dec.serialize_incremental_pca, dec.deserialize_incremental_pca),
+    (MiniBatchSparsePCA, dec.serialize_minibatch_sparse_pca, dec.deserialize_minibatch_sparse_pca),
+    (SparsePCA, dec.serialize_sparse_pca, dec.deserialize_sparse_pca),
+    (MiniBatchDictionaryLearning, dec.serialize_minibatch_dictionary_learning, dec.deserialize_minibatch_dictionary_learning),
+    (DictionaryLearning, dec.serialize_dictionary_learning, dec.deserialize_dictionary_learning),
+    (FactorAnalysis, dec.serialize_factor_analysis, dec.deserialize_factor_analysis),
+    (FastICA, dec.serialize_fast_ica, dec.deserialize_fast_ica),
+    (LatentDirichletAllocation, dec.serialize_latent_dirichlet_allocation, dec.deserialize_latent_dirichlet_allocation),
+    (MiniBatchNMF, dec.serialize_minibatch_nmf, dec.deserialize_minibatch_nmf),
+    (NMF, dec.serialize_nmf, dec.deserialize_nmf),
+    (SparseCoder, dec.serialize_sparse_coder, dec.deserialize_sparse_coder),
+    (TruncatedSVD, dec.serialize_truncated_svd, dec.deserialize_truncated_svd),
+
+    # Manifold
+    (TSNE, man.serialize_tsne, man.deserialize_tsne),
+    (MDS, man.serialize_mds, man.deserialize_mds),
+    (Isomap, man.serialize_isomap, man.deserialize_isomap),
+    (LocallyLinearEmbedding, man.serialize_locally_linear_embedding, man.deserialize_locally_linear_embedding),
+    (SpectralEmbedding, man.serialize_spectral_embedding, man.deserialize_spectral_embedding),
+
+    # Neighbors
+    (NearestNeighbors, nei.serialize_nearest_neighbors, nei.deserialize_nearest_neighbors),
+    (KDTree, nei.serialize_kdtree, nei.deserialize_kdtree),
+    (KernelDensity, nei.serialize_kernel_density, nei.deserialize_kernel_density),
+
+    # Feature Extraction
+    (DictVectorizer, ext.serialize_dict_vectorizer, ext.deserialize_dict_vectorizer),
+
+    # Preprocess
+    (LabelEncoder, pre.serialize_label_encoder, pre.deserialize_label_encoder),
+    (LabelBinarizer, pre.serialize_label_binarizer, pre.deserialize_label_binarizer),
+    (MultiLabelBinarizer, pre.serialize_multilabel_binarizer, pre.deserialize_multilabel_binarizer),
+    (MinMaxScaler, pre.serialize_minmax_scaler, pre.deserialize_minmax_scaler),
+    (StandardScaler, pre.serialize_standard_scaler, pre.deserialize_standard_scaler),
+    (RobustScaler, pre.serialize_robust_scaler, pre.deserialize_robust_scaler),
+    (MaxAbsScaler, pre.serialize_maxabs_scaler, pre.deserialize_maxabs_scaler),
+    (KernelCenterer, pre.serialize_kernel_centerer, pre.deserialize_kernel_centerer),
+    (OneHotEncoder, pre.serialize_onehot_encoder, pre.deserialize_onehot_encoder),
+    (OrdinalEncoder, pre.serialize_ordinal_encoder, pre.deserialize_ordinal_encoder),
+    (Normalizer, pre.serialize_normalizer, pre.deserialize_normalizer),
+
+    # Pipeline
+    (Pipeline, ppl.serialize_pipeline, ppl.deserialize_pipeline),
+    (FeatureUnion, ppl.serialize_feature_union, ppl.deserialize_feature_union),
+
+    # Mixture
+    (GaussianMixture, mix.serialize_gaussian_mixture, mix.deserialize_gaussian_mixture),
+    (BayesianGaussianMixture, mix.serialize_bayesian_gaussian_mixture, mix.deserialize_bayesian_gaussian_mixture),
+
+    # Dummy
+    (DummyClassifier, dum.serialize_dummy_classifier, dum.deserialize_dummy_classifier),
+    (DummyRegressor, dum.serialize_dummy_regressor, dum.deserialize_dummy_regressor),
+
+    # Covariance
+    (EllipticEnvelope, cov.serialize_elliptic_envelope, cov.deserialize_elliptic_envelope),
+    (EmpiricalCovariance, cov.serialize_empirical_covariance, cov.deserialize_empirical_covariance),
+    (GraphicalLasso, cov.serialize_graphical_lasso, cov.deserialize_graphical_lasso),
+    (GraphicalLassoCV, cov.serialize_graphical_lasso_cv, cov.deserialize_graphical_lasso_cv),
+    (LedoitWolf, cov.serialize_ledoit_wolf, cov.deserialize_ledoit_wolf),
+    (MinCovDet, cov.serialize_min_cov_det, cov.deserialize_min_cov_det),
+    (OAS, cov.serialize_oas, cov.deserialize_oas),
+    (ShrunkCovariance, cov.serialize_shrunk_covariance, cov.deserialize_shrunk_covariance),
+
+    # Kernel approximation
+    (AdditiveChi2Sampler, kapp.serialize_additive_chi2_sampler, kapp.deserialize_additive_chi2_sampler),
+    (Nystroem, kapp.serialize_nystroem, kapp.deserialize_nystroem),
+    (PolynomialCountSketch, kapp.serialize_polynomial_count_sketch, kapp.deserialize_polynomial_count_sketch),
+    (RBFSampler, kapp.serialize_rbf_sampler, kapp.deserialize_rbf_sampler),
+    (SkewedChi2Sampler, kapp.serialize_skewed_chi2_sampler, kapp.deserialize_skewed_chi2_sampler),
+
+    # Kernel ridge
+    (KernelRidge, kr.serialize_kernel_ridge, kr.deserialize_kernel_ridge),
+
+    # Isotonic
+    (IsotonicRegression, iso.serialize_isotonic_regression, iso.deserialize_isotonic_regression),
+
+    # Random projection
+    (GaussianRandomProjection, rp.serialize_gaussian_random_projection, rp.deserialize_gaussian_random_projection),
+    (SparseRandomProjection, rp.serialize_sparse_random_projection, rp.deserialize_sparse_random_projection),
+
+    # Classification additions (linear_model/svm/naive_bayes/neighbors classifiers)
+    (CategoricalNB, clf.serialize_categorical_nb, clf.deserialize_categorical_nb),
+    (LinearSVC, clf.serialize_linear_svc, clf.deserialize_linear_svc),
+    (NuSVC, clf.serialize_nu_svc, clf.deserialize_nu_svc),
+    (OneClassSVM, clf.serialize_one_class_svm, clf.deserialize_one_class_svm),
+    (SGDOneClassSVM, clf.serialize_sgd_one_class_svm, clf.deserialize_sgd_one_class_svm),
+    (PassiveAggressiveClassifier, clf.serialize_passive_aggressive_classifier, clf.deserialize_passive_aggressive_classifier),
+    (RidgeClassifier, clf.serialize_ridge_classifier, clf.deserialize_ridge_classifier),
+    (RidgeClassifierCV, clf.serialize_ridge_classifier_cv, clf.deserialize_ridge_classifier_cv),
+    (SGDClassifier, clf.serialize_sgd_classifier, clf.deserialize_sgd_classifier),
+    (LogisticRegressionCV, clf.serialize_logistic_regression_cv, clf.deserialize_logistic_regression_cv),
+    (RadiusNeighborsClassifier, clf.serialize_radius_neighbors_classifier, clf.deserialize_radius_neighbors_classifier),
+    (NearestCentroid, clf.serialize_nearest_centroid, clf.deserialize_nearest_centroid),
+    (BernoulliRBM, dec.serialize_bernoulli_rbm, dec.deserialize_bernoulli_rbm),
+
+    # Regression additions (linear_model/svm/neighbors regressors)
+    (ARDRegression, reg.serialize_ard_regression, reg.deserialize_ard_regression),
+    (BayesianRidge, reg.serialize_bayesian_ridge, reg.deserialize_bayesian_ridge),
+    (ElasticNetCV, reg.serialize_elasticnet_cv, reg.deserialize_elasticnet_cv),
+    (LassoCV, reg.serialize_lasso_cv, reg.deserialize_lasso_cv),
+    (MultiTaskElasticNet, reg.serialize_multitask_elasticnet, reg.deserialize_multitask_elasticnet),
+    (MultiTaskElasticNetCV, reg.serialize_multitask_elasticnet_cv, reg.deserialize_multitask_elasticnet_cv),
+    (MultiTaskLasso, reg.serialize_multitask_lasso, reg.deserialize_multitask_lasso),
+    (MultiTaskLassoCV, reg.serialize_multitask_lasso_cv, reg.deserialize_multitask_lasso_cv),
+    (GammaRegressor, reg.serialize_gamma_regressor, reg.deserialize_gamma_regressor),
+    (PoissonRegressor, reg.serialize_poisson_regressor, reg.deserialize_poisson_regressor),
+    (TweedieRegressor, reg.serialize_tweedie_regressor, reg.deserialize_tweedie_regressor),
+    (HuberRegressor, reg.serialize_huber_regressor, reg.deserialize_huber_regressor),
+    (Lars, reg.serialize_lars, reg.deserialize_lars),
+    (LarsCV, reg.serialize_lars_cv, reg.deserialize_lars_cv),
+    (LassoLars, reg.serialize_lasso_lars, reg.deserialize_lasso_lars),
+    (LassoLarsCV, reg.serialize_lasso_lars_cv, reg.deserialize_lasso_lars_cv),
+    (LassoLarsIC, reg.serialize_lasso_lars_ic, reg.deserialize_lasso_lars_ic),
+    (OrthogonalMatchingPursuit, reg.serialize_orthogonal_matching_pursuit, reg.deserialize_orthogonal_matching_pursuit),
+    (OrthogonalMatchingPursuitCV, reg.serialize_orthogonal_matching_pursuit_cv, reg.deserialize_orthogonal_matching_pursuit_cv),
+    (PassiveAggressiveRegressor, reg.serialize_passive_aggressive_regressor, reg.deserialize_passive_aggressive_regressor),
+    (QuantileRegressor, reg.serialize_quantile_regressor, reg.deserialize_quantile_regressor),
+    (RANSACRegressor, reg.serialize_ransac_regressor, reg.deserialize_ransac_regressor),
+    (RidgeCV, reg.serialize_ridge_cv, reg.deserialize_ridge_cv),
+    (SGDRegressor, reg.serialize_sgd_regressor, reg.deserialize_sgd_regressor),
+    (TheilSenRegressor, reg.serialize_theilsen_regressor, reg.deserialize_theilsen_regressor),
+    (LinearSVR, reg.serialize_linear_svr, reg.deserialize_linear_svr),
+    (NuSVR, reg.serialize_nu_svr, reg.deserialize_nu_svr),
+    (RadiusNeighborsRegressor, reg.serialize_radius_neighbors_regressor, reg.deserialize_radius_neighbors_regressor),
+
+    # Neighbors additions
+    (KNeighborsTransformer, nei.serialize_kneighbors_transformer, nei.deserialize_kneighbors_transformer),
+    (RadiusNeighborsTransformer, nei.serialize_radius_neighbors_transformer, nei.deserialize_radius_neighbors_transformer),
+    (LocalOutlierFactor, nei.serialize_local_outlier_factor, nei.deserialize_local_outlier_factor),
+    (NeighborhoodComponentsAnalysis, nei.serialize_neighborhood_components_analysis, nei.deserialize_neighborhood_components_analysis),
+    (BallTree, nei.serialize_balltree, nei.deserialize_balltree),
+
+    # Preprocessing additions
+    (Binarizer, pre.serialize_binarizer, pre.deserialize_binarizer),
+    (PowerTransformer, pre.serialize_power_transformer, pre.deserialize_power_transformer),
+    (QuantileTransformer, pre.serialize_quantile_transformer, pre.deserialize_quantile_transformer),
+    (KBinsDiscretizer, pre.serialize_kbins_discretizer, pre.deserialize_kbins_discretizer),
+    (PolynomialFeatures, pre.serialize_polynomial_features, pre.deserialize_polynomial_features),
+    (SplineTransformer, pre.serialize_spline_transformer, pre.deserialize_spline_transformer),
+    (TargetEncoder, pre.serialize_target_encoder, pre.deserialize_target_encoder),
+
+    # Feature extraction additions
+    (FeatureHasher, ext.serialize_feature_hasher, ext.deserialize_feature_hasher),
+    (CountVectorizer, ext.serialize_count_vectorizer, ext.deserialize_count_vectorizer),
+    (TfidfTransformer, ext.serialize_tfidf_transformer, ext.deserialize_tfidf_transformer),
+    (TfidfVectorizer, ext.serialize_tfidf_vectorizer, ext.deserialize_tfidf_vectorizer),
+    (HashingVectorizer, ext.serialize_hashing_vectorizer, ext.deserialize_hashing_vectorizer),
+    (PatchExtractor, ext.serialize_patch_extractor, ext.deserialize_patch_extractor),
+
+    # Calibration
+    (CalibratedClassifierCV, calib.serialize_calibrated_classifier_cv, calib.deserialize_calibrated_classifier_cv),
+
+    # Feature selection
+    (SelectFromModel, fsel.serialize_select_from_model, fsel.deserialize_select_from_model),
+    (RFE, fsel.serialize_rfe, fsel.deserialize_rfe),
+    (RFECV, fsel.serialize_rfecv, fsel.deserialize_rfecv),
+    (SequentialFeatureSelector, fsel.serialize_sequential_feature_selector, fsel.deserialize_sequential_feature_selector),
+    (GenericUnivariateSelect, fsel.serialize_generic_univariate_select, fsel.deserialize_generic_univariate_select),
+    (SelectFdr, fsel.serialize_select_fdr, fsel.deserialize_select_fdr),
+    (SelectFpr, fsel.serialize_select_fpr, fsel.deserialize_select_fpr),
+    (SelectFwe, fsel.serialize_select_fwe, fsel.deserialize_select_fwe),
+    (SelectKBest, fsel.serialize_select_kbest, fsel.deserialize_select_kbest),
+    (SelectPercentile, fsel.serialize_select_percentile, fsel.deserialize_select_percentile),
+    (VarianceThreshold, fsel.serialize_variance_threshold, fsel.deserialize_variance_threshold),
+
+    # Impute
+    (SimpleImputer, imp.serialize_simple_imputer, imp.deserialize_simple_imputer),
+    (MissingIndicator, imp.serialize_missing_indicator, imp.deserialize_missing_indicator),
+    (KNNImputer, imp.serialize_knn_imputer, imp.deserialize_knn_imputer),
+    (IterativeImputer, imp.serialize_iterative_imputer, imp.deserialize_iterative_imputer),
+
+    # Gaussian process
+    (GaussianProcessClassifier, gp.serialize_gaussian_process_classifier, gp.deserialize_gaussian_process_classifier),
+    (GaussianProcessRegressor, gp.serialize_gaussian_process_regressor, gp.deserialize_gaussian_process_regressor),
+
+    # Multiclass
+    (OneVsOneClassifier, mcls.serialize_one_vs_one_classifier, mcls.deserialize_one_vs_one_classifier),
+    (OneVsRestClassifier, mcls.serialize_one_vs_rest_classifier, mcls.deserialize_one_vs_rest_classifier),
+    (OutputCodeClassifier, mcls.serialize_output_code_classifier, mcls.deserialize_output_code_classifier),
+
+    # Multioutput
+    (ClassifierChain, mout.serialize_classifier_chain, mout.deserialize_classifier_chain),
+    (MultiOutputClassifier, mout.serialize_multioutput_classifier, mout.deserialize_multioutput_classifier),
+    (MultiOutputRegressor, mout.serialize_multioutput_regressor, mout.deserialize_multioutput_regressor),
+    (RegressorChain, mout.serialize_regressor_chain, mout.deserialize_regressor_chain),
+
+    # Semi-supervised
+    (LabelPropagation, ssup.serialize_label_propagation, ssup.deserialize_label_propagation),
+    (LabelSpreading, ssup.serialize_label_spreading, ssup.deserialize_label_spreading),
+    (SelfTrainingClassifier, ssup.serialize_self_training_classifier, ssup.deserialize_self_training_classifier),
+
+    # Compose
+    (ColumnTransformer, comp.serialize_column_transformer, comp.deserialize_column_transformer),
+    (TransformedTargetRegressor, comp.serialize_transformed_target_regressor, comp.deserialize_transformed_target_regressor),
+
+    # Model selection
+    (KFold, msel.serialize_kfold, msel.deserialize_kfold),
+    (StratifiedKFold, msel.serialize_stratified_kfold, msel.deserialize_stratified_kfold),
+    (GroupKFold, msel.serialize_group_kfold, msel.deserialize_group_kfold),
+    (StratifiedGroupKFold, msel.serialize_stratified_group_kfold, msel.deserialize_stratified_group_kfold),
+    (RepeatedKFold, msel.serialize_repeated_kfold, msel.deserialize_repeated_kfold),
+    (RepeatedStratifiedKFold, msel.serialize_repeated_stratified_kfold, msel.deserialize_repeated_stratified_kfold),
+    (LeaveOneOut, msel.serialize_leave_one_out, msel.deserialize_leave_one_out),
+    (LeavePOut, msel.serialize_leave_p_out, msel.deserialize_leave_p_out),
+    (LeaveOneGroupOut, msel.serialize_leave_one_group_out, msel.deserialize_leave_one_group_out),
+    (LeavePGroupsOut, msel.serialize_leave_p_groups_out, msel.deserialize_leave_p_groups_out),
+    (ShuffleSplit, msel.serialize_shuffle_split, msel.deserialize_shuffle_split),
+    (StratifiedShuffleSplit, msel.serialize_stratified_shuffle_split, msel.deserialize_stratified_shuffle_split),
+    (GroupShuffleSplit, msel.serialize_group_shuffle_split, msel.deserialize_group_shuffle_split),
+    (TimeSeriesSplit, msel.serialize_time_series_split, msel.deserialize_time_series_split),
+    (PredefinedSplit, msel.serialize_predefined_split, msel.deserialize_predefined_split),
+    (ParameterGrid, msel.serialize_parameter_grid, msel.deserialize_parameter_grid),
+    (ParameterSampler, msel.serialize_parameter_sampler, msel.deserialize_parameter_sampler),
+    (GridSearchCV, msel.serialize_grid_search_cv, msel.deserialize_grid_search_cv),
+    (RandomizedSearchCV, msel.serialize_randomized_search_cv, msel.deserialize_randomized_search_cv),
+    (HalvingGridSearchCV, msel.serialize_halving_grid_search_cv, msel.deserialize_halving_grid_search_cv),
+    (HalvingRandomSearchCV, msel.serialize_halving_randomized_search_cv, msel.deserialize_halving_randomized_search_cv),
+]
+
+# Optional dependencies: registered the same way, guarded by the same
+# '<Name>' in <module>.__optionals__ checks the imports above already use.
+if 'XGBClassifier' in clf.__optionals__:
+    _REGISTRY.append((XGBClassifier, clf.serialize_xgboost_classifier, clf.deserialize_xgboost_classifier))
+if 'XGBRFClassifier' in clf.__optionals__:
+    _REGISTRY.append((XGBRFClassifier, clf.serialize_xgboost_rf_classifier, clf.deserialize_xgboost_rf_classifier))
+if 'LGBMClassifier' in clf.__optionals__:
+    _REGISTRY.append((LGBMClassifier, clf.serialize_lightgbm_classifier, clf.deserialize_lightgbm_classifier))
+if 'CatBoostClassifier' in clf.__optionals__:
+    _REGISTRY.append((CatBoostClassifier, clf.serialize_catboost_classifier, clf.deserialize_catboost_classifier))
+if 'CatBoost' in clf.__optionals__:
+    _REGISTRY.append((CatBoost, clf.serialize_catboost, clf.deserialize_catboost))
+
+if 'XGBRanker' in reg.__optionals__:
+    _REGISTRY.append((XGBRanker, reg.serialize_xgboost_ranker, reg.deserialize_xgboost_ranker))
+if 'XGBRegressor' in reg.__optionals__:
+    _REGISTRY.append((XGBRegressor, reg.serialize_xgboost_regressor, reg.deserialize_xgboost_regressor))
+if 'XGBRFRegressor' in reg.__optionals__:
+    _REGISTRY.append((XGBRFRegressor, reg.serialize_xgboost_rf_regressor, reg.deserialize_xgboost_rf_regressor))
+if 'LGBMRegressor' in reg.__optionals__:
+    _REGISTRY.append((LGBMRegressor, reg.serialize_lightgbm_regressor, reg.deserialize_lightgbm_regressor))
+if 'LGBMRanker' in reg.__optionals__:
+    _REGISTRY.append((LGBMRanker, reg.serialize_lightgbm_ranker, reg.deserialize_lightgbm_ranker))
+if 'CatBoostRegressor' in reg.__optionals__:
+    _REGISTRY.append((CatBoostRegressor, reg.serialize_catboost_regressor, reg.deserialize_catboost_regressor))
+if 'CatBoostRanker' in reg.__optionals__:
+    _REGISTRY.append((CatBoostRanker, reg.serialize_catboost_ranker, reg.deserialize_catboost_ranker))
+
+if 'KPrototypes' in clus.__optionals__:
+    _REGISTRY.append((KPrototypes, clus.serialize_kprototypes, clus.deserialize_kprototypes))
+if 'KModes' in clus.__optionals__:
+    _REGISTRY.append((KModes, clus.serialize_kmodes, clus.deserialize_kmodes))
+if 'HDBSCAN' in clus.__optionals__:
+    _REGISTRY.append((HDBSCAN, clus.serialize_hdbscan, clus.deserialize_hdbscan))
+if 'RobustSingleLinkage' in clus.__optionals__:
+    _REGISTRY.append((RobustSingleLinkage, clus.serialize_robust_single_linkage, clus.deserialize_robust_single_linkage))
+if 'KMedoids' in clus.__optionals__:
+    _REGISTRY.append((KMedoids, clus.serialize_kmedoids, clus.deserialize_kmedoids))
+if 'CommonNNClustering' in clus.__optionals__:
+    _REGISTRY.append((CommonNNClustering, clus.serialize_common_nn_clustering, clus.deserialize_common_nn_clustering))
+if 'Fastfood' in kapp.__optionals__:
+    _REGISTRY.append((Fastfood, kapp.serialize_fastfood, kapp.deserialize_fastfood))
+if 'EigenProRegressor' in kmeth.__optionals__:
+    _REGISTRY.append((EigenProRegressor, kmeth.serialize_eigenpro_regressor, kmeth.deserialize_eigenpro_regressor))
+if 'EigenProClassifier' in kmeth.__optionals__:
+    _REGISTRY.append((EigenProClassifier, kmeth.serialize_eigenpro_classifier, kmeth.deserialize_eigenpro_classifier))
+if 'RobustWeightedClassifier' in rob.__optionals__:
+    _REGISTRY.append((RobustWeightedClassifier, rob.serialize_robust_weighted_classifier, rob.deserialize_robust_weighted_classifier))
+if 'RobustWeightedRegressor' in rob.__optionals__:
+    _REGISTRY.append((RobustWeightedRegressor, rob.serialize_robust_weighted_regressor, rob.deserialize_robust_weighted_regressor))
+if 'RobustWeightedKMeans' in rob.__optionals__:
+    _REGISTRY.append((RobustWeightedKMeans, rob.serialize_robust_weighted_kmeans, rob.deserialize_robust_weighted_kmeans))
+
+if 'UMAP' in man.__optionals__:
+    _REGISTRY.append((UMAP, man.serialize_umap, man.deserialize_umap))
+if 'OpenTSNE' in man.__optionals__:
+    _REGISTRY.append((OpenTSNE, man.serialize_opentsne, man.deserialize_opentsne))
+    _REGISTRY.append((OpenTSNEsklearn, man.serialize_opentsne, man.deserialize_opentsne))
+    _REGISTRY.append((OpenTSNEEmbedding, man.serialize_opentsne_embedding, man.deserialize_opentsne_embedding))
+    _REGISTRY.append((OpenPartialTSNEEmbedding, man.serialize_opentsne_partial_embedding, man.deserialize_opentsne_partial_embedding))
+
+if 'NNDescent' in nei.__optionals__:
+    _REGISTRY.append((NNDescent, nei.serialize_nndescent, nei.deserialize_nndescent))
+if 'PyNNDescentTransformer' in nei.__optionals__:
+    _REGISTRY.append((PyNNDescentTransformer, nei.serialize_pynndescent_transformer, nei.deserialize_pynndescent_transformer))
+
+if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
+    _REGISTRY.extend([
+        (BoundingBoxApplicabilityDomain, ad.serialize_bounding_box_applicability_domain, ad.deserialize_bounding_box_applicability_domain),
+        (ConvexHullApplicabilityDomain, ad.serialize_convex_hull_applicability_domain, ad.deserialize_convex_hull_applicability_domain),
+        (PCABoundingBoxApplicabilityDomain, ad.serialize_pca_bounding_box_applicability_domain, ad.deserialize_pca_bounding_box_applicability_domain),
+        (TopKatApplicabilityDomain, ad.serialize_topkat_applicability_domain, ad.deserialize_topkat_applicability_domain),
+        (LeverageApplicabilityDomain, ad.serialize_leverage_applicability_domain, ad.deserialize_leverage_applicability_domain),
+        (HotellingT2ApplicabilityDomain, ad.serialize_hotelling_t2_applicability_domain, ad.deserialize_hotelling_t2_applicability_domain),
+        (KernelDensityApplicabilityDomain, ad.serialize_kernel_density_applicability_domain, ad.deserialize_kernel_density_applicability_domain),
+        (IsolationForestApplicabilityDomain, ad.serialize_isolation_forest_applicability_domain, ad.deserialize_isolation_forest_applicability_domain),
+        (CentroidDistanceApplicabilityDomain, ad.serialize_centroid_distance_applicability_domain, ad.deserialize_centroid_distance_applicability_domain),
+        (KNNApplicabilityDomain, ad.serialize_knn_applicability_domain, ad.deserialize_knn_applicability_domain),
+        (StandardizationApproachApplicabilityDomain, ad.serialize_standardization_approach_applicability_domain, ad.deserialize_standardization_approach_applicability_domain),
+    ])
+if 'LocalOutlierFactorApplicabilityDomain' in ad.__optionals__:
+    _REGISTRY.append((LocalOutlierFactorApplicabilityDomain, ad.serialize_local_outlier_factor_applicability_domain, ad.deserialize_local_outlier_factor_applicability_domain))
+
+if 'imblearn' in ous.__optionals__:
+    _REGISTRY.extend([
+        (ClusterCentroids, ous.serialize_cluster_centroids, ous.deserialize_cluster_centroids),
+        (CondensedNearestNeighbour, ous.serialize_condensed_nearest_neighbours, ous.deserialize_condensed_nearest_neighbours),
+        (EditedNearestNeighbours, ous.serialize_edited_nearest_neighbours, ous.deserialize_edited_nearest_neighbours),
+        (RepeatedEditedNearestNeighbours, ous.serialize_repeated_edited_nearest_neighbours, ous.deserialize_repeated_edited_nearest_neighbours),
+        (AllKNN, ous.serialize_all_knn, ous.deserialize_all_knn),
+        (InstanceHardnessThreshold, ous.serialize_instance_hardness_threshold, ous.deserialize_instance_hardness_threshold),
+        (NearMiss, ous.serialize_near_miss, ous.deserialize_near_miss),
+        (NeighbourhoodCleaningRule, ous.serialize_neighbourhood_cleaning_rule, ous.deserialize_neighbourhood_cleaning_rule),
+        (OneSidedSelection, ous.serialize_one_sided_selection, ous.deserialize_one_sided_selection),
+        (RandomUnderSampler, ous.serialize_random_under_sampler, ous.deserialize_random_under_sampler),
+        (TomekLinks, ous.serialize_tomek_links, ous.deserialize_tomek_links),
+        (RandomOverSampler, ous.serialize_random_over_sampler, ous.deserialize_random_over_sampler),
+        (SMOTENC, ous.serialize_smotenc, ous.deserialize_smotenc),
+        (SMOTEN, ous.serialize_smoten, ous.deserialize_smoten),
+        (SMOTE, ous.serialize_smote, ous.deserialize_smote),
+        (ADASYN, ous.serialize_adasyn, ous.deserialize_adasyn),
+        (BorderlineSMOTE, ous.serialize_borderline_smote, ous.deserialize_borderline_smote),
+        (KMeansSMOTE, ous.serialize_kmeans_smote, ous.deserialize_kmeans_smote),
+        (SVMSMOTE, ous.serialize_svm_smote, ous.deserialize_svm_smote),
+        (SMOTEENN, ous.serialize_smote_enn, ous.deserialize_smote_enn),
+        (SMOTETomek, ous.serialize_smote_tomek, ous.deserialize_smote_tomek),
+    ])
+
+if 'imblearn' in ppl.__optionals__:
+    _REGISTRY.append((ImblearnPipeline, ppl.serialize_imblearn_pipeline, ppl.deserialize_imblearn_pipeline))
+
+if 'Prince' in dec.__optionals__:
+    _REGISTRY.extend([
+        (PrincePCA, dec.serialize_prince_pca, dec.deserialize_prince_pca),
+        (PrinceCA, dec.serialize_prince_ca, dec.deserialize_prince_ca),
+        (PrinceMCA, dec.serialize_prince_mca, dec.deserialize_prince_mca),
+        (PrinceMFA, dec.serialize_prince_mfa, dec.deserialize_prince_mfa),
+        (PrinceFAMD, dec.serialize_prince_famd, dec.deserialize_prince_famd),
+        (PrinceGPA, dec.serialize_prince_gpa, dec.deserialize_prince_gpa),
+        (PrincePGA, dec.serialize_prince_pga, dec.deserialize_prince_pga),
+    ])
+
+if 'imblearn' in clf.__optionals__:
+    _REGISTRY.extend([
+        (EasyEnsembleClassifier, clf.serialize_easy_ensemble_classifier, clf.deserialize_easy_ensemble_classifier),
+        (RUSBoostClassifier, clf.serialize_rusboost_classifier, clf.deserialize_rusboost_classifier),
+        (BalancedBaggingClassifier, clf.serialize_balanced_bagging_classifier, clf.deserialize_balanced_bagging_classifier),
+        (BalancedRandomForestClassifier, clf.serialize_balanced_random_forest_classifier, clf.deserialize_balanced_random_forest_classifier),
+    ])
+
+# Boosting libraries' own native, non-sklearn-estimator objects (Booster/Dataset/Pool)
+if 'XGBBooster' in boost.__optionals__:
+    _REGISTRY.append((XGBBooster, boost.serialize_xgboost_booster, boost.deserialize_xgboost_booster))
+if 'LGBMBooster' in boost.__optionals__:
+    _REGISTRY.append((LGBMBooster, boost.serialize_lightgbm_booster, boost.deserialize_lightgbm_booster))
+    _REGISTRY.append((LGBMDataset, boost.serialize_lightgbm_dataset, boost.deserialize_lightgbm_dataset))
+if 'CatBoostPool' in boost.__optionals__:
+    _REGISTRY.append((CatBoostPool, boost.serialize_catboost_pool, boost.deserialize_catboost_pool))
+
+# CatBoost serializers need an extra `catboost_data` argument that no other
+# serializer takes, so they're routed separately in serialize_model rather
+# than forcing every serialize_X function to accept an unused parameter.
+_CATBOOST_SERIALIZE_FNS = {}
+if 'CatBoostClassifier' in clf.__optionals__:
+    _CATBOOST_SERIALIZE_FNS[CatBoostClassifier] = clf.serialize_catboost_classifier
+if 'CatBoostRegressor' in reg.__optionals__:
+    _CATBOOST_SERIALIZE_FNS[CatBoostRegressor] = reg.serialize_catboost_regressor
+if 'CatBoostRanker' in reg.__optionals__:
+    _CATBOOST_SERIALIZE_FNS[CatBoostRanker] = reg.serialize_catboost_ranker
+if 'CatBoost' in clf.__optionals__:
+    _CATBOOST_SERIALIZE_FNS[CatBoost] = clf.serialize_catboost
+
+_META_BY_TYPE = {}
+_DESERIALIZE_BY_META = {}
+for _cls, _ser_fn, _deser_fn in _REGISTRY:
+    _meta = _meta_for(_cls)
+    # Two distinct classes intentionally sharing one (de)serializer (e.g.
+    # openTSNE.TSNE and its openTSNE.sklearn.TSNE wrapper, both handled by
+    # man.deserialize_opentsne) collide on meta harmlessly - same wire format,
+    # same reconstruction function. Only a *different* handler landing on an
+    # already-claimed meta is a genuine ambiguity worth failing fast on.
+    if _meta in _DESERIALIZE_BY_META and _DESERIALIZE_BY_META[_meta] is not _deser_fn:
+        raise RuntimeError(f'Duplicate meta {_meta!r}: {_cls} collides with an existing registry entry')
+    _DESERIALIZE_BY_META[_meta] = _deser_fn
+    _META_BY_TYPE[_cls] = _meta
+_SERIALIZE_BY_TYPE = {cls: ser_fn for cls, ser_fn, _ in _REGISTRY if cls not in _CATBOOST_SERIALIZE_FNS}
+del _cls, _ser_fn, _deser_fn, _meta
+
+# Legacy meta strings this library used before dispatch was table-driven
+# (e.g. 'lr', 'isomap', 'umap'). Kept so previously-serialized JSON still
+# deserializes; deserialize_model emits a DeprecationWarning when it falls
+# back to this table.
+_LEGACY_META_ALIASES = {
+    # Classification
+    'lr': clf.deserialize_logistic_regression,
+    'bernoulli-nb': clf.deserialize_bernoulli_nb,
+    'gaussian-nb': clf.deserialize_gaussian_nb,
+    'multinomial-nb': clf.deserialize_multinomial_nb,
+    'complement-nb': clf.deserialize_complement_nb,
+    'lda': clf.deserialize_lda,
+    'qda': clf.deserialize_qda,
+    'svm': clf.deserialize_svm,
+    'perceptron': clf.deserialize_perceptron,
+    'decision-tree': clf.deserialize_decision_tree,
+    'gb': clf.deserialize_gradient_boosting,
+    'rf': clf.deserialize_random_forest,
+    'mlp': clf.deserialize_mlp,
+    'adaboost-classifier': clf.deserialize_adaboost_classifier,
+    'bagging-classifier': clf.deserialize_bagging_classifier,
+    'extra-tree-cls': clf.deserialize_extra_tree_classifier,
+    'extratrees-classifier': clf.deserialize_extratrees_classifier,
+    'isolation-forest': clf.deserialize_isolation_forest,
+    'random-trees-embedding': clf.deserialize_random_trees_embedding,
+    'nearest-neighbour-classifier': clf.deserialize_nearest_neighbour_classifier,
+    'stacking-classifier': clf.deserialize_stacking_classifier,
+    'voting-classifier': clf.deserialize_voting_classifier,
+
+    # Regression
+    'linear-regression': reg.deserialize_linear_regressor,
+    'lasso-regression': reg.deserialize_lasso_regressor,
+    'elasticnet-regression': reg.deserialize_elastic_regressor,
+    'ridge-regression': reg.deserialize_ridge_regressor,
+    'svr': reg.deserialize_svr,
+    'decision-tree-regression': reg.deserialize_decision_tree_regressor,
+    'gb-regression': reg.deserialize_gradient_boosting_regressor,
+    'rf-regression': reg.deserialize_random_forest_regressor,
+    'mlp-regression': reg.deserialize_mlp_regressor,
+    'adaboost-regressor': reg.deserialize_adaboost_regressor,
+    'bagging-regression': reg.deserialize_bagging_regressor,
+    'extra-tree-reg': reg.deserialize_extra_tree_regressor,
+    'extratrees-regressor': reg.deserialize_extratrees_regressor,
+    'nearest-neighbour-regressor': reg.deserialize_nearest_neighbour_regressor,
+    'stacking-regressor': reg.deserialize_stacking_regressor,
+    'voting-regressor': reg.deserialize_voting_regressor,
+
+    # Clustering
+    'affinity-propagation': clus.deserialize_affinity_propagation,
+    'agglomerative-clustering': clus.deserialize_agglomerative_clustering,
+    'feature-agglomeration': clus.deserialize_feature_agglomeration,
+    'dbscan': clus.deserialize_dbscan,
+    'meanshift': clus.deserialize_meanshift,
+    'kmeans': clus.deserialize_kmeans,
+    'minibatch-kmeans': clus.deserialize_minibatch_kmeans,
+    'optics': clus.deserialize_optics,
+    'spectral-clustering': clus.deserialize_spectral_clustering,
+    'spectral-biclustering': clus.deserialize_spectral_biclustering,
+    'spectral-coclustering': clus.deserialize_spectral_coclustering,
+    'birch': clus.deserialize_birch,
+    'bisecting-kmeans': clus.deserialize_bisecting_kmeans,
+
+    # Cross-decomposition
+    'cca': crdec.deserialize_cca,
+    'pls-canonical': crdec.deserialize_pls_canonical,
+    'pls-regression': crdec.deserialize_pls_regression,
+    'pls-svd': crdec.deserialize_pls_svd,
+
+    # Decomposition
+    'pca': dec.deserialize_pca,
+    'kernel-pca': dec.deserialize_kernel_pca,
+    'incremental-pca': dec.deserialize_incremental_pca,
+    'sparse-pca': dec.deserialize_sparse_pca,
+    'minibatch-sparse-pca': dec.deserialize_minibatch_sparse_pca,
+    'dictionary-learning': dec.deserialize_dictionary_learning,
+    'minibatch-dictionary-learning': dec.deserialize_minibatch_dictionary_learning,
+    'factor-analysis': dec.deserialize_factor_analysis,
+    'fast-ica': dec.deserialize_fast_ica,
+    'latent-dirichlet-allocation': dec.deserialize_latent_dirichlet_allocation,
+    'nmf': dec.deserialize_nmf,
+    'minibatch-nmf': dec.deserialize_minibatch_nmf,
+    'sparse-coder': dec.deserialize_sparse_coder,
+    'truncated-svd': dec.deserialize_truncated_svd,
+
+    # Manifold
+    'tsne': man.deserialize_tsne,
+    'mds': man.deserialize_mds,
+    'isomap': man.deserialize_isomap,
+    'locally-linear-embedding': man.deserialize_locally_linear_embedding,
+    'spectral-embedding': man.deserialize_spectral_embedding,
+
+    # Neighbors
+    'nearest-neighbors': nei.deserialize_nearest_neighbors,
+    'kdtree': nei.deserialize_kdtree,
+    'kernel-density': nei.deserialize_kernel_density,
+
+    # Feature Extraction
+    'dict-vectorizer': ext.deserialize_dict_vectorizer,
+
+    # Preprocess
+    'label-encoder': pre.deserialize_label_encoder,
+    'label-binarizer': pre.deserialize_label_binarizer,
+    'multilabel-binarizer': pre.deserialize_multilabel_binarizer,
+    'minmax-scaler': pre.deserialize_minmax_scaler,
+    'standard-scaler': pre.deserialize_standard_scaler,
+    'robust-scaler': pre.deserialize_robust_scaler,
+    'maxabs-scaler': pre.deserialize_maxabs_scaler,
+    'kernel-centerer': pre.deserialize_kernel_centerer,
+    'onehot-encoder': pre.deserialize_onehot_encoder,
+    'ordinal-encoder': pre.deserialize_ordinal_encoder,
+    'normalizer': pre.deserialize_normalizer,
+
+    # Pipeline
+    'pipeline': ppl.deserialize_pipeline,
+}
+
+if 'XGBClassifier' in clf.__optionals__:
+    _LEGACY_META_ALIASES['xgboost-classifier'] = clf.deserialize_xgboost_classifier
+if 'XGBRFClassifier' in clf.__optionals__:
+    _LEGACY_META_ALIASES['xgboost-rf-classifier'] = clf.deserialize_xgboost_rf_classifier
+if 'LGBMClassifier' in clf.__optionals__:
+    _LEGACY_META_ALIASES['lightgbm-classifier'] = clf.deserialize_lightgbm_classifier
+if 'CatBoostClassifier' in clf.__optionals__:
+    _LEGACY_META_ALIASES['catboost-classifier'] = clf.deserialize_catboost_classifier
+if 'XGBRanker' in reg.__optionals__:
+    _LEGACY_META_ALIASES['xgboost-ranker'] = reg.deserialize_xgboost_ranker
+if 'XGBRegressor' in reg.__optionals__:
+    _LEGACY_META_ALIASES['xgboost-regressor'] = reg.deserialize_xgboost_regressor
+if 'XGBRFRegressor' in reg.__optionals__:
+    _LEGACY_META_ALIASES['xgboost-rf-regressor'] = reg.deserialize_xgboost_rf_regressor
+if 'LGBMRegressor' in reg.__optionals__:
+    _LEGACY_META_ALIASES['lightgbm-regressor'] = reg.deserialize_lightgbm_regressor
+if 'LGBMRanker' in reg.__optionals__:
+    _LEGACY_META_ALIASES['lightgbm-ranker'] = reg.deserialize_lightgbm_ranker
+if 'CatBoostRegressor' in reg.__optionals__:
+    _LEGACY_META_ALIASES['catboost-regressor'] = reg.deserialize_catboost_regressor
+if 'CatBoostRanker' in reg.__optionals__:
+    _LEGACY_META_ALIASES['catboost-ranker'] = reg.deserialize_catboost_ranker
+if 'KPrototypes' in clus.__optionals__:
+    _LEGACY_META_ALIASES['kprototypes'] = clus.deserialize_kprototypes
+if 'KModes' in clus.__optionals__:
+    _LEGACY_META_ALIASES['kmodes'] = clus.deserialize_kmodes
+if 'HDBSCAN' in clus.__optionals__:
+    _LEGACY_META_ALIASES['hdbscan'] = clus.deserialize_hdbscan
+if 'UMAP' in man.__optionals__:
+    _LEGACY_META_ALIASES['umap'] = man.deserialize_umap
+if 'OpenTSNE' in man.__optionals__:
+    _LEGACY_META_ALIASES['openTSNE'] = man.deserialize_opentsne
+    _LEGACY_META_ALIASES['openTSNEEmbedding'] = man.deserialize_opentsne_embedding
+    _LEGACY_META_ALIASES['openTSNEPartialEmbedding'] = man.deserialize_opentsne_partial_embedding
+if 'NNDescent' in nei.__optionals__:
+    _LEGACY_META_ALIASES['nn-descent'] = nei.deserialize_nndescent
+if 'BoundingBoxApplicabilityDomain' in ad.__optionals__:
+    _LEGACY_META_ALIASES.update({
+        'bounding-box-ad': ad.deserialize_bounding_box_applicability_domain,
+        'convex-hull-ad': ad.deserialize_convex_hull_applicability_domain,
+        'pca-bounding-box-ad': ad.deserialize_pca_bounding_box_applicability_domain,
+        'topkat-ad': ad.deserialize_topkat_applicability_domain,
+        'leverage-ad': ad.deserialize_leverage_applicability_domain,
+        'hotelling-t2-ad': ad.deserialize_hotelling_t2_applicability_domain,
+        'kernel-density-ad': ad.deserialize_kernel_density_applicability_domain,
+        'isolation-forest-ad': ad.deserialize_isolation_forest_applicability_domain,
+        'centroid-distance-ad': ad.deserialize_centroid_distance_applicability_domain,
+        'knn-ad': ad.deserialize_knn_applicability_domain,
+        'standardization-approach-ad': ad.deserialize_standardization_approach_applicability_domain,
+    })
+if 'imblearn' in ous.__optionals__:
+    _LEGACY_META_ALIASES.update({
+        'cluster-centroids': ous.deserialize_cluster_centroids,
+        'condensed-nearest-neighbours': ous.deserialize_condensed_nearest_neighbours,
+        'edited-nearest-neighbours': ous.deserialize_edited_nearest_neighbours,
+        'repeated-edited-nearest-neighbours': ous.deserialize_repeated_edited_nearest_neighbours,
+        'all-knn': ous.deserialize_all_knn,
+        'instance-hardness-threshold': ous.deserialize_instance_hardness_threshold,
+        'near-miss': ous.deserialize_near_miss,
+        'neighbourhood-cleaning-rule': ous.deserialize_neighbourhood_cleaning_rule,
+        'one-sided-selection': ous.deserialize_one_sided_selection,
+        'random-under-sampler': ous.deserialize_random_under_sampler,
+        'tomek-links': ous.deserialize_tomek_links,
+        'random-over-sampler': ous.deserialize_random_over_sampler,
+        'smotenc': ous.deserialize_smotenc,
+        'smoten': ous.deserialize_smoten,
+        'smote': ous.deserialize_smote,
+        'adasyn': ous.deserialize_adasyn,
+        'borderline-smote': ous.deserialize_borderline_smote,
+        'kmeans-smote': ous.deserialize_kmeans_smote,
+        'svm-smote': ous.deserialize_svm_smote,
+        'smote-enn': ous.deserialize_smote_enn,
+        'smote-tomek': ous.deserialize_smote_tomek,
+    })
 
 
 def serialize_model(model, catboost_data: Pool = None) -> Dict:
@@ -111,456 +884,29 @@ def serialize_model(model, catboost_data: Pool = None) -> Dict:
     if not is_model_fitted(model):
         return serialize_unfitted_model(model)
 
-    # Classification
-    if isinstance(model, LogisticRegression):
-        model_dict = clf.serialize_logistic_regression(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, BernoulliNB):
-        model_dict = clf.serialize_bernoulli_nb(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, GaussianNB):
-        model_dict = clf.serialize_gaussian_nb(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MultinomialNB):
-        model_dict = clf.serialize_multinomial_nb(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, ComplementNB):
-        model_dict = clf.serialize_complement_nb(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, discriminant_analysis.LinearDiscriminantAnalysis):
-        model_dict = clf.serialize_lda(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, discriminant_analysis.QuadraticDiscriminantAnalysis):
-        model_dict = clf.serialize_qda(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, svm.SVC):
-        model_dict = clf.serialize_svm(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, Perceptron):
-        model_dict = clf.serialize_perceptron(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, DecisionTreeClassifier):
-        model_dict = clf.serialize_decision_tree(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, GradientBoostingClassifier):
-        model_dict = clf.serialize_gradient_boosting(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, RandomForestClassifier):
-        model_dict = clf.serialize_random_forest(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MLPClassifier):
-        model_dict = clf.serialize_mlp(model)
-        return serialize_version(model, model_dict)
-    elif 'XGBClassifier' in clf.__optionals__ and isinstance(model, XGBClassifier):
-        model_dict = clf.serialize_xgboost_classifier(model)
-        return serialize_version(model, model_dict)
-    elif 'XGBRFClassifier' in clf.__optionals__ and isinstance(model, XGBRFClassifier):
-        model_dict = clf.serialize_xgboost_rf_classifier(model)
-        return serialize_version(model, model_dict)
-    elif 'LGBMClassifier' in clf.__optionals__ and isinstance(model, LGBMClassifier):
-        model_dict = clf.serialize_lightgbm_classifier(model)
-        return serialize_version(model, model_dict)
-    elif 'CatBoostClassifier' in clf.__optionals__ and isinstance(model, CatBoostClassifier):
-        model_dict = clf.serialize_catboost_classifier(model, catboost_data)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, AdaBoostClassifier):
-        model_dict = clf.serialize_adaboost_classifier(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, BaggingClassifier):
-        model_dict = clf.serialize_bagging_classifier(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, ExtraTreeClassifier):
-        model_dict = clf.serialize_extra_tree_classifier(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, ExtraTreesClassifier):
-        model_dict = clf.serialize_extratrees_classifier(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, IsolationForest):
-        model_dict = clf.serialize_isolation_forest(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, RandomTreesEmbedding):
-        model_dict = clf.serialize_random_trees_embedding(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, KNeighborsClassifier):
-        model_dict = clf.serialize_nearest_neighbour_classifier(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, StackingClassifier):
-        model_dict = clf.serialize_stacking_classifier(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, VotingClassifier):
-        model_dict = clf.serialize_voting_classifier(model)
-        return serialize_version(model, model_dict)
-
-    # Regression
-    elif isinstance(model, LinearRegression):
-        model_dict = reg.serialize_linear_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, Lasso):
-        model_dict = reg.serialize_lasso_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, ElasticNet):
-        model_dict = reg.serialize_elastic_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, Ridge):
-        model_dict = reg.serialize_ridge_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, SVR):
-        model_dict = reg.serialize_svr(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, ExtraTreeRegressor):
-        model_dict = reg.serialize_extra_tree_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, DecisionTreeRegressor):
-        model_dict = reg.serialize_decision_tree_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, GradientBoostingRegressor):
-        model_dict = reg.serialize_gradient_boosting_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, RandomForestRegressor):
-        model_dict = reg.serialize_random_forest_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, ExtraTreesRegressor):
-        model_dict = reg.serialize_extratrees_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MLPRegressor):
-        model_dict = reg.serialize_mlp_regressor(model)
-        return serialize_version(model, model_dict)
-    elif 'XGBRanker' in reg.__optionals__ and isinstance(model, XGBRanker):
-        model_dict = reg.serialize_xgboost_ranker(model)
-        return serialize_version(model, model_dict)
-    elif 'XGBRegressor' in reg.__optionals__ and isinstance(model, XGBRegressor):
-        model_dict = reg.serialize_xgboost_regressor(model)
-        return serialize_version(model, model_dict)
-    elif 'XGBRFRegressor' in reg.__optionals__ and isinstance(model, XGBRFRegressor):
-        model_dict = reg.serialize_xgboost_rf_regressor(model)
-        return serialize_version(model, model_dict)
-    elif 'LGBMRegressor' in reg.__optionals__ and isinstance(model, LGBMRegressor):
-        model_dict = reg.serialize_lightgbm_regressor(model)
-        return serialize_version(model, model_dict)
-    elif 'LGBMRanker' in reg.__optionals__ and isinstance(model, LGBMRanker):
-        model_dict = reg.serialize_lightgbm_ranker(model)
-        return serialize_version(model, model_dict)
-    elif 'CatBoostRegressor' in reg.__optionals__ and isinstance(model, CatBoostRegressor):
-        model_dict = reg.serialize_catboost_regressor(model, catboost_data)
-        return serialize_version(model, model_dict)
-    elif 'CatBoostRanker' in reg.__optionals__ and isinstance(model, CatBoostRanker):
-        model_dict = reg.serialize_catboost_ranker(model, catboost_data)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, AdaBoostRegressor):
-        model_dict = reg.serialize_adaboost_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, BaggingRegressor):
-        model_dict = reg.serialize_bagging_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, KNeighborsRegressor):
-        model_dict = reg.serialize_nearest_neighbour_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, StackingRegressor):
-        model_dict = reg.serialize_stacking_regressor(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, VotingRegressor):
-        model_dict = reg.serialize_voting_regressor(model)
-        return serialize_version(model, model_dict)
-
-    # Clustering
-    elif isinstance(model, FeatureAgglomeration):
-        model_dict = clus.serialize_feature_agglomeration(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, AffinityPropagation):
-        model_dict = clus.serialize_affinity_propagation(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, AgglomerativeClustering):
-        model_dict = clus.serialize_agglomerative_clustering(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, DBSCAN):
-        model_dict = clus.serialize_dbscan(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MeanShift):
-        model_dict = clus.serialize_meanshift(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, BisectingKMeans):
-        model_dict = clus.serialize_bisecting_kmeans(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MiniBatchKMeans):
-        model_dict = clus.serialize_minibatch_kmeans(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, KMeans):
-        model_dict = clus.serialize_kmeans(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, OPTICS):
-        model_dict = clus.serialize_optics(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, SpectralClustering):
-        model_dict = clus.serialize_spectral_clustering(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, SpectralBiclustering):
-        model_dict = clus.serialize_spectral_biclustering(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, SpectralCoclustering):
-        model_dict = clus.serialize_spectral_coclustering(model)
-        return serialize_version(model, model_dict)
-    elif 'KPrototypes' in clus.__optionals__ and isinstance(model, KPrototypes):
-        model_dict = clus.serialize_kprototypes(model)
-        return serialize_version(model, model_dict)
-    elif 'KModes' in clus.__optionals__ and isinstance(model, KModes):
-        model_dict = clus.serialize_kmodes(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, Birch):
-        model_dict = clus.serialize_birch(model)
-        return serialize_version(model, model_dict)
-    elif 'HDBSCAN' in clus.__optionals__ and isinstance(model, HDBSCAN):
-        model_dict = clus.serialize_hdbscan(model)
-        return serialize_version(model, model_dict)
-
-    # Cross-decomposition
-    elif isinstance(model, CCA):
-        model_dict = crdec.serialize_cca(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, PLSCanonical):
-        model_dict = crdec.serialize_pls_canonical(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, PLSRegression):
-        model_dict = crdec.serialize_pls_regression(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, PLSSVD):
-        model_dict = crdec.serialize_pls_svd(model)
-        return serialize_version(model, model_dict)
-
-    # Decomposition
-    elif isinstance(model, PCA):
-        model_dict = dec.serialize_pca(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, KernelPCA):
-        model_dict = dec.serialize_kernel_pca(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, IncrementalPCA):
-        model_dict = dec.serialize_incremental_pca(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MiniBatchSparsePCA):
-        model_dict = dec.serialize_minibatch_sparse_pca(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, SparsePCA):
-        model_dict = dec.serialize_sparse_pca(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MiniBatchDictionaryLearning):
-        model_dict = dec.serialize_minibatch_dictionary_learning(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, DictionaryLearning):
-        model_dict = dec.serialize_dictionary_learning(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, FactorAnalysis):
-        model_dict = dec.serialize_factor_analysis(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, FastICA):
-        model_dict = dec.serialize_fast_ica(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, LatentDirichletAllocation):
-        model_dict = dec.serialize_latent_dirichlet_allocation(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MiniBatchNMF):
-        model_dict = dec.serialize_minibatch_nmf(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, NMF):
-        model_dict = dec.serialize_nmf(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, SparseCoder):
-        model_dict = dec.serialize_sparse_coder(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, TruncatedSVD):
-        model_dict = dec.serialize_truncated_svd(model)
-        return serialize_version(model, model_dict)
-
-    # Manifold
-    elif isinstance(model, TSNE):
-        model_dict = man.serialize_tsne(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MDS):
-        model_dict = man.serialize_mds(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, Isomap):
-        model_dict = man.serialize_isomap(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, LocallyLinearEmbedding):
-        model_dict = man.serialize_locally_linear_embedding(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, SpectralEmbedding):
-        model_dict = man.serialize_spectral_embedding(model)
-        return serialize_version(model, model_dict)
-    elif 'UMAP' in man.__optionals__ and isinstance(model, UMAP):
-        model_dict = man.serialize_umap(model)
-        return serialize_version(model, model_dict)
-    elif 'OpenTSNE' in man.__optionals__ and isinstance(model, (OpenTSNE, OpenTSNEsklearn)):
-        model_dict = man.serialize_opentsne(model)
-        return serialize_version(model, model_dict)
-    elif 'OpenTSNE' in man.__optionals__ and isinstance(model, OpenTSNEEmbedding):
-        model_dict = man.serialize_opentsne_embedding(model)
-        return serialize_version(model, model_dict)
-    elif 'OpenTSNE' in man.__optionals__ and isinstance(model, OpenPartialTSNEEmbedding):
-        model_dict = man.serialize_opentsne_partial_embedding(model)
-        return serialize_version(model, model_dict)
-
-    # Neighbors
-    elif isinstance(model, NearestNeighbors):
-        model_dict = nei.serialize_nearest_neighbors(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, KDTree):
-        model_dict = nei.serialize_kdtree(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, KernelDensity):
-        model_dict = nei.serialize_kernel_density(model)
-        return serialize_version(model, model_dict)
-    elif 'NNDescent' in nei.__optionals__ and isinstance(model, NNDescent):
-        model_dict = nei.serialize_nndescent(model)
-        return serialize_version(model, model_dict)
-
-    # Feature Extraction
-    elif isinstance(model, DictVectorizer):
-        model_dict = ext.serialize_dict_vectorizer(model)
-        return serialize_version(model, model_dict)
-
-    # Preprocess
-    elif isinstance(model, LabelEncoder):
-        model_dict = pre.serialize_label_encoder(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, LabelBinarizer):
-        model_dict = pre.serialize_label_binarizer(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MultiLabelBinarizer):
-        model_dict = pre.serialize_multilabel_binarizer(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MinMaxScaler):
-        model_dict = pre.serialize_minmax_scaler(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, StandardScaler):
-        model_dict = pre.serialize_standard_scaler(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, RobustScaler):
-        model_dict = pre.serialize_robust_scaler(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, MaxAbsScaler):
-        model_dict = pre.serialize_maxabs_scaler(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, KernelCenterer):
-        model_dict = pre.serialize_kernel_centerer(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, OneHotEncoder):
-        model_dict = pre.serialize_onehot_encoder(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, OrdinalEncoder):
-        model_dict = pre.serialize_ordinal_encoder(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, Normalizer):
-        model_dict = pre.serialize_normalizer(model)
-        return serialize_version(model, model_dict)
-
-    # Applicability Domain
-    elif isinstance(model, BoundingBoxApplicabilityDomain):
-        model_dict = ad.serialize_bounding_box_applicability_domain(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, ConvexHullApplicabilityDomain):
-        model_dict = ad.serialize_convex_hull_applicability_domain(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, PCABoundingBoxApplicabilityDomain):
-        model_dict = ad.serialize_pca_bounding_box_applicability_domain(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, TopKatApplicabilityDomain):
-        model_dict = ad.serialize_topkat_applicability_domain(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, LeverageApplicabilityDomain):
-        model_dict = ad.serialize_leverage_applicability_domain(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, HotellingT2ApplicabilityDomain):
-        model_dict = ad.serialize_hotelling_t2_applicability_domain(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, KernelDensityApplicabilityDomain):
-        model_dict = ad.serialize_kernel_density_applicability_domain(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, IsolationForestApplicabilityDomain):
-        model_dict = ad.serialize_isolation_forest_applicability_domain(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, CentroidDistanceApplicabilityDomain):
-        model_dict = ad.serialize_centroid_distance_applicability_domain(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, KNNApplicabilityDomain):
-        model_dict = ad.serialize_knn_applicability_domain(model)
-        return serialize_version(model, model_dict)
-    elif isinstance(model, StandardizationApproachApplicabilityDomain):
-        model_dict = ad.serialize_standardization_approach_applicability_domain(model)
-        return serialize_version(model, model_dict)
-
-    # Balancing
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, ClusterCentroids):
-        model_dict = ous.serialize_cluster_centroids(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, CondensedNearestNeighbour):
-        model_dict = ous.serialize_condensed_nearest_neighbours(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, EditedNearestNeighbours):
-        model_dict = ous.serialize_edited_nearest_neighbours(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, RepeatedEditedNearestNeighbours):
-        model_dict = ous.serialize_repeated_edited_nearest_neighbours(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, AllKNN):
-        model_dict = ous.serialize_all_knn(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, InstanceHardnessThreshold):
-        model_dict = ous.serialize_instance_hardness_threshold(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, NearMiss):
-        model_dict = ous.serialize_near_miss(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, NeighbourhoodCleaningRule):
-        model_dict = ous.serialize_neighbourhood_cleaning_rule(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, OneSidedSelection):
-        model_dict = ous.serialize_one_sided_selection(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, RandomUnderSampler):
-        model_dict = ous.serialize_random_under_sampler(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, TomekLinks):
-        model_dict = ous.serialize_tomek_links(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, RandomOverSampler):
-        model_dict = ous.serialize_random_over_sampler(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, SMOTENC):
-        model_dict = ous.serialize_smotenc(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, SMOTEN):
-        model_dict = ous.serialize_smoten(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, SMOTE):
-        model_dict = ous.serialize_smote(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, ADASYN):
-        model_dict = ous.serialize_adasyn(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, BorderlineSMOTE):
-        model_dict = ous.serialize_borderline_smote(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, KMeansSMOTE):
-        model_dict = ous.serialize_kmeans_smote(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, SVMSMOTE):
-        model_dict = ous.serialize_svm_smote(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, SMOTEENN):
-        model_dict = ous.serialize_smote_enn(model)
-        return serialize_version(model, model_dict)
-    elif 'imblearn' in ous.__optionals__ and isinstance(model, SMOTETomek):
-        model_dict = ous.serialize_smote_tomek(model)
-        return serialize_version(model, model_dict)
-
-    # Pipeline
-    elif isinstance(model, Pipeline):
-        model_dict = ppl.serialize_pipeline(model)
-        return serialize_version(model, model_dict)
-
-    # Otherwise
+    cls = type(model)
+    if cls in _CATBOOST_SERIALIZE_FNS:
+        model_dict = _CATBOOST_SERIALIZE_FNS[cls](model, catboost_data)
+    elif cls in _SERIALIZE_BY_TYPE:
+        model_dict = _SERIALIZE_BY_TYPE[cls](model)
     else:
-        raise ModelNotSupported('This model type is not currently supported. Email support@mlrequest.com to request a feature or report a bug.')
+        # Otherwise: fall back to generically walking the model's __dict__
+        try:
+            model_dict = _base.serialize_model_generic(model)
+        except _base.ModelNotSupported:
+            raise ModelNotSupported('This model type is not currently supported. Email support@mlrequest.com to request a feature or report a bug.')
+        return serialize_version(model, model_dict)
+
+    # A registered serializer that delegates to _base.serialize_model_generic
+    # (most of them do) can return a bare {'meta': 'ref', 'id': ...} marker
+    # instead of a full dict, when this exact object was already serialized
+    # elsewhere in the same object graph (e.g. the same fitted estimator
+    # reachable both via a Pipeline's `steps` and its `named_steps`).
+    # Overwriting 'meta' here would silently turn that marker into a fake
+    # full object missing 'module'/'type'/'dict', so leave refs untouched.
+    if model_dict.get('meta') != 'ref':
+        model_dict['meta'] = _META_BY_TYPE[cls]
+    return serialize_version(model, model_dict)
 
 
 def deserialize_model(model_dict: Dict):
@@ -573,454 +919,31 @@ def deserialize_model(model_dict: Dict):
         check_version(model_dict)
         return deserialize_unfitted_model(model_dict)
 
-    # Classification
-    if model_dict['meta'] == 'lr':
-        check_version(model_dict)
-        return clf.deserialize_logistic_regression(model_dict)
-    elif model_dict['meta'] == 'bernoulli-nb':
-        check_version(model_dict)
-        return clf.deserialize_bernoulli_nb(model_dict)
-    elif model_dict['meta'] == 'gaussian-nb':
-        check_version(model_dict)
-        return clf.deserialize_gaussian_nb(model_dict)
-    elif model_dict['meta'] == 'multinomial-nb':
-        check_version(model_dict)
-        return clf.deserialize_multinomial_nb(model_dict)
-    elif model_dict['meta'] == 'complement-nb':
-        check_version(model_dict)
-        return clf.deserialize_complement_nb(model_dict)
-    elif model_dict['meta'] == 'lda':
-        check_version(model_dict)
-        return clf.deserialize_lda(model_dict)
-    elif model_dict['meta'] == 'qda':
-        check_version(model_dict)
-        return clf.deserialize_qda(model_dict)
-    elif model_dict['meta'] == 'svm':
-        check_version(model_dict)
-        return clf.deserialize_svm(model_dict)
-    elif model_dict['meta'] == 'perceptron':
-        check_version(model_dict)
-        return clf.deserialize_perceptron(model_dict)
-    elif model_dict['meta'] == 'decision-tree':
-        check_version(model_dict)
-        return clf.deserialize_decision_tree(model_dict)
-    elif model_dict['meta'] == 'gb':
-        check_version(model_dict)
-        return clf.deserialize_gradient_boosting(model_dict)
-    elif model_dict['meta'] == 'rf':
-        check_version(model_dict)
-        return clf.deserialize_random_forest(model_dict)
-    elif model_dict['meta'] == 'mlp':
-        check_version(model_dict)
-        return clf.deserialize_mlp(model_dict)
-    elif model_dict['meta'] == 'xgboost-classifier':
-        check_version(model_dict)
-        return clf.deserialize_xgboost_classifier(model_dict)
-    elif model_dict['meta'] == 'xgboost-rf-classifier':
-        check_version(model_dict)
-        return clf.deserialize_xgboost_rf_classifier(model_dict)
-    elif model_dict['meta'] == 'lightgbm-classifier':
-        check_version(model_dict)
-        return clf.deserialize_lightgbm_classifier(model_dict)
-    elif model_dict['meta'] == 'catboost-classifier':
-        check_version(model_dict)
-        return clf.deserialize_catboost_classifier(model_dict)
-    elif model_dict['meta'] == 'adaboost-classifier':
-        check_version(model_dict)
-        return clf.deserialize_adaboost_classifier(model_dict)
-    elif model_dict['meta'] == 'bagging-classifier':
-        check_version(model_dict)
-        return clf.deserialize_bagging_classifier(model_dict)
-    elif model_dict['meta'] == 'extra-tree-cls':
-        check_version(model_dict)
-        return clf.deserialize_extra_tree_classifier(model_dict)
-    elif model_dict['meta'] == 'extratrees-classifier':
-        check_version(model_dict)
-        return clf.deserialize_extratrees_classifier(model_dict)
-    elif model_dict['meta'] == 'isolation-forest':
-        check_version(model_dict)
-        return clf.deserialize_isolation_forest(model_dict)
-    elif model_dict['meta'] == 'random-trees-embedding':
-        check_version(model_dict)
-        return clf.deserialize_random_trees_embedding(model_dict)
-    elif model_dict['meta'] == 'nearest-neighbour-classifier':
-        check_version(model_dict)
-        return clf.deserialize_nearest_neighbour_classifier(model_dict)
-    elif model_dict['meta'] == 'stacking-classifier':
-        check_version(model_dict)
-        return clf.deserialize_stacking_classifier(model_dict)
-    elif model_dict['meta'] == 'voting-classifier':
-        check_version(model_dict)
-        return clf.deserialize_voting_classifier(model_dict)
+    meta = model_dict['meta']
 
-    # Regression
-    elif model_dict['meta'] == 'linear-regression':
-        check_version(model_dict)
-        return reg.deserialize_linear_regressor(model_dict)
-    elif model_dict['meta'] == 'lasso-regression':
-        check_version(model_dict)
-        return reg.deserialize_lasso_regressor(model_dict)
-    elif model_dict['meta'] == 'elasticnet-regression':
-        check_version(model_dict)
-        return reg.deserialize_elastic_regressor(model_dict)
-    elif model_dict['meta'] == 'ridge-regression':
-        check_version(model_dict)
-        return reg.deserialize_ridge_regressor(model_dict)
-    elif model_dict['meta'] == 'svr':
-        check_version(model_dict)
-        return reg.deserialize_svr(model_dict)
-    elif model_dict['meta'] == 'decision-tree-regression':
-        check_version(model_dict)
-        return reg.deserialize_decision_tree_regressor(model_dict)
-    elif model_dict['meta'] == 'gb-regression':
-        check_version(model_dict)
-        return reg.deserialize_gradient_boosting_regressor(model_dict)
-    elif model_dict['meta'] == 'rf-regression':
-        check_version(model_dict)
-        return reg.deserialize_random_forest_regressor(model_dict)
-    elif model_dict['meta'] == 'mlp-regression':
-        check_version(model_dict)
-        return reg.deserialize_mlp_regressor(model_dict)
-    elif model_dict['meta'] == 'xgboost-ranker':
-        check_version(model_dict)
-        return reg.deserialize_xgboost_ranker(model_dict)
-    elif model_dict['meta'] == 'xgboost-regressor':
-        check_version(model_dict)
-        return reg.deserialize_xgboost_regressor(model_dict)
-    elif model_dict['meta'] == 'xgboost-rf-regressor':
-        check_version(model_dict)
-        return reg.deserialize_xgboost_rf_regressor(model_dict)
-    elif model_dict['meta'] == 'lightgbm-regressor':
-        check_version(model_dict)
-        return reg.deserialize_lightgbm_regressor(model_dict)
-    elif model_dict['meta'] == 'lightgbm-ranker':
-        check_version(model_dict)
-        return reg.deserialize_lightgbm_ranker(model_dict)
-    elif model_dict['meta'] == 'catboost-regressor':
-        check_version(model_dict)
-        return reg.deserialize_catboost_regressor(model_dict)
-    elif model_dict['meta'] == 'catboost-ranker':
-        check_version(model_dict)
-        return reg.deserialize_catboost_ranker(model_dict)
-    elif model_dict['meta'] == 'adaboost-regressor':
-        check_version(model_dict)
-        return reg.deserialize_adaboost_regressor(model_dict)
-    elif model_dict['meta'] == 'bagging-regression':
-        check_version(model_dict)
-        return reg.deserialize_bagging_regressor(model_dict)
-    elif model_dict['meta'] == 'extra-tree-reg':
-        check_version(model_dict)
-        return reg.deserialize_extra_tree_regressor(model_dict)
-    elif model_dict['meta'] == 'extratrees-regressor':
-        check_version(model_dict)
-        return reg.deserialize_extratrees_regressor(model_dict)
-    elif model_dict['meta'] == 'nearest-neighbour-regressor':
-        check_version(model_dict)
-        return reg.deserialize_nearest_neighbour_regressor(model_dict)
-    elif model_dict['meta'] == 'stacking-regressor':
-        check_version(model_dict)
-        return reg.deserialize_stacking_regressor(model_dict)
-    elif model_dict['meta'] == 'voting-regressor':
-        check_version(model_dict)
-        return reg.deserialize_voting_regressor(model_dict)
+    if meta == 'ref':
+        # A registered serializer delegating to _base.serialize_model_generic
+        # can hand back a bare memo reference (see serialize_model) when a
+        # hand-written serializer reaches this same nested object a second
+        # time via a path that calls serialize_model/deserialize_model
+        # directly rather than _base.recursive_serialize/recursive_deserialize
+        # (e.g. a Pipeline's `steps` and `named_steps` both holding the same
+        # fitted estimator). _base.recursive_deserialize already knows how to
+        # resolve these against the active deserialization memo.
+        return _base.recursive_deserialize(model_dict)
 
-    # Clustering
-    elif model_dict['meta'] == 'affinity-propagation':
+    if meta in _DESERIALIZE_BY_META:
         check_version(model_dict)
-        return clus.deserialize_affinity_propagation(model_dict)
-    elif model_dict['meta'] == 'agglomerative-clustering':
+        return _DESERIALIZE_BY_META[meta](model_dict)
+    elif meta in _LEGACY_META_ALIASES:
+        warnings.warn(f'meta tag {meta!r} uses the pre-registry ml2json format; '
+                      f're-serialize this model to upgrade it', DeprecationWarning)
         check_version(model_dict)
-        return clus.deserialize_agglomerative_clustering(model_dict)
-    elif model_dict['meta'] == 'feature-agglomeration':
+        return _LEGACY_META_ALIASES[meta](model_dict)
+    # Otherwise: fall back to the generic engine for anything it serialized
+    elif isinstance(meta, str) and meta.startswith('generic_object:'):
         check_version(model_dict)
-        return clus.deserialize_feature_agglomeration(model_dict)
-    elif model_dict['meta'] == 'dbscan':
-        check_version(model_dict)
-        return clus.deserialize_dbscan(model_dict)
-    elif model_dict['meta'] == 'meanshift':
-        check_version(model_dict)
-        return clus.deserialize_meanshift(model_dict)
-    elif model_dict['meta'] == 'kmeans':
-        check_version(model_dict)
-        return clus.deserialize_kmeans(model_dict)
-    elif model_dict['meta'] == 'minibatch-kmeans':
-        check_version(model_dict)
-        return clus.deserialize_minibatch_kmeans(model_dict)
-    elif model_dict['meta'] == 'optics':
-        check_version(model_dict)
-        return clus.deserialize_optics(model_dict)
-    elif model_dict['meta'] == 'spectral-clustering':
-        check_version(model_dict)
-        return clus.deserialize_spectral_clustering(model_dict)
-    elif model_dict['meta'] == 'spectral-biclustering':
-        check_version(model_dict)
-        return clus.deserialize_spectral_biclustering(model_dict)
-    elif model_dict['meta'] == 'spectral-coclustering':
-        check_version(model_dict)
-        return clus.deserialize_spectral_coclustering(model_dict)
-    elif model_dict['meta'] == 'kmodes':
-        check_version(model_dict)
-        return clus.deserialize_kmodes(model_dict)
-    elif model_dict['meta'] == 'kprototypes':
-        check_version(model_dict)
-        return clus.deserialize_kprototypes(model_dict)
-    elif model_dict['meta'] == 'birch':
-        check_version(model_dict)
-        return clus.deserialize_birch(model_dict)
-    elif model_dict['meta'] == 'bisecting-kmeans':
-        check_version(model_dict)
-        return clus.deserialize_bisecting_kmeans(model_dict)
-    elif model_dict['meta'] == 'hdbscan':
-        check_version(model_dict)
-        return clus.deserialize_hdbscan(model_dict)
-
-    # Cross-decomposition
-    elif model_dict['meta'] == 'cca':
-        check_version(model_dict)
-        return crdec.deserialize_cca(model_dict)
-    elif model_dict['meta'] == 'pls-canonical':
-        check_version(model_dict)
-        return crdec.deserialize_pls_canonical(model_dict)
-    elif model_dict['meta'] == 'pls-regression':
-        check_version(model_dict)
-        return crdec.deserialize_pls_regression(model_dict)
-    elif model_dict['meta'] == 'pls-svd':
-        check_version(model_dict)
-        return crdec.deserialize_pls_svd(model_dict)
-
-    # Decomposition
-    elif model_dict['meta'] == 'pca':
-        check_version(model_dict)
-        return dec.deserialize_pca(model_dict)
-    elif model_dict['meta'] == 'kernel-pca':
-        check_version(model_dict)
-        return  dec.deserialize_kernel_pca(model_dict)
-    elif model_dict['meta'] == 'incremental-pca':
-        check_version(model_dict)
-        return  dec.deserialize_incremental_pca(model_dict)
-    elif model_dict['meta'] == 'sparse-pca':
-        check_version(model_dict)
-        return  dec.deserialize_sparse_pca(model_dict)
-    elif model_dict['meta'] == 'minibatch-sparse-pca':
-        check_version(model_dict)
-        return  dec.deserialize_minibatch_sparse_pca(model_dict)
-    elif model_dict['meta'] == 'dictionary-learning':
-        check_version(model_dict)
-        return  dec.deserialize_dictionary_learning(model_dict)
-    elif model_dict['meta'] == 'minibatch-dictionary-learning':
-        check_version(model_dict)
-        return  dec.deserialize_minibatch_dictionary_learning(model_dict)
-    elif model_dict['meta'] == 'factor-analysis':
-        check_version(model_dict)
-        return  dec.deserialize_factor_analysis(model_dict)
-    elif model_dict['meta'] == 'fast-ica':
-        check_version(model_dict)
-        return  dec.deserialize_fast_ica(model_dict)
-    elif model_dict['meta'] == 'latent-dirichlet-allocation':
-        check_version(model_dict)
-        return  dec.deserialize_latent_dirichlet_allocation(model_dict)
-    elif model_dict['meta'] == 'nmf':
-        check_version(model_dict)
-        return  dec.deserialize_nmf(model_dict)
-    elif model_dict['meta'] == 'minibatch-nmf':
-        check_version(model_dict)
-        return  dec.deserialize_minibatch_nmf(model_dict)
-    elif model_dict['meta'] == 'sparse-coder':
-        check_version(model_dict)
-        return  dec.deserialize_sparse_coder(model_dict)
-    elif model_dict['meta'] == 'truncated-svd':
-        check_version(model_dict)
-        return  dec.deserialize_truncated_svd(model_dict)
-
-    # Manifold
-    elif model_dict['meta'] == 'tsne':
-        check_version(model_dict)
-        return  man.deserialize_tsne(model_dict)
-    elif model_dict['meta'] == 'mds':
-        check_version(model_dict)
-        return  man.deserialize_mds(model_dict)
-    elif model_dict['meta'] == 'isomap':
-        check_version(model_dict)
-        return  man.deserialize_isomap(model_dict)
-    elif model_dict['meta'] == 'locally-linear-embedding':
-        check_version(model_dict)
-        return  man.deserialize_locally_linear_embedding(model_dict)
-    elif model_dict['meta'] == 'spectral-embedding':
-        check_version(model_dict)
-        return  man.deserialize_spectral_embedding(model_dict)
-    elif model_dict['meta'] == 'umap':
-        check_version(model_dict)
-        return  man.deserialize_umap(model_dict)
-    elif model_dict['meta'] == 'openTSNE':
-        check_version(model_dict)
-        return  man.deserialize_opentsne(model_dict)
-    elif model_dict['meta'] == 'openTSNEEmbedding':
-        check_version(model_dict)
-        return  man.deserialize_opentsne_embedding(model_dict)
-    elif model_dict['meta'] == 'openTSNEPartialEmbedding':
-        check_version(model_dict)
-        return  man.deserialize_opentsne_partial_embedding(model_dict)
-
-    # Neighbors
-    elif model_dict['meta'] == 'nearest-neighbors':
-        check_version(model_dict)
-        return  nei.deserialize_nearest_neighbors(model_dict)
-    elif model_dict['meta'] == 'kdtree':
-        check_version(model_dict)
-        return  nei.deserialize_kdtree(model_dict)
-    elif model_dict['meta'] == 'kernel-density':
-        check_version(model_dict)
-        return  nei.deserialize_kernel_density(model_dict)
-    elif model_dict['meta'] == 'nn-descent':
-        check_version(model_dict)
-        return  nei.deserialize_nndescent(model_dict)
-
-    # Feature Extraction
-    elif model_dict['meta'] == 'dict-vectorizer':
-        check_version(model_dict)
-        return ext.deserialize_dict_vectorizer(model_dict)
-
-    # Preprocess
-    elif model_dict['meta'] == 'label-encoder':
-        check_version(model_dict)
-        return pre.deserialize_label_encoder(model_dict)
-    elif model_dict['meta'] == 'label-binarizer':
-        check_version(model_dict)
-        return pre.deserialize_label_binarizer(model_dict)
-    elif model_dict['meta'] == 'multilabel-binarizer':
-        check_version(model_dict)
-        return pre.deserialize_multilabel_binarizer(model_dict)
-    elif model_dict['meta'] == 'minmax-scaler':
-        check_version(model_dict)
-        return pre.deserialize_minmax_scaler(model_dict)
-    elif model_dict['meta'] == 'standard-scaler':
-        check_version(model_dict)
-        return pre.deserialize_standard_scaler(model_dict)
-    elif model_dict['meta'] == 'robust-scaler':
-        check_version(model_dict)
-        return pre.deserialize_robust_scaler(model_dict)
-    elif model_dict['meta'] == 'maxabs-scaler':
-        check_version(model_dict)
-        return pre.deserialize_maxabs_scaler(model_dict)
-    elif model_dict['meta'] == 'kernel-centerer':
-        check_version(model_dict)
-        return pre.deserialize_kernel_centerer(model_dict)
-    elif model_dict['meta'] == 'onehot-encoder':
-        check_version(model_dict)
-        return pre.deserialize_onehot_encoder(model_dict)
-    elif model_dict['meta'] == 'ordinal-encoder':
-        check_version(model_dict)
-        return pre.deserialize_ordinal_encoder(model_dict)
-    elif model_dict['meta'] == 'normalizer':
-        check_version(model_dict)
-        return pre.deserialize_normalizer(model_dict)
-
-    # Applicability Domain
-    elif model_dict['meta'] == 'bounding-box-ad':
-        check_version(model_dict)
-        return ad.deserialize_bounding_box_applicability_domain(model_dict)
-    elif model_dict['meta'] == 'convex-hull-ad':
-        check_version(model_dict)
-        return ad.deserialize_convex_hull_applicability_domain(model_dict)
-    elif model_dict['meta'] == 'pca-bounding-box-ad':
-        check_version(model_dict)
-        return ad.deserialize_pca_bounding_box_applicability_domain(model_dict)
-    elif model_dict['meta'] == 'topkat-ad':
-        check_version(model_dict)
-        return ad.deserialize_topkat_applicability_domain(model_dict)
-    elif model_dict['meta'] == 'leverage-ad':
-        check_version(model_dict)
-        return ad.deserialize_leverage_applicability_domain(model_dict)
-    elif model_dict['meta'] == 'hotelling-t2-ad':
-        check_version(model_dict)
-        return ad.deserialize_hotelling_t2_applicability_domain(model_dict)
-    elif model_dict['meta'] == 'kernel-density-ad':
-        check_version(model_dict)
-        return ad.deserialize_kernel_density_applicability_domain(model_dict)
-    elif model_dict['meta'] == 'isolation-forest-ad':
-        check_version(model_dict)
-        return ad.deserialize_isolation_forest_applicability_domain(model_dict)
-    elif model_dict['meta'] == 'centroid-distance-ad':
-        check_version(model_dict)
-        return ad.deserialize_centroid_distance_applicability_domain(model_dict)
-    elif model_dict['meta'] == 'knn-ad':
-        check_version(model_dict)
-        return ad.deserialize_knn_applicability_domain(model_dict)
-    elif model_dict['meta'] == 'standardization-approach-ad':
-        check_version(model_dict)
-        return ad.deserialize_standardization_approach_applicability_domain(model_dict)
-
-    # Balancing
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'cluster-centroids':
-        check_version(model_dict)
-        return ous.deserialize_cluster_centroids(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'condensed-nearest-neighbours':
-        check_version(model_dict)
-        return ous.deserialize_condensed_nearest_neighbours(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'edited-nearest-neighbours':
-        check_version(model_dict)
-        return ous.deserialize_edited_nearest_neighbours(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'repeated-edited-nearest-neighbours':
-        check_version(model_dict)
-        return ous.deserialize_repeated_edited_nearest_neighbours(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'all-knn':
-        check_version(model_dict)
-        return ous.deserialize_all_knn(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'instance-hardness-threshold':
-        check_version(model_dict)
-        return ous.deserialize_instance_hardness_threshold(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'near-miss':
-        check_version(model_dict)
-        return ous.deserialize_near_miss(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'neighbourhood-cleaning-rule':
-        check_version(model_dict)
-        return ous.deserialize_neighbourhood_cleaning_rule(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'one-sided-selection':
-        check_version(model_dict)
-        return ous.deserialize_one_sided_selection(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'random-under-sampler':
-        check_version(model_dict)
-        return ous.deserialize_random_under_sampler(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'tomek-links':
-        check_version(model_dict)
-        return ous.deserialize_tomek_links(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'random-over-sampler':
-        check_version(model_dict)
-        return ous.deserialize_random_over_sampler(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smotenc':
-        check_version(model_dict)
-        return ous.deserialize_smotenc(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smoten':
-        check_version(model_dict)
-        return ous.deserialize_smoten(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smote':
-        check_version(model_dict)
-        return ous.deserialize_smote(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'adasyn':
-        check_version(model_dict)
-        return ous.deserialize_adasyn(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'borderline-smote':
-        check_version(model_dict)
-        return ous.deserialize_borderline_smote(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'kmeans-smote':
-        check_version(model_dict)
-        return ous.deserialize_kmeans_smote(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'svm-smote':
-        check_version(model_dict)
-        return ous.deserialize_svm_smote(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smote-enn':
-        check_version(model_dict)
-        return ous.deserialize_smote_enn(model_dict)
-    elif 'imblearn' in ous.__optionals__ and model_dict['meta'] == 'smote-tomek':
-        check_version(model_dict)
-        return ous.deserialize_smote_tomek(model_dict)
-
-    # Pipeline
-    elif model_dict['meta'] == 'pipeline':
-        check_version(model_dict)
-        return ppl.deserialize_pipeline(model_dict)
-
-    # Otherwise
+        return _base.deserialize_model_generic(model_dict)
     else:
         raise ModelNotSupported('Model type not supported or corrupt JSON file.')
 
@@ -1034,7 +957,15 @@ def serialize_unfitted_model(model):
         'unfitted': True,
         'meta': (inspect.getmodule(model).__name__,
                  type(model).__name__),
-        'params': model.get_params()
+        # deep=False: get_params(deep=True) (the default) flattens nested
+        # meta-estimator params (e.g. a Pipeline's per-step keys like
+        # 'randomundersampler__random_state') into a dict that ClassName(**params)
+        # can't reconstruct from - only the constructor's own top-level kwargs are valid.
+        # Routed through recursive_serialize since a constructor param can itself be a
+        # non-JSON-safe object (e.g. OneVsRestClassifier's unfitted .estimator prototype
+        # holding kernel=RBF(...)) - to_dict/from_dict happens to work without this via
+        # in-memory object identity, but to_json/from_json needs the JSON-safe form.
+        'params': {key: _base.recursive_serialize(value) for key, value in model.get_params(deep=False).items()}
     }
     serialize_version(model, serialized_model)
     return serialized_model
@@ -1046,7 +977,13 @@ def deserialize_unfitted_model(model_dict: Dict):
     :param model_dict: previously serialized unfitted model
     """
     check_version(model_dict)
-    model = getattr(importlib.import_module(model_dict['meta'][0]), model_dict['meta'][1])(**model_dict['params'])
+    # check_version() already restored RandomState/bare-type params in place (see
+    # its docstring) - only values still in wrapped-dict form need recursive_deserialize;
+    # re-running it on an already-restored value (e.g. a raw RandomState/type) would
+    # fail, since that's not a JSON-safe payload recursive_deserialize accepts.
+    params = {key: (_base.recursive_deserialize(value) if isinstance(value, dict) and 'meta' in value else value)
+             for key, value in model_dict['params'].items()}
+    model = getattr(importlib.import_module(model_dict['meta'][0]), model_dict['meta'][1])(**params)
     return model
 
 
@@ -1106,6 +1043,20 @@ def serialize_version(model, model_dict):
     :param model: model to check the dependencies of
     :param model_dict: serialized model to add the dependencies' versions to
     """
+    # A user-supplied RandomState instance (e.g. RandomForestClassifier(random_state=
+    # np.random.RandomState(0))) leaks straight through model.get_params() into
+    # 'params' unconverted by every hand-written serializer, which is not
+    # JSON-safe. Same for a bare type used as a constructor default/argument
+    # (e.g. OrdinalEncoder(dtype=np.float64) - which HistGradientBoostingClassifier/
+    # Regressor builds internally as an unfitted transformer spec whenever
+    # `categorical_features` is set, reached here via serialize_unfitted_model on
+    # that nested, not-yet-fit OrdinalEncoder). Sanitize both here since every
+    # serialize_* branch funnels through this single function before returning.
+    if 'params' in model_dict:
+        model_dict['params'] = {key: (serialize_random_state(value) if isinstance(value, RandomState)
+                                      else _base.recursive_serialize(value) if isinstance(value, type)
+                                      else value)
+                                for key, value in model_dict['params'].items()}
     # Obtain library used to fit the model
     module = inspect.getmodule(model)
     if module is None:
@@ -1121,6 +1072,18 @@ def check_version(model_dict):
 
     :param model_dict: serialized model
     """
+    # Reverse of the RandomState/bare-type sanitization done in serialize_version,
+    # so every deserialize_* branch (which calls SomeClass(**model_dict['params']))
+    # receives back a real RandomState instance/type rather than its serialized
+    # dict form.
+    if 'params' in model_dict:
+        def _restore_param(value):
+            if isinstance(value, dict) and value.get('meta') == 'random_state':
+                return deserialize_random_state(value)
+            if isinstance(value, dict) and value.get('meta') in ('numpy_scalar_type', 'class_reference'):
+                return _base.recursive_deserialize(value)
+            return value
+        model_dict['params'] = {key: _restore_param(value) for key, value in model_dict['params'].items()}
     if 'versions' not in model_dict:
         return
     # Obtain module used to fit the model

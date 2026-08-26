@@ -7,7 +7,9 @@ from collections import Counter
 
 import numpy as np
 from sklearn.datasets import fetch_20newsgroups
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction import DictVectorizer, FeatureHasher
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, TfidfVectorizer, HashingVectorizer
+from sklearn.feature_extraction.image import PatchExtractor
 
 from src import ml2json
 
@@ -53,3 +55,128 @@ class TestAPI(unittest.TestCase):
     def test_dict_vectorization(self):
         self.check_model(DictVectorizer(), 'dict-vectorizer.json')
         self.check_model(DictVectorizer(sparse=False), 'dict-vectorizer.json')
+        self.check_model(DictVectorizer(separator=':'), 'dict-vectorizer.json')
+        self.check_model(DictVectorizer(sort=False), 'dict-vectorizer.json')
+        self.check_model(DictVectorizer(dtype=np.float32), 'dict-vectorizer.json')
+        self.check_model(DictVectorizer(dtype=np.int64), 'dict-vectorizer.json')
+
+    def check_feature_hasher(self, model, data):
+        expected_t = model.transform(data)
+
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
+
+        actual_t = deserialized_model.transform(data)
+        np.testing.assert_array_equal(expected_t.toarray(), actual_t.toarray())
+
+        model_name = 'feature-hasher.json'
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        actual_t = deserialized_model.transform(data)
+        np.testing.assert_array_equal(expected_t.toarray(), actual_t.toarray())
+
+    def test_feature_hasher(self):
+        data = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'd': 1}, {'b': 1, 'e': 5}]
+        self.check_feature_hasher(FeatureHasher(n_features=8), data)
+
+    def test_feature_hasher_alternate_sign_false(self):
+        data = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'd': 1}, {'b': 1, 'e': 5}]
+        self.check_feature_hasher(FeatureHasher(n_features=8, alternate_sign=False), data)
+
+    def test_feature_hasher_pair_input(self):
+        data = [[('a', 1), ('b', 2), ('c', 3)], [('a', 4), ('d', 1)], [('b', 1), ('e', 5)]]
+        self.check_feature_hasher(FeatureHasher(n_features=8, input_type='pair'), data)
+
+    def test_feature_hasher_string_input(self):
+        data = [['a', 'b', 'c'], ['a', 'd'], ['b', 'e']]
+        self.check_feature_hasher(FeatureHasher(n_features=8, input_type='string'), data)
+
+    def test_feature_hasher_int32_dtype(self):
+        data = [{'a': 1, 'b': 2, 'c': 3}, {'a': 4, 'd': 1}, {'b': 1, 'e': 5}]
+        self.check_feature_hasher(FeatureHasher(n_features=8, dtype=np.int32), data)
+
+    def check_text_model(self, model, docs, model_name):
+        expected_vectors = model.fit_transform(docs)
+
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
+
+        actual_vectors = deserialized_model.transform(docs)
+        np.testing.assert_allclose(expected_vectors.toarray(), actual_vectors.toarray())
+
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        json_vectors = deserialized_model.transform(docs)
+        np.testing.assert_allclose(expected_vectors.toarray(), json_vectors.toarray())
+
+    def get_text_corpus(self):
+        newsgroup = fetch_20newsgroups(subset='train', categories=['sci.space'], remove=('headers', 'footers', 'quotes'))
+        return newsgroup.data[:50]
+
+    def test_count_vectorizer(self):
+        docs = self.get_text_corpus()
+        self.check_text_model(CountVectorizer(), docs, 'count-vectorizer.json')
+        self.check_text_model(CountVectorizer(ngram_range=(1, 2)), docs, 'count-vectorizer.json')
+        self.check_text_model(CountVectorizer(max_features=100), docs, 'count-vectorizer.json')
+        self.check_text_model(CountVectorizer(binary=True), docs, 'count-vectorizer.json')
+        self.check_text_model(CountVectorizer(stop_words='english'), docs, 'count-vectorizer.json')
+
+    def test_tfidf_vectorizer(self):
+        docs = self.get_text_corpus()
+        self.check_text_model(TfidfVectorizer(), docs, 'tfidf-vectorizer.json')
+        self.check_text_model(TfidfVectorizer(sublinear_tf=True), docs, 'tfidf-vectorizer.json')
+        self.check_text_model(TfidfVectorizer(norm='l1'), docs, 'tfidf-vectorizer.json')
+        self.check_text_model(TfidfVectorizer(use_idf=False), docs, 'tfidf-vectorizer.json')
+
+    def test_hashing_vectorizer(self):
+        docs = self.get_text_corpus()
+        self.check_text_model(HashingVectorizer(n_features=64), docs, 'hashing-vectorizer.json')
+        self.check_text_model(HashingVectorizer(n_features=64, alternate_sign=False), docs, 'hashing-vectorizer.json')
+
+    def test_tfidf_transformer(self):
+        docs = self.get_text_corpus()
+        X = CountVectorizer().fit_transform(docs)
+
+        model = TfidfTransformer()
+        model.fit(X)
+
+        expected_vectors = model.transform(X)
+
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
+
+        actual_vectors = deserialized_model.transform(X)
+        np.testing.assert_allclose(expected_vectors.toarray(), actual_vectors.toarray())
+
+        model_name = 'tfidf-transformer.json'
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        json_vectors = deserialized_model.transform(X)
+        np.testing.assert_allclose(expected_vectors.toarray(), json_vectors.toarray())
+
+    def test_patch_extractor(self):
+        images = np.random.RandomState(0).rand(3, 10, 10)
+
+        model = PatchExtractor(patch_size=(4, 4), max_patches=5, random_state=0)
+
+        expected_patches = model.transform(images)
+
+        serialized_model = ml2json.to_dict(model)
+        deserialized_model = ml2json.from_dict(serialized_model)
+
+        actual_patches = deserialized_model.transform(images)
+        np.testing.assert_array_equal(expected_patches, actual_patches)
+
+        model_name = 'patch-extractor.json'
+        ml2json.to_json(model, model_name)
+        deserialized_model = ml2json.from_json(model_name)
+        os.remove(model_name)
+
+        json_patches = deserialized_model.transform(images)
+        np.testing.assert_array_equal(expected_patches, json_patches)

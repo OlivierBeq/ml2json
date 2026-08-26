@@ -31,10 +31,18 @@ try:
 except ImportError:
     pass
 
+# LocalOutlierFactorApplicabilityDomain doesn't exist in older mlchemad
+# releases (the ones the classes above were written against), so it gets its
+# own guard rather than joining the block above.
+try:
+    from mlchemad.applicability_domains import LocalOutlierFactorApplicabilityDomain
+    __optionals__.append('LocalOutlierFactorApplicabilityDomain')
+except ImportError:
+    pass
+
 
 def serialize_bounding_box_applicability_domain(model):
     serialized_model = {
-        'meta': 'bounding-box-ad',
         'fitted_': model.fitted_,
         'compute_minmax': model.compute_minmax,
         'constant_value_min': model.constant_value_min,
@@ -73,7 +81,6 @@ if 'BoundingBoxApplicabilityDomain' in __optionals__:
 
 def serialize_convex_hull_applicability_domain(model):
     serialized_model = {
-        'meta': 'convex-hull-ad',
         'fitted_': model.fitted_,
     }
     if model.fitted_:
@@ -101,7 +108,6 @@ if 'ConvexHullApplicabilityDomain' in __optionals__:
 
 def serialize_pca_bounding_box_applicability_domain(model):
     serialized_model = {
-        'meta': 'pca-bounding-box-ad',
         'fitted_': model.fitted_,
         'scaler': ml2json.to_dict(model.scaler) if model.scaler is not None else None,
         'min_explained_var': model.min_explained_var,
@@ -134,11 +140,18 @@ if 'PCABoundingBoxApplicabilityDomain' in __optionals__:
             model.min_ = np.array(model_dict['min_'])
             model.max_ = np.array(model_dict['max_'])
 
+            # Re-fitting a PCA from serialized components_/mean_ reproduces transform()
+            # up to a few ULPs (BLAS reduction order depends on array memory layout),
+            # which can flip contains() for points that sit exactly on the training
+            # boundary. Widen the box by a negligible epsilon to absorb that noise.
+            tol = 1e4 * np.finfo(np.float64).eps * np.maximum(np.abs(model.min_), np.abs(model.max_))
+            model.min_ = model.min_ - tol
+            model.max_ = model.max_ + tol
+
         return model
 
 def serialize_topkat_applicability_domain(model):
     serialized_model = {
-        'meta': 'topkat-ad',
         'fitted_': model.fitted_,
     }
     if model.fitted_:
@@ -176,7 +189,6 @@ if 'TopKatApplicabilityDomain' in __optionals__:
 
 def serialize_leverage_applicability_domain(model):
     serialized_model = {
-        'meta': 'leverage-ad',
         'fitted_': model.fitted_,
         'scaler': ml2json.to_dict(model.scaler),
     }
@@ -209,7 +221,6 @@ if 'LeverageApplicabilityDomain' in __optionals__:
 
 def serialize_hotelling_t2_applicability_domain(model):
     serialized_model = {
-        'meta': 'hotelling-t2-ad',
         'fitted_': model.fitted_,
         'alpha': model.alpha,
     }
@@ -240,7 +251,6 @@ if 'HotellingT2ApplicabilityDomain' in __optionals__:
 
 def serialize_kernel_density_applicability_domain(model):
     serialized_model = {
-        'meta': 'kernel-density-ad',
         'fitted_': model.fitted_,
         'kde': ml2json.to_dict(model.kde), # TODO: add ml2json.to_dict(model.kde)
         'threshold': model.threshold,
@@ -273,7 +283,6 @@ if 'KernelDensityApplicabilityDomain' in __optionals__:
 
 def serialize_isolation_forest_applicability_domain(model):
     serialized_model = {
-        'meta': 'isolation-forest-ad',
         'fitted_': model.fitted_,
         'isol': ml2json.to_dict(model.isol),
     }
@@ -302,7 +311,6 @@ if 'IsolationForestApplicabilityDomain' in __optionals__:
 
 def serialize_centroid_distance_applicability_domain(model):
     serialized_model = {
-        'meta': 'centroid-distance-ad',
         'fitted_': model.fitted_,
         'dist': model.dist,
         'scaler': ml2json.to_dict(model.scaler),
@@ -337,7 +345,6 @@ if 'CentroidDistanceApplicabilityDomain' in __optionals__:
 
 def serialize_knn_applicability_domain(model):
     serialized_model = {
-        'meta': 'knn-ad',
         'fitted_': model.fitted_,
         'scaler': ml2json.to_dict(model.scaler) if model.scaler is not None else None,
         'dist': model.dist,
@@ -384,7 +391,6 @@ if 'KNNApplicabilityDomain' in __optionals__:
 
 def serialize_standardization_approach_applicability_domain(model):
     serialized_model = {
-        'meta': 'standardization-approach-ad',
         'fitted_': model.fitted_,
         'scaler': ml2json.to_dict(model.scaler),
     }
@@ -404,6 +410,46 @@ if 'StandardizationApproachApplicabilityDomain' in __optionals__:
         model = StandardizationApproachApplicabilityDomain()
         model.fitted_ = model_dict['fitted_']
         model.scaler = ml2json.from_dict(model_dict['scaler'])
+
+        if model.fitted_:
+            model.num_points = model_dict['num_points']
+            model.num_dims = model_dict['num_dims']
+
+        return model
+
+def serialize_local_outlier_factor_applicability_domain(model):
+    serialized_model = {
+        'fitted_': model.fitted_,
+        'scaler': ml2json.to_dict(model.scaler) if model.scaler is not None else None,
+        'dist': model.dist,
+        'k': model.k,
+        'contamination': model.contamination,
+        'threshold': model.threshold,
+        'lof': ml2json.to_dict(model.lof),
+    }
+
+    if model.fitted_:
+        serialized_model.update(
+            {
+            'num_points': model.num_points,
+            'num_dims': model.num_dims,
+            }
+        )
+
+    return serialized_model
+
+if 'LocalOutlierFactorApplicabilityDomain' in __optionals__:
+    def deserialize_local_outlier_factor_applicability_domain(model_dict):
+        model = LocalOutlierFactorApplicabilityDomain()
+        model.fitted_ = model_dict['fitted_']
+        model.scaler = (ml2json.from_dict(model_dict['scaler'])
+                        if model_dict['scaler'] is not None
+                        else None)
+        model.dist = model_dict['dist']
+        model.k = model_dict['k']
+        model.contamination = model_dict['contamination']
+        model.threshold = model_dict['threshold']
+        model.lof = ml2json.from_dict(model_dict['lof'])
 
         if model.fitted_:
             model.num_points = model_dict['num_points']

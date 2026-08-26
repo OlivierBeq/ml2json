@@ -7,7 +7,6 @@ from sklearn.cross_decomposition import (CCA, PLSCanonical,
 
 def serialize_cca(model):
     serialized_model = {
-        'meta': 'cca',
         'x_weights_': model.x_weights_.tolist(),
         'y_weights_': model.y_weights_.tolist(),
         'x_loadings_': model.x_loadings_.tolist(),
@@ -86,7 +85,6 @@ def deserialize_cca(model_dict):
 
 def serialize_pls_canonical(model):
     serialized_model = {
-        'meta': 'pls-canonical',
         'x_weights_': model.x_weights_.tolist(),
         'y_weights_': model.y_weights_.tolist(),
         'x_loadings_': model.x_loadings_.tolist(),
@@ -163,7 +161,6 @@ def deserialize_pls_canonical(model_dict):
 
 def serialize_pls_regression(model):
     serialized_model = {
-        'meta': 'pls-regression',
         'x_weights_': model.x_weights_.tolist(),
         'y_weights_': model.y_weights_.tolist(),
         'x_loadings_': model.x_loadings_.tolist(),
@@ -244,7 +241,6 @@ def deserialize_pls_regression(model_dict):
 
 def serialize_pls_svd(model):
     serialized_model = {
-        'meta': 'pls-svd',
         'x_weights_': model.x_weights_.tolist(),
         'y_weights_': model.y_weights_.tolist(),
         '_x_mean': model._x_mean.tolist(),

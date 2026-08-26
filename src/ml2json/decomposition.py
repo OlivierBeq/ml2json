@@ -5,13 +5,22 @@ from sklearn.decomposition import (PCA, KernelPCA, DictionaryLearning, FactorAna
                                    LatentDirichletAllocation, MiniBatchDictionaryLearning, MiniBatchSparsePCA, NMF,
                                    MiniBatchNMF, SparsePCA, SparseCoder, TruncatedSVD)
 
+from . import _base
 from .preprocessing import serialize_kernel_centerer, deserialize_kernel_centerer
 from .utils.random_state import serialize_random_state, deserialize_random_state
+
+# Allow additional dependencies to be optional
+__optionals__ = []
+try:
+    from prince import PCA as PrincePCA, CA as PrinceCA, MCA as PrinceMCA, MFA as PrinceMFA, \
+        FAMD as PrinceFAMD, GPA as PrinceGPA, PGA as PrincePGA
+    __optionals__.append('Prince')
+except ImportError:
+    pass
 
 
 def serialize_pca(model):
     serialized_model = {
-        'meta': 'pca',
         'components_': model.components_.tolist(),
         'explained_variance_': model.explained_variance_.tolist(),
         'explained_variance_ratio_': model.explained_variance_ratio_.tolist(),
@@ -57,7 +66,6 @@ def deserialize_pca(model_dict):
 
 def serialize_kernel_pca(model):
     serialized_model = {
-        'meta': 'kernel-pca',
         'eigenvalues_': model.eigenvalues_.tolist(),
         'eigenvectors_': model.eigenvectors_.tolist(),
         'n_features_in_': model.n_features_in_,
@@ -95,7 +103,6 @@ def deserialize_kernel_pca(model_dict):
 
 def serialize_dictionary_learning(model):
     serialized_model = {
-        'meta': 'dictionary-learning',
         'components_': model.components_.tolist(),
         'n_iter_': model.n_iter_,
         'error_': model.error_,
@@ -125,7 +132,6 @@ def deserialize_dictionary_learning(model_dict):
 
 def serialize_factor_analysis(model):
     serialized_model = {
-        'meta': 'factor-analysis',
         'components_': model.components_.tolist(),
         'loglike_': model.loglike_,
         'noise_variance_': model.noise_variance_.tolist(),
@@ -134,6 +140,9 @@ def serialize_factor_analysis(model):
         'n_features_in_': model.n_features_in_,
         'params': model.get_params(),
     }
+
+    if isinstance(serialized_model['params'].get('noise_variance_init'), np.ndarray):
+        serialized_model['params']['noise_variance_init'] = serialized_model['params']['noise_variance_init'].tolist()
 
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
@@ -159,7 +168,6 @@ def deserialize_factor_analysis(model_dict):
 
 def serialize_fast_ica(model):
     serialized_model = {
-        'meta': 'fast-ica',
         'components_': model.components_.tolist(),
         'mixing_': model.mixing_.tolist(),
         'whitening_': model.whitening_.tolist(),
@@ -169,9 +177,14 @@ def serialize_fast_ica(model):
         'params': model.get_params(),
     }
 
+    # `fun` accepts a custom callable, not just the built-in 'logcosh'/'exp'/
+    # 'cube' string names - a raw function isn't JSON-safe on its own.
+    if callable(serialized_model['params'].get('fun')):
+        serialized_model['params']['fun'] = _base.recursive_serialize(serialized_model['params']['fun'])
+
     if 'feature_names_in_' in model.__dict__:
         serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
-        
+
     if '_whiten' in model.__dict__:
         serialized_model['_whiten'] = model._whiten
     else:
@@ -181,7 +194,10 @@ def serialize_fast_ica(model):
 
 
 def deserialize_fast_ica(model_dict):
-    model = FastICA(**model_dict['params'])
+    params = dict(model_dict['params'])
+    if isinstance(params.get('fun'), dict):
+        params['fun'] = _base.recursive_deserialize(params['fun'])
+    model = FastICA(**params)
 
     model.components_ = np.array(model_dict['components_'])
     model.mixing_ = np.array(model_dict['mixing_'])
@@ -196,14 +212,13 @@ def deserialize_fast_ica(model_dict):
     if '_whiten' in model_dict.keys():
         model._whiten = model_dict['_whiten']
     else:
-        model.whithen = model_dict['whiten']
+        model.whiten = model_dict['whiten']
 
     return model
 
 
 def serialize_incremental_pca(model):
     serialized_model = {
-        'meta': 'incremental-pca',
         'components_': model.components_.tolist(),
         'explained_variance_': model.explained_variance_.tolist(),
         'explained_variance_ratio_': model.explained_variance_ratio_.tolist(),
@@ -247,7 +262,6 @@ def deserialize_incremental_pca(model_dict):
 
 def serialize_minibatch_sparse_pca(model):
     serialized_model = {
-        'meta': 'minibatch-sparse-pca',
         'components_': model.components_.tolist(),
         'mean_': model.mean_.tolist(),
         'n_components_': model.n_components_,
@@ -279,7 +293,6 @@ def deserialize_minibatch_sparse_pca(model_dict):
 
 def serialize_sparse_pca(model):
     serialized_model = {
-        'meta': 'sparse-pca',
         'components_': model.components_.tolist(),
         'mean_': model.mean_.tolist(),
         'n_components_': model.n_components_,
@@ -316,7 +329,6 @@ def deserialize_sparse_pca(model_dict):
 
 def serialize_latent_dirichlet_allocation(model):
     serialized_model = {
-        'meta': 'latent-dirichlet-allocation',
         'components_': model.components_.tolist(),
         'exp_dirichlet_component_': model.exp_dirichlet_component_.tolist(),
         'bound_': model.bound_.tolist(),
@@ -356,7 +368,6 @@ def deserialize_latent_dirichlet_allocation(model_dict):
 
 def serialize_nmf(model):
     serialized_model = {
-        'meta': 'nmf',
         'components_': model.components_.tolist(),
         'n_components_': model.n_components_,
         'reconstruction_err_': model.reconstruction_err_,
@@ -388,7 +399,6 @@ def deserialize_nmf(model_dict):
 
 def serialize_minibatch_nmf(model):
     serialized_model = {
-        'meta': 'minibatch-nmf',
         'components_': model.components_.tolist(),
         'n_components_': model.n_components_,
         '_n_components': model._n_components,
@@ -476,7 +486,6 @@ def deserialize_minibatch_nmf(model_dict):
 
 def serialize_minibatch_dictionary_learning(model):
     serialized_model = {
-        'meta': 'minibatch-dictionary-learning',
         'components_': model.components_.tolist(),
         'n_iter_': model.n_iter_,
         'n_steps_': model.n_steps_,
@@ -506,7 +515,6 @@ def deserialize_minibatch_dictionary_learning(model_dict):
 
 def serialize_sparse_coder(model):
     serialized_model = {
-        'meta': 'sparse-coder',
         'params': model.get_params(),
     }
 
@@ -532,7 +540,6 @@ def deserialize_sparse_coder(model_dict):
 
 def serialize_truncated_svd(model):
     serialized_model = {
-        'meta': 'truncated-svd',
         'components_': model.components_.tolist(),
         'explained_variance_': model.explained_variance_.tolist(),
         'explained_variance_ratio_': model.explained_variance_ratio_.tolist(),
@@ -560,3 +567,77 @@ def deserialize_truncated_svd(model_dict):
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
+
+
+# BernoulliRBM (sklearn.neural_network) is an unsupervised feature-learning
+# transformer, not a classifier/regressor - it fits in here alongside the
+# other unsupervised decomposition/transform models rather than in
+# classification.py/regression.py.
+def serialize_bernoulli_rbm(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_bernoulli_rbm(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+# Prince's factor-analysis family (PCA, CA, MCA, MFA, FAMD, GPA, PGA) are all
+# plain sklearn.base.BaseEstimator subclasses whose fitted state is nothing
+# but numpy arrays/scalars, pandas Index/Series/DataFrame objects and nested
+# fitted sub-estimators (e.g. MFA/PGA embedding a per-group/tangent-space
+# PCA) - all of which the generic recursive engine already knows how to walk.
+if 'Prince' in __optionals__:
+    def serialize_prince_pca(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_pca(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_ca(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_ca(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_mca(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_mca(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_mfa(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_mfa(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_famd(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_famd(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_gpa(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_gpa(model_dict):
+        return _base.deserialize_model_generic(model_dict)
+
+
+    def serialize_prince_pga(model):
+        return _base.serialize_model_generic(model)
+
+
+    def deserialize_prince_pga(model_dict):
+        return _base.deserialize_model_generic(model_dict)

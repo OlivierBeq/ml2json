@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ml2json"
+dynamic = ["version"]
+description = "A safe, transparent way to share and deploy scikit-learn models."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Olivier J. M. Béquignon", email = "olivier.bequignon.maintainer@gmail.com" },
+]
+maintainers = [
+    { name = "Olivier J. M. Béquignon", email = "olivier.bequignon.maintainer@gmail.com" },
+]
+keywords = [
+    "scikit-learn",
+    "serializing",
+    "json",
+    "reproducibility",
+    "machine learning",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "scikit-learn>=1.4.0",
+    "scipy",
+    "joblib",
+    "numpy>=2.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/OlivierBeq/ml2json"
+Repository = "https://github.com/OlivierBeq/ml2json"
+Issues = "https://github.com/OlivierBeq/ml2json/issues"
+
+[project.optional-dependencies]
+full = [
+    "xgboost>=2.0.3",
+    "lightgbm",
+    "catboost",
+    "hdbscan",
+    "pynndescent",
+    "umap-learn",
+    "kmodes",
+    "mlchemad>=1.5.0",
+    "hnswlib",
+    "opentsne",
+    "imblearn",
+    "scikit-learn-extra",
+    "prince",
+]
+testing = [
+    "ml2json[full]",
+    "pytest",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ml2json.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["test"]

@@ -11,23 +11,32 @@ def serialize_memory(memory):
         '_verbose': memory._verbose,
         'mmap_mode': memory.mmap_mode,
         'timestamp': memory.timestamp,
-        'bytes_limit': memory.bytes_limit,
         'backend': memory.backend,
         'compress': memory.compress,
         'backend_options': memory.backend_options,
         'location': memory.location,
     }
+    # bytes_limit was removed from joblib's Memory in newer versions
+    if hasattr(memory, 'bytes_limit'):
+        serialized_memory['bytes_limit'] = memory.bytes_limit
     return serialized_memory
 
 
 def deserialize_memory(memory_dict):
-    memory = Memory(location=memory_dict['location'],
-                    backend=memory_dict['backend'],
-                    mmap_mode=memory_dict['mmap_mode'],
-                    compress=memory_dict['compress'],
-                    verbose=memory_dict['_verbose'],
-                    bytes_limit=memory_dict['bytes_limit'],
-                    backend_options=memory_dict['backend_options'])
+    kwargs = dict(location=memory_dict['location'],
+                 backend=memory_dict['backend'],
+                 mmap_mode=memory_dict['mmap_mode'],
+                 compress=memory_dict['compress'],
+                 verbose=memory_dict['_verbose'],
+                 backend_options=memory_dict['backend_options'])
+    # bytes_limit was removed from joblib's Memory in newer versions
+    if 'bytes_limit' in memory_dict:
+        try:
+            memory = Memory(bytes_limit=memory_dict['bytes_limit'], **kwargs)
+        except TypeError:
+            memory = Memory(**kwargs)
+    else:
+        memory = Memory(**kwargs)
 
     memory.depth = memory_dict['depth']
     memory.timestamp = memory_dict['timestamp']

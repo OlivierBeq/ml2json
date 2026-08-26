@@ -34,12 +34,23 @@ from .utils.memory import serialize_memory, deserialize_memory
 
 
 if 'imblearn' in __optionals__:
+    def _encode_sampling_strategy(value):
+        # sampling_strategy accepts a dict keyed by class label (e.g. {0: 50, 1: 200}).
+        # JSON object keys must be strings, so a raw dict would silently come back with
+        # str(label) keys after a to_json/from_json round-trip - stringify/eval it instead,
+        # mirroring how the fitted sampling_strategy_ attribute is already handled below.
+        return str(value) if isinstance(value, dict) else value
+
+
+    def _decode_sampling_strategy(value):
+        return eval(value) if isinstance(value, str) and value.startswith('{') else value
+
+
     def serialize_cluster_centroids(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'cluster-centroids',
-                            'params': {param: value
-                                       for param, value in model.get_params().items()
+        serialized_model = {'params': {param: value
+                                       for param, value in model.get_params(deep=False).items()
                                        if not param.startswith('estimator')}
                             }
 
@@ -54,10 +65,12 @@ if 'imblearn' in __optionals__:
         if 'voting_' in model.__dict__:
             serialized_model['voting_'] = model.voting_
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_cluster_centroids(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -80,8 +93,7 @@ if 'imblearn' in __optionals__:
     def serialize_condensed_nearest_neighbours(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'condensed-nearest-neighbours',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.n_neighbors, int) and model.n_neighbors is not None:
@@ -98,10 +110,12 @@ if 'imblearn' in __optionals__:
         if 'sample_indices_' in model.__dict__:
             serialized_model['sample_indices_'] = model.sample_indices_.tolist()
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_condensed_nearest_neighbours(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -127,9 +141,8 @@ if 'imblearn' in __optionals__:
     def serialize_edited_nearest_neighbours(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'edited-nearest-neighbours',
-                            'params': {param: value
-                                       for param, value in model.get_params().items()
+        serialized_model = {'params': {param: value
+                                       for param, value in model.get_params(deep=False).items()
                                        if not param.startswith('n_neighbors__')}
                             }
 
@@ -147,10 +160,12 @@ if 'imblearn' in __optionals__:
         if 'sample_indices_' in model.__dict__:
             serialized_model['sample_indices_'] = model.sample_indices_.tolist()
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_edited_nearest_neighbours(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -176,8 +191,7 @@ if 'imblearn' in __optionals__:
     def serialize_repeated_edited_nearest_neighbours(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'repeated-edited-nearest-neighbours',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.n_neighbors, int):
@@ -198,10 +212,12 @@ if 'imblearn' in __optionals__:
         if 'sample_indices_' in model.__dict__:
             serialized_model['sample_indices_'] = model.sample_indices_.tolist()
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_repeated_edited_nearest_neighbours(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -231,8 +247,7 @@ if 'imblearn' in __optionals__:
     def serialize_all_knn(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'all-knn',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.n_neighbors, int):
@@ -251,10 +266,12 @@ if 'imblearn' in __optionals__:
         if 'sample_indices_' in model.__dict__:
             serialized_model['sample_indices_'] = model.sample_indices_.tolist()
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_all_knn(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -282,8 +299,7 @@ if 'imblearn' in __optionals__:
     def serialize_instance_hardness_threshold(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'instance-hardness-threshold',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if serialized_model['params']['estimator'] is not None:
@@ -300,10 +316,12 @@ if 'imblearn' in __optionals__:
         if 'sample_indices_' in model.__dict__:
             serialized_model['sample_indices_'] = model.sample_indices_.tolist()
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_instance_hardness_threshold(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -329,8 +347,7 @@ if 'imblearn' in __optionals__:
     def serialize_near_miss(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'near-miss',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.n_neighbors, int):
@@ -349,10 +366,12 @@ if 'imblearn' in __optionals__:
         if 'sample_indices_' in model.__dict__:
             serialized_model['sample_indices_'] = model.sample_indices_.tolist()
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_near_miss(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -380,8 +399,7 @@ if 'imblearn' in __optionals__:
     def serialize_neighbourhood_cleaning_rule(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'neighbourhood-cleaning-rule',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if model.edited_nearest_neighbours is not None:
@@ -404,10 +422,12 @@ if 'imblearn' in __optionals__:
         if 'classes_to_clean_' in model.__dict__:
             serialized_model['classes_to_clean_'] = [int(x) for x in model.classes_to_clean_]
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_neighbourhood_cleaning_rule(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -439,8 +459,7 @@ if 'imblearn' in __optionals__:
     def serialize_one_sided_selection(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'one-sided-selection',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.n_neighbors, int) and model.n_neighbors is not None:
@@ -459,10 +478,12 @@ if 'imblearn' in __optionals__:
         if 'sample_indices_' in model.__dict__:
             serialized_model['sample_indices_'] = model.sample_indices_.tolist()
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_one_sided_selection(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -488,8 +509,7 @@ if 'imblearn' in __optionals__:
 
 
     def serialize_random_under_sampler(model):
-        serialized_model = {'meta': 'random-under-sampler',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if 'n_features_in_' in model.__dict__:
@@ -501,10 +521,12 @@ if 'imblearn' in __optionals__:
         if 'sample_indices_' in model.__dict__:
             serialized_model['sample_indices_'] = model.sample_indices_.tolist()
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_random_under_sampler(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
 
         model = RandomUnderSampler(**model_dict['params'])
@@ -524,8 +546,7 @@ if 'imblearn' in __optionals__:
     def serialize_tomek_links(model):
         from .ml2json import serialize_model
 
-        serialized_model = {'meta': 'tomek-links',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if 'n_features_in_' in model.__dict__:
@@ -537,10 +558,12 @@ if 'imblearn' in __optionals__:
         if 'sample_indices_' in model.__dict__:
             serialized_model['sample_indices_'] = model.sample_indices_.tolist()
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_tomek_links(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
 
         model = TomekLinks(**model_dict['params'])
@@ -558,8 +581,7 @@ if 'imblearn' in __optionals__:
 
 
     def serialize_random_over_sampler(model):
-        serialized_model = {'meta': 'random-over-sampler',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if 'n_features_in_' in model.__dict__:
@@ -573,10 +595,12 @@ if 'imblearn' in __optionals__:
         if 'shrinkage_' in model.__dict__:
             serialized_model['shrinkage_'] = model.shrinkage_
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_random_over_sampler(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
 
         model = RandomOverSampler(**model_dict['params'])
@@ -597,8 +621,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_smote(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'smote',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -613,10 +636,12 @@ if 'imblearn' in __optionals__:
         if 'nn_k_' in model.__dict__:
             serialized_model['nn_k_'] = serialize_model(model.nn_k_)
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_smote(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -639,8 +664,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_smotenc(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'smotenc',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -669,10 +693,12 @@ if 'imblearn' in __optionals__:
         if 'ohe_' in model.__dict__:
             serialized_model['ohe_'] = serialize_model(model.ohe_)
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_smotenc(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -709,8 +735,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_smoten(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'smoten',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -729,10 +754,12 @@ if 'imblearn' in __optionals__:
         if 'categorical_encoder_' in model.__dict__:
             serialized_model['categorical_encoder_'] = serialize_model(model.categorical_encoder_) if model.categorical_encoder_ is not None else None
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_smoten(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -759,8 +786,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_adasyn(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'adasyn',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.n_neighbors, int) and model.n_neighbors is not None:
@@ -775,17 +801,19 @@ if 'imblearn' in __optionals__:
         if 'nn_' in model.__dict__:
             serialized_model['nn_'] = serialize_model(model.nn_)
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_adasyn(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
         if not isinstance(model_dict['params']['n_neighbors'], int) and model_dict['params']['n_neighbors'] is not None:
             model_dict['params']['n_neighbors'] = deserialize_model(model_dict['params']['n_neighbors'])
 
-        model = SMOTE(**model_dict['params'])
+        model = ADASYN(**model_dict['params'])
 
         if 'n_features_in_' in model_dict.keys():
             model.n_features_in_ = model_dict['n_features_in_']
@@ -801,8 +829,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_borderline_smote(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'borderline-smote',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -824,10 +851,12 @@ if 'imblearn' in __optionals__:
         if 'nn_m_' in model.__dict__:
             serialized_model['nn_m_'] = serialize_model(model.nn_m_)
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_borderline_smote(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -857,8 +886,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_kmeans_smote(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'kmeans-smote',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -879,10 +907,12 @@ if 'imblearn' in __optionals__:
         if 'cluster_balance_threshold_' in model.__dict__:
             serialized_model['cluster_balance_threshold_'] = model.cluster_balance_threshold_
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_kmeans_smote(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -911,8 +941,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_svm_smote(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'svm-smote',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if not isinstance(model.k_neighbors, int) and model.k_neighbors is not None:
@@ -937,10 +966,12 @@ if 'imblearn' in __optionals__:
         if 'cluster_balance_threshold_' in model.__dict__:
             serialized_model['cluster_balance_threshold_'] = model.cluster_balance_threshold_
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_svm_smote(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -973,8 +1004,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_smote_enn(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'smote-enn',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if model.enn is not None:
@@ -993,10 +1023,12 @@ if 'imblearn' in __optionals__:
         if 'smote_' in model.__dict__:
             serialized_model['smote_'] = serialize_model(model.smote_)
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_smote_enn(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 
@@ -1023,8 +1055,7 @@ if 'imblearn' in __optionals__:
 
     def serialize_smote_tomek(model):
         from .ml2json import serialize_model
-        serialized_model = {'meta': 'smote-tomek',
-                            'params': model.get_params()
+        serialized_model = {'params': model.get_params(deep=False)
                             }
 
         if model.tomek is not None:
@@ -1043,10 +1074,12 @@ if 'imblearn' in __optionals__:
         if 'smote_' in model.__dict__:
             serialized_model['smote_'] = serialize_model(model.smote_)
 
+        serialized_model['params']['sampling_strategy'] = _encode_sampling_strategy(serialized_model['params']['sampling_strategy'])
         return serialized_model
 
 
     def deserialize_smote_tomek(model_dict):
+        model_dict['params']['sampling_strategy'] = _decode_sampling_strategy(model_dict['params']['sampling_strategy'])
         from collections import OrderedDict
         from .ml2json import deserialize_model
 

@@ -2,26 +2,16 @@
 
 import os
 import uuid
-import inspect
-import importlib
 
 import numpy as np
 import scipy as sp
 import sklearn
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
-from sklearn.tree import DecisionTreeRegressor, ExtraTreeRegressor
-from sklearn.ensemble import (AdaBoostRegressor, BaggingRegressor, ExtraTreesRegressor,
-                              GradientBoostingRegressor, RandomForestRegressor,
-                              StackingRegressor, VotingRegressor,
-                              HistGradientBoostingRegressor)
-from sklearn._loss import loss
+from sklearn.ensemble import StackingRegressor, VotingRegressor
 from sklearn.neural_network import MLPRegressor
-from sklearn.tree._tree import Tree
 from sklearn.svm import SVR
-from sklearn import dummy
-from sklearn.neighbors import KNeighborsRegressor
 
-from .neighbors import serialize_kdtree, deserialize_kdtree
+from . import _base
 
 # Allow additional dependencies to be optional
 __optionals__ = []
@@ -46,10 +36,13 @@ from .utils import csr
 
 
 def serialize_linear_regressor(model):
+    # coef_/intercept_ keep the dtype of the training data (e.g. float32) - a bare
+    # .tolist()/np.array() round-trip always upcasts back to float64, which then
+    # changes predict()'s output slightly for float32-fitted models since numpy
+    # promotes the float32 X to float64 during the dot product.
     serialized_model = {
-        'meta': 'linear-regression',
-        'coef_': model.coef_.tolist(),
-        'intercept_': model.intercept_.tolist(),
+        'coef_': _base.serialize_numpy_array(model.coef_),
+        'intercept_': _base.serialize_numpy_array(np.asarray(model.intercept_)),
         'params': model.get_params()
     }
 
@@ -59,16 +52,17 @@ def serialize_linear_regressor(model):
 def deserialize_linear_regressor(model_dict):
     model = LinearRegression(**model_dict['params'])
 
-    model.coef_ = np.array(model_dict['coef_'])
-    model.intercept_ = np.array(model_dict['intercept_'])
+    model.coef_ = _base.deserialize_numpy_array(model_dict['coef_'])
+    model.intercept_ = _base.deserialize_numpy_array(model_dict['intercept_'])
 
     return model
 
 
 def serialize_lasso_regressor(model):
+    # See serialize_linear_regressor: preserve coef_'s dtype (e.g. float32) instead
+    # of always upcasting to float64 on deserialize.
     serialized_model = {
-        'meta': 'lasso-regression',
-        'coef_': model.coef_.tolist(),
+        'coef_': _base.serialize_numpy_array(model.coef_),
         'params': model.get_params()
     }
 
@@ -86,9 +80,9 @@ def serialize_lasso_regressor(model):
 
 
 def deserialize_lasso_regressor(model_dict):
-    model = Lasso(model_dict['params'])
+    model = Lasso(**model_dict['params'])
 
-    model.coef_ = np.array(model_dict['coef_'])
+    model.coef_ = _base.deserialize_numpy_array(model_dict['coef_'])
 
     if isinstance(model_dict['n_iter_'], list):
         model.n_iter_ = np.array(model_dict['n_iter_'])
@@ -104,9 +98,10 @@ def deserialize_lasso_regressor(model_dict):
 
 
 def serialize_elastic_regressor(model):
+    # See serialize_linear_regressor: preserve coef_'s dtype (e.g. float32) instead
+    # of always upcasting to float64 on deserialize.
     serialized_model = {
-        'meta': 'elasticnet-regression',
-        'coef_': model.coef_.tolist(),
+        'coef_': _base.serialize_numpy_array(model.coef_),
         'alpha': model.alpha,
         'params': model.get_params()
     }
@@ -123,10 +118,9 @@ def serialize_elastic_regressor(model):
 
 
 def deserialize_elastic_regressor(model_dict):
-    model = ElasticNet(model_dict['params'])
+    model = ElasticNet(**model_dict['params'])
 
-    model.coef_ = np.array(model_dict['coef_'])
-    model.alpha = np.array(model_dict['alpha'])
+    model.coef_ = _base.deserialize_numpy_array(model_dict['coef_'])
 
     if isinstance(model_dict['n_iter_'], list):
         model.n_iter_ = np.array(model_dict['n_iter_'])
@@ -140,9 +134,10 @@ def deserialize_elastic_regressor(model_dict):
 
 
 def serialize_ridge_regressor(model):
+    # See serialize_linear_regressor: preserve coef_'s dtype (e.g. float32) instead
+    # of always upcasting to float64 on deserialize.
     serialized_model = {
-        'meta': 'ridge-regression',
-        'coef_': model.coef_.tolist(),
+        'coef_': _base.serialize_numpy_array(model.coef_),
         'params': model.get_params()
     }
 
@@ -158,9 +153,9 @@ def serialize_ridge_regressor(model):
 
 
 def deserialize_ridge_regressor(model_dict):
-    model = Ridge(model_dict['params'])
+    model = Ridge(**model_dict['params'])
 
-    model.coef_ = np.array(model_dict['coef_'])
+    model.coef_ = _base.deserialize_numpy_array(model_dict['coef_'])
 
     if 'n_iter_' in model_dict:
         model.n_iter_ = np.array(model_dict['n_iter_'])
@@ -175,7 +170,6 @@ def deserialize_ridge_regressor(model_dict):
 
 def serialize_svr(model):
     serialized_model = {
-        'meta': 'svr',
         'support_': model.support_.tolist(),
         '_n_support': model._n_support.tolist(),
         '_probA': model._probA.tolist(),
@@ -188,17 +182,20 @@ def serialize_svr(model):
     if isinstance(model.support_vectors_, sp.sparse.csr_matrix):
         serialized_model['support_vectors_'] = csr.serialize_csr_matrix(model.support_vectors_)
     elif isinstance(model.support_vectors_, np.ndarray):
-        serialized_model['support_vectors_'] = model.support_vectors_.tolist()
+        # .tolist() collapses a (0, 0) array (e.g. kernel='precomputed', which never
+        # populates support_vectors_) down to [], losing the second dimension - the
+        # shape-preserving generic array serializer keeps it reconstructible.
+        serialized_model['support_vectors_'] = _base.serialize_numpy_array(model.support_vectors_)
 
     if isinstance(model.dual_coef_, sp.sparse.csr_matrix):
         serialized_model['dual_coef_'] = csr.serialize_csr_matrix(model.dual_coef_)
     elif isinstance(model.dual_coef_, np.ndarray):
-        serialized_model['dual_coef_'] = model.dual_coef_.tolist()
+        serialized_model['dual_coef_'] = _base.serialize_numpy_array(model.dual_coef_)
 
     if isinstance(model._dual_coef_, sp.sparse.csr_matrix):
         serialized_model['_dual_coef_'] = csr.serialize_csr_matrix(model._dual_coef_)
     elif isinstance(model._dual_coef_, np.ndarray):
-        serialized_model['_dual_coef_'] = model._dual_coef_.tolist()
+        serialized_model['_dual_coef_'] = _base.serialize_numpy_array(model._dual_coef_)
 
     if hasattr(model, 'class_weight_') and sklearn.__version__ < '1.2.0':
             serialized_model['class_weight_'] = model.class_weight_.tolist(),
@@ -215,6 +212,7 @@ def deserialize_svr(model_dict):
     model = SVR(**model_dict['params'])
     model.shape_fit_ = model_dict['shape_fit_']
     model._gamma = model_dict['_gamma']
+    model._effective_probability = model.probability is True
 
 
     model.support_ = np.array(model_dict['support_']).astype(np.int32)
@@ -226,18 +224,18 @@ def deserialize_svr(model_dict):
         model.support_vectors_ = csr.deserialize_csr_matrix(model_dict['support_vectors_'])
         model._sparse = True
     else:
-        model.support_vectors_ = np.array(model_dict['support_vectors_']).astype(np.float64)
+        model.support_vectors_ = _base.deserialize_numpy_array(model_dict['support_vectors_'])
         model._sparse = False
 
     if 'meta' in model_dict['dual_coef_'] and model_dict['dual_coef_']['meta'] == 'csr':
         model.dual_coef_ = csr.deserialize_csr_matrix(model_dict['dual_coef_'])
     else:
-        model.dual_coef_ = np.array(model_dict['dual_coef_']).astype(np.float64)
+        model.dual_coef_ = _base.deserialize_numpy_array(model_dict['dual_coef_'])
 
     if 'meta' in model_dict['_dual_coef_'] and model_dict['_dual_coef_']['meta'] == 'csr':
         model._dual_coef_ = csr.deserialize_csr_matrix(model_dict['_dual_coef_'])
     else:
-        model._dual_coef_ = np.array(model_dict['_dual_coef_']).astype(np.float64)
+        model._dual_coef_ = _base.deserialize_numpy_array(model_dict['_dual_coef_'])
 
     if 'class_weight_' in model_dict:
         model.class_weight_ = np.array(model_dict['class_weight_']).astype(np.float64)
@@ -251,209 +249,40 @@ def deserialize_svr(model_dict):
     return model
 
 
-def serialize_tree(tree):
-    serialized_tree = tree.__getstate__()
-    dtypes = serialized_tree['nodes'].dtype
-    serialized_tree['nodes'] = serialized_tree['nodes'].tolist()
-    serialized_tree['values'] = serialized_tree['values'].tolist()
-
-    return serialized_tree, dtypes
-
-
-def deserialize_tree(tree_dict, n_features, n_outputs):
-    tree_dict['nodes'] = [tuple(lst) for lst in tree_dict['nodes']]
-
-    names = ['left_child', 'right_child', 'feature', 'threshold', 'impurity', 'n_node_samples', 'weighted_n_node_samples']
-    if sklearn.__version__ >= '1.3':
-        names.append('missing_go_to_left')
-    tree_dict['nodes'] = np.array(tree_dict['nodes'], dtype=np.dtype({'names': names, 'formats': tree_dict['nodes_dtype']}))
-    tree_dict['values'] = np.array(tree_dict['values'])
-
-    # Dummy classes
-    dummy_classes = np.array([1] * n_outputs, dtype=np.intp)
-
-    tree = Tree(n_features, dummy_classes, n_outputs)
-    tree.__setstate__(tree_dict)
-
-    return tree
-
-
 def serialize_decision_tree_regressor(model):
-    tree, dtypes = serialize_tree(model.tree_)
-    serialized_model = {
-        'meta': 'decision-tree-regression',
-        'feature_importances_': model.feature_importances_.tolist(),
-        'max_features_': model.max_features_,
-        'n_features_in_': model.n_features_in_,
-        'n_outputs_': model.n_outputs_,
-        'tree_': tree
-    }
-
-    tree_dtypes = []
-    for i in range(0, len(dtypes)):
-        tree_dtypes.append(dtypes[i].str)
-
-    serialized_model['tree_']['nodes_dtype'] = tree_dtypes
-
-    return serialized_model
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_decision_tree_regressor(model_dict):
-    deserialized_decision_tree = DecisionTreeRegressor()
-
-    deserialized_decision_tree.max_features_ = model_dict['max_features_']
-    deserialized_decision_tree.n_features_in_ = model_dict['n_features_in_']
-    deserialized_decision_tree.n_outputs_ = model_dict['n_outputs_']
-
-    tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_in_'], model_dict['n_outputs_'])
-    deserialized_decision_tree.tree_ = tree
-
-    return deserialized_decision_tree
-
-
-def serialize_dummy_regressor(model):
-    if isinstance(model.constant_, np.ndarray):
-        model.constant = model.constant_.tolist()
-    else:
-        model.constant = model.constant_
-    return model.__dict__
+    return _base.deserialize_model_generic(model_dict)
 
 
 def serialize_gradient_boosting_regressor(model):
-
-    serialized_model = {
-        'meta': 'gb-regression',
-        'max_features_': model.max_features_,
-        'n_features_in_': model.n_features_in_,
-        'train_score_': model.train_score_.tolist(),
-        'params': model.get_params(),
-        'estimators_shape': list(model.estimators_.shape),
-        'estimators_': []
-    }
-    if  isinstance(model.init_, dummy.DummyRegressor):
-        serialized_model['init_'] = serialize_dummy_regressor(model.init_)
-        serialized_model['init_']['meta'] = 'dummy'
-    elif isinstance(model.init_, str):
-        serialized_model['init_'] = model.init_
-
-    if sklearn.__version__ >= '1.4.0':
-        if isinstance(model._loss, loss.HalfSquaredError):
-            serialized_model['_loss'] = 'ls'
-        elif isinstance(model._loss, loss.AbsoluteError):
-            serialized_model['_loss'] = 'lad'
-        elif isinstance(model._loss, loss.HuberLoss):
-            serialized_model['_loss'] = 'huber'
-            serialized_model['quantile'] = model._loss.quantile
-        elif isinstance(model._loss, loss.PinballLoss):
-            serialized_model['_loss'] = 'quantile'
-            serialized_model['quantile'] = model._loss.closs.quantile
-    else:
-        from sklearn.ensemble import _gb_losses
-        if isinstance(model._loss, _gb_losses.LeastSquaresError):
-            serialized_model['_loss'] = 'ls'
-        elif isinstance(model._loss, _gb_losses.LeastAbsoluteError):
-            serialized_model['_loss'] = 'lad'
-        elif isinstance(model._loss, _gb_losses.HuberLossFunction):
-            serialized_model['_loss'] = 'huber'
-        elif isinstance(model._loss, _gb_losses.QuantileLossFunction):
-            serialized_model['quantile'] = model._loss.quantile
-        elif isinstance(model._loss, loss.PinballLoss):
-            serialized_model['_loss'] = 'quantile'
-
-    if 'priors' in model.init_.__dict__:
-        serialized_model['priors'] = model.init_.priors.tolist()
-
-    for tree in model.estimators_.reshape((-1,)):
-        serialized_model['estimators_'].append(serialize_decision_tree_regressor(tree))
-
-    serialized_model['init_'] = {key: value.tolist() if isinstance(value, np.ndarray) else value
-                                 for key, value in serialized_model['init_'].items()}
-
-    return serialized_model
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_gradient_boosting_regressor(model_dict):
-    model = GradientBoostingRegressor(**model_dict['params'])
-    trees = [deserialize_decision_tree_regressor(tree) for tree in model_dict['estimators_']]
-    model.estimators_ = np.array(trees).reshape(model_dict['estimators_shape'])
+    return _base.deserialize_model_generic(model_dict)
 
-    if 'init_' in model_dict:
-        model_dict['init_'] = {key: np.array(value) if isinstance(value, list) else value
-                               for key, value in model_dict['init_'].items()}
-        if model_dict['init_']['meta'] == 'dummy':
-            model.init_ = dummy.DummyRegressor()
-        model.init_.__dict__ = model_dict['init_']
-        model.init_.__dict__.pop('meta')
 
-    model.train_score_ = np.array(model_dict['train_score_'])
-    model.max_features_ = model_dict['max_features_']
-    model.n_features_in_ = model_dict['n_features_in_']
-    
-    if sklearn.__version__ >= '1.4.0':
-        if model_dict['_loss'] == 'ls':
-            model._loss = loss.HalfSquaredError()
-        elif model_dict['_loss'] == 'lad':
-            model._loss = loss.AbsoluteError()
-        elif model_dict['_loss'] == 'huber':
-            model._loss = loss.HuberLoss(quantile=model_dict['quantile'])
-        elif model_dict['_loss'] == 'quantile':
-            model._loss = loss.PinballLoss(quantile=model_dict['quantile'])
-    else:
-        from sklearn.ensemble import _gb_losses
-        if model_dict['_loss'] == 'ls':
-            model._loss = _gb_losses.LeastSquaresError()
-        elif model_dict['_loss'] == 'lad':
-            model._loss = _gb_losses.LeastAbsoluteError()
-        elif model_dict['_loss'] == 'huber':
-            model._loss = _gb_losses.HuberLossFunction(1)
-        elif model_dict['_loss'] == 'quantile':
-            model._loss = _gb_losses.QuantileLossFunction(1)
+def serialize_hist_gradient_boosting_regressor(model):
+    return _base.serialize_model_generic(model)
 
-    if 'priors' in model_dict:
-        model.init_.priors = np.array(model_dict['priors'])
 
-    return model
+def deserialize_hist_gradient_boosting_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
 
 
 def serialize_random_forest_regressor(model):
-
-    serialized_model = {
-        'meta': 'rf-regression',
-        'estimators_': [serialize_decision_tree_regressor(decision_tree) for decision_tree in model.estimators_],
-        'n_features_in_': model.n_features_in_,
-        'n_outputs_': model.n_outputs_,
-        'params': model.get_params()
-    }
-
-    if 'oob_score_' in model.__dict__:
-        serialized_model['oob_score_'] = model.oob_score_
-    if 'oob_decision_function_' in model.__dict__:
-        serialized_model['oob_prediction_'] = model.oob_prediction_.tolist()
-    if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist(),
-
-    return serialized_model
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_random_forest_regressor(model_dict):
-    model = RandomForestRegressor(**model_dict['params'])
-    estimators = [deserialize_decision_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
-    model.estimators_ = np.array(estimators)
-
-    model.n_features_in_ = model_dict['n_features_in_']
-    model.n_outputs_ = model_dict['n_outputs_']
-
-    if 'oob_score_' in model_dict:
-        model.oob_score_ = model_dict['oob_score_']
-    if 'oob_prediction_' in model_dict:
-        model.oob_prediction_ =np.array(model_dict['oob_prediction_'])
-
-    return model
+    return _base.deserialize_model_generic(model_dict)
 
 
 def serialize_mlp_regressor(model):
     serialized_model = {
-        'meta': 'mlp-regression',
         'coefs_': [array.tolist() for array in model.coefs_],
         'loss_': model.loss_,
         'intercepts_': [array.tolist() for array in model.intercepts_],
@@ -484,7 +313,6 @@ def deserialize_mlp_regressor(model_dict):
 if 'XGBRanker' in __optionals__:
     def serialize_xgboost_ranker(model):
         serialized_model = {
-            'meta': 'xgboost-ranker',
             'params': model.get_params()
         }
 
@@ -511,7 +339,6 @@ if 'XGBRanker' in __optionals__:
 if 'XGBRegressor' in __optionals__:
     def serialize_xgboost_regressor(model):
         serialized_model = {
-            'meta': 'xgboost-regressor',
             'params': model.get_params()
         }
 
@@ -538,7 +365,6 @@ if 'XGBRegressor' in __optionals__:
 if 'XGBRFRegressor' in __optionals__:
     def serialize_xgboost_rf_regressor(model):
         serialized_model = {
-            'meta': 'xgboost-rf-regressor',
             'params': model.get_params()
         }
 
@@ -566,7 +392,6 @@ if 'XGBRFRegressor' in __optionals__:
 if 'LGBMRegressor' in __optionals__:
     def serialize_lightgbm_regressor(model):
         serialized_model = {
-            'meta': 'lightgbm-regressor',
             'params': model.get_params(),
             '_other_params': model._other_params
         }
@@ -609,7 +434,6 @@ if 'LGBMRegressor' in __optionals__:
 if 'LGBMRanker' in __optionals__:
     def serialize_lightgbm_ranker(model):
         serialized_model = {
-            'meta': 'lightgbm-ranker',
             'params': model.get_params(),
             '_other_params': model._other_params
         }
@@ -654,7 +478,6 @@ if 'LGBMRanker' in __optionals__:
 if 'CatBoostRegressor' in __optionals__:
     def serialize_catboost_regressor(model, catboost_data):
         serialized_model = {
-            'meta': 'catboost-regressor',
             'params': model.get_params()
         }
 
@@ -682,7 +505,6 @@ if 'CatBoostRegressor' in __optionals__:
 if 'CatBoostRanker' in __optionals__:
     def serialize_catboost_ranker(model: CatBoostRanker, catboost_data):
         serialized_model = {
-            'meta': 'catboost-ranker',
             'params': model.get_params()
         }
 
@@ -708,293 +530,42 @@ if 'CatBoostRanker' in __optionals__:
 
 
 def serialize_adaboost_regressor(model):
-    serialized_model = {
-        'meta': 'adaboost-regressor',
-        'estimators_': [serialize_decision_tree_regressor(decision_tree) for decision_tree in model.estimators_],
-        'estimator_weights_': model.estimator_weights_.tolist(),
-        'estimator_errors_': model.estimator_errors_.tolist(),
-        'estimator_params': model.estimator_params,
-        'n_features_in_': model.n_features_in_,
-        'params': model.get_params()
-    }
-
-    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
-        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
-                                               type(model.base_estimator_).__name__,
-                                               model.base_estimator_.get_params())
-    elif sklearn.__version__ < '1.2.0':
-        serialized_model['base_estimator_'] = None
-    elif '_estimator' in model.__dict__ and model._estimator is not None:
-        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
-                                          type(model._estimator).__name__,
-                                          model._estimator.get_params())
-    else:
-        serialized_model['_estimator'] = None
-
-    if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
-
-    return serialized_model
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_adaboost_regressor(model_dict):
-    if model_dict.get('base_estimator_') is not None:
-        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
-                                                         model_dict['base_estimator_'][1])(
-            **model_dict['base_estimator_'][2])
-    elif sklearn.__version__ < '1.2.0':
-        model_dict['params']['base_estimator'] = None
-    elif model_dict.get('_estimator') is not None:
-        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
-                                                    model_dict['_estimator'][1])(**model_dict['_estimator'][2])
-    else:
-        model_dict['params']['estimator'] = None
-
-    model = AdaBoostRegressor(**model_dict['params'])
-    if sklearn.__version__ < '1.2.0':
-        model.base_estimator_ = model_dict['params']['base_estimator']
-    else:
-        model._estimator = model_dict['params']['estimator']
-    model.estimators_ = [deserialize_decision_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
-    model.estimator_weights_ = np.array(model_dict['estimator_weights_'])
-    model.estimator_errors_ = np.array(model_dict['estimator_errors_'])
-    model.estimator_params = tuple(model_dict['estimator_params'])
-    model.n_features_in_ = model_dict['n_features_in_']
-
-    if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
-
-    return model
+    return _base.deserialize_model_generic(model_dict)
 
 
 def serialize_bagging_regressor(model):
-    serialized_model = {
-        'meta': 'bagging-regression',
-        '_max_samples': model._max_samples,
-        '_n_samples': model._n_samples,
-        '_max_features': model._max_features,
-        'n_features_in_': model.n_features_in_,
-        '_seeds': model._seeds.tolist(),
-        'estimators_': [serialize_decision_tree_regressor(decision_tree) for decision_tree in model.estimators_],
-        'estimator_params': model.estimator_params,
-        'estimators_features_': [array.tolist() for array in model.estimators_features_],
-        'params': model.get_params()
-    }
-
-    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
-        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
-                                               type(model.base_estimator_).__name__,
-                                               model.base_estimator_.get_params())
-    elif sklearn.__version__ < '1.2.0':
-        serialized_model['base_estimator_'] = None
-    elif '_estimator' in model.__dict__ and model._estimator is not None:
-        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
-                                          type(model._estimator).__name__,
-                                          model._estimator.get_params())
-    else:
-        serialized_model['_estimator'] = None
-
-    if 'oob_score_' in model.__dict__:
-        serialized_model['oob_score_'] = model.oob_score_
-    if 'oob_decision_function_' in model.__dict__:
-        serialized_model['oob_decision_function_'] = model.oob_decision_function_.tolist()
-
-    if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
-
-    return serialized_model
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_bagging_regressor(model_dict):
-    if model_dict.get('base_estimator_') is not None:
-        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
-                                                         model_dict['base_estimator_'][1])(
-            **model_dict['base_estimator_'][2])
-    elif sklearn.__version__ < '1.2.0':
-        model_dict['params']['base_estimator'] = None
-    elif model_dict.get('_estimator') is not None:
-        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
-                                                     model_dict['_estimator'][1])(**model_dict['_estimator'][2])
-    else:
-        model_dict['params']['estimator'] = None
-
-    model = BaggingRegressor(**model_dict['params'])
-
-    if sklearn.__version__ < '1.2.0':
-        model.base_estimator_ = model_dict['params']['base_estimator']
-    else:
-        model._estimator = model_dict['params']['estimator']
-    model.estimators_ = [deserialize_decision_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
-    model._max_samples = model_dict['_max_samples']
-    model._n_samples = model_dict['_n_samples']
-    model._max_features = model_dict['_max_features']
-    model.n_features_in_ = model_dict['n_features_in_']
-    model._seeds = np.array(model_dict['_seeds'])
-    model.estimator_params = model_dict['estimator_params']
-    model.estimators_features_ = [np.array(array) for array in model_dict['estimators_features_']]
-
-    if 'oob_score_' in model_dict:
-        model.oob_score_ = model_dict['oob_score_']
-    if 'oob_decision_function_' in model_dict:
-        model.oob_decision_function_ = model_dict['oob_decision_function_']
-
-    if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
-
-    return model
+    return _base.deserialize_model_generic(model_dict)
 
 
 def serialize_extra_tree_regressor(model):
-    tree, dtypes = serialize_tree(model.tree_)
-    serialized_model = {
-        'meta': 'extra-tree-reg',
-        'max_features_': model.max_features_,
-        'n_features_in_': model.n_features_in_,
-        'n_outputs_': model.n_outputs_,
-        'tree_': tree,
-        'params': model.get_params()
-    }
-
-    tree_dtypes = []
-    for i in range(0, len(dtypes)):
-        tree_dtypes.append(dtypes[i].str)
-
-    serialized_model['tree_']['nodes_dtype'] = tree_dtypes
-
-    if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
-
-    return serialized_model
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_extra_tree_regressor(model_dict):
-    deserialized_model = ExtraTreeRegressor(**model_dict['params'])
-
-    deserialized_model.max_features_ = model_dict['max_features_']
-    deserialized_model.n_features_in_ = model_dict['n_features_in_']
-    deserialized_model.n_outputs_ = model_dict['n_outputs_']
-
-    tree = deserialize_tree(model_dict['tree_'], model_dict['n_features_in_'], model_dict['n_outputs_'])
-    deserialized_model.tree_ = tree
-
-    if 'feature_names_in_' in model_dict.keys():
-        deserialized_model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
-
-    return deserialized_model
+    return _base.deserialize_model_generic(model_dict)
 
 
 def serialize_extratrees_regressor(model):
-    serialized_model = {
-        'meta': 'extratrees-regressor',
-        'n_features_in_': model.n_features_in_,
-        'n_outputs_': model.n_outputs_,
-        'estimators_': [serialize_extra_tree_regressor(extra_tree) for extra_tree in model.estimators_],
-        'params': model.get_params()
-    }
-
-    if 'base_estimator_' in model.__dict__ and model.base_estimator_ is not None:
-        serialized_model['base_estimator_'] = (inspect.getmodule(model.base_estimator_).__name__,
-                                               type(model.base_estimator_).__name__,
-                                               model.base_estimator_.get_params())
-    elif sklearn.__version__ < '1.2.0':
-        serialized_model['base_estimator_'] = None
-    elif '_estimator' in model.__dict__ and model._estimator is not None:
-        serialized_model['_estimator'] = (inspect.getmodule(model._estimator).__name__,
-                                          type(model._estimator).__name__,
-                                          model._estimator.get_params())
-    else:
-        serialized_model['_estimator'] = None
-
-    if 'oob_score_' in model.__dict__:
-        serialized_model['oob_score_'] = model.oob_score_
-    if 'oob_prediction_' in model.__dict__:
-        serialized_model['oob_prediction_'] = model.oob_prediction_.tolist()
-
-    if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
-
-    return serialized_model
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_extratrees_regressor(model_dict):
-    model = ExtraTreesRegressor(**model_dict['params'])
-
-    if model_dict.get('base_estimator_') is not None:
-        model_dict['params']['base_estimator'] = getattr(importlib.import_module(model_dict['base_estimator_'][0]),
-                                                         model_dict['base_estimator_'][1])(
-            **model_dict['base_estimator_'][2])
-    elif sklearn.__version__ < '1.2.0':
-        model_dict['params']['base_estimator'] = None
-    elif model_dict.get('_estimator') is not None:
-        model_dict['params']['estimator'] = getattr(importlib.import_module(model_dict['_estimator'][0]),
-                                                    model_dict['_estimator'][1])(**model_dict['_estimator'][2])
-    else:
-        model_dict['params']['estimator'] = None
-
-    if sklearn.__version__ < '1.2.0':
-        model.base_estimator_ = model_dict['params']['base_estimator']
-    else:
-        model._estimator = model_dict['params']['estimator']
-    model.estimators_ = [deserialize_extra_tree_regressor(decision_tree) for decision_tree in model_dict['estimators_']]
-    model.n_features_in_ = model_dict['n_features_in_']
-    model.n_outputs_ = model_dict['n_outputs_']
-
-    if 'oob_score_' in model_dict:
-        model.oob_score_ = model_dict['oob_score_']
-    if 'oob_prediction_' in model_dict:
-        model.oob_prediction_ = model_dict['oob_prediction_']
-
-    if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
-
-    return model
+    return _base.deserialize_model_generic(model_dict)
 
 def serialize_nearest_neighbour_regressor(model):
-    serialized_model = {
-        'meta': 'nearest-neighbour-regressor',
-        'radius': model.radius,
-        'n_features_in_': model.n_features_in_,
-        '_y': model._y.tolist(),
-        'effective_metric_params_': model.effective_metric_params_,
-        'effective_metric_': model.effective_metric_,
-        '_fit_method': model._fit_method,
-        'n_samples_fit_': model.n_samples_fit_,
-        '_fit_X': model._fit_X.tolist(),
-        'params': model.get_params()
-    }
-
-    if '_tree' in model.__dict__ and model.__dict__['_tree'] is not None:
-        serialized_model['_tree'] = serialize_kdtree(model._tree)
-    else:
-        serialized_model['_tree'] = None
-
-    if 'feature_names_in_' in model.__dict__:
-        serialized_model['feature_names_in_'] = model.feature_names_in_.tolist()
-
-    return serialized_model
+    return _base.serialize_model_generic(model)
 
 
 def deserialize_nearest_neighbour_regressor(model_dict):
-    model = KNeighborsRegressor(**model_dict['params'])
-
-    model.radius = model_dict['radius']
-    model.n_features_in_ = model_dict['n_features_in_']
-    model._y = np.array(model_dict['_y'])
-    model.effective_metric_params_ = model_dict['effective_metric_params_']
-    model.effective_metric_ = model_dict['effective_metric_']
-    model._fit_method = model_dict['_fit_method']
-    model._fit_X = np.array(model_dict['_fit_X'])
-    model.n_samples_fit_ = model_dict['n_samples_fit_']
-
-    if model_dict['_tree'] is not None:
-        model._tree = deserialize_kdtree(model_dict['_tree'])
-    else:
-        model._tree = None
-
-    if 'feature_names_in_' in model_dict.keys():
-        model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
-
-    return model
+    return _base.deserialize_model_generic(model_dict)
 
 
 def serialize_stacking_regressor(model):
@@ -1002,7 +573,6 @@ def serialize_stacking_regressor(model):
     from . import serialize_model
 
     serialized_model = {
-        'meta': 'stacking-regressor',
         '_n_feature_outs': model._n_feature_outs,
         'estimators_': [serialize_model(submodel) for submodel in model.estimators_],
         'final_estimator_': serialize_model(model.final_estimator_),
@@ -1047,7 +617,6 @@ def serialize_voting_regressor(model):
     from . import serialize_model
 
     serialized_model = {
-        'meta': 'voting-regressor',
         'estimators_': [serialize_model(submodel) for submodel in model.estimators_],
         'named_estimators_': {model_name: serialize_model(submodel) for model_name, submodel in
                               model.named_estimators_.items()},
@@ -1082,3 +651,232 @@ def deserialize_voting_regressor(model_dict):
         model.feature_names_in_ = np.array(model_dict['feature_names_in_'][0])
 
     return model
+
+
+# The classes below all hold plain attributes (arrays, scalars, nested
+# already-supported estimators) with no exotic Cython/compiled state, so the
+# generic recursive engine handles them directly - same pattern as
+# AdaBoostRegressor/BaggingRegressor above.
+
+def serialize_ard_regression(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_ard_regression(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_bayesian_ridge(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_bayesian_ridge(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_elasticnet_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_elasticnet_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lasso_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lasso_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_multitask_elasticnet(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_multitask_elasticnet(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_multitask_elasticnet_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_multitask_elasticnet_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_multitask_lasso(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_multitask_lasso(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_multitask_lasso_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_multitask_lasso_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_gamma_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_gamma_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_poisson_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_poisson_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_tweedie_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_tweedie_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_huber_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_huber_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lars(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lars(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lars_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lars_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lasso_lars(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lasso_lars(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lasso_lars_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lasso_lars_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_lasso_lars_ic(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_lasso_lars_ic(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_orthogonal_matching_pursuit(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_orthogonal_matching_pursuit(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_orthogonal_matching_pursuit_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_orthogonal_matching_pursuit_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_passive_aggressive_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_passive_aggressive_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_quantile_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_quantile_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_ransac_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_ransac_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_ridge_cv(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_ridge_cv(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_sgd_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_sgd_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_theilsen_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_theilsen_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_linear_svr(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_linear_svr(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_nu_svr(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_nu_svr(model_dict):
+    return _base.deserialize_model_generic(model_dict)
+
+
+def serialize_radius_neighbors_regressor(model):
+    return _base.serialize_model_generic(model)
+
+
+def deserialize_radius_neighbors_regressor(model_dict):
+    return _base.deserialize_model_generic(model_dict)

@@ -5,6 +5,8 @@ import unittest
 
 import numpy as np
 from sklearn.datasets import make_classification, fetch_openml, clear_data_home
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import scale, label_binarize
 
 # Allow testing of additional optional dependencies
@@ -147,7 +149,7 @@ class TestAPI(unittest.TestCase):
         self.check_fitresample_model(model, 'smoten.json', X, y, is_text=True)
 
     def test_adasyn(self):
-        model = SMOTEN(random_state=486547865183 // 4856)
+        model = ADASYN(random_state=486547865183 // 4856)
         self.check_fitresample_model(model, 'adasyn.json', self.X, self.y)
 
     def test_borderline_smote(self):
@@ -169,3 +171,95 @@ class TestAPI(unittest.TestCase):
     def test_smote_tomek(self):
         model = SMOTETomek(random_state=987634)
         self.check_fitresample_model(model, 'smote_tomek.json', self.X, self.y)
+
+    def test_sampling_strategy_string_variants(self):
+        for strategy in ['majority', 'not minority', 'all', 'auto']:
+            model = RandomUnderSampler(sampling_strategy=strategy, random_state=8468546)
+            self.check_fitresample_model(model, 'ous_random_under_sampler_strategy.json', self.X, self.y)
+
+        for strategy in ['minority', 'not majority', 'all', 'auto']:
+            model = RandomOverSampler(sampling_strategy=strategy, random_state=48961)
+            self.check_fitresample_model(model, 'ous_random_over_sampler_strategy.json', self.X, self.y)
+
+            model = SMOTE(sampling_strategy=strategy, random_state=48961)
+            self.check_fitresample_model(model, 'ous_smote_strategy.json', self.X, self.y)
+
+    def test_sampling_strategy_float(self):
+        model = RandomUnderSampler(sampling_strategy=0.5, random_state=8468546)
+        self.check_fitresample_model(model, 'ous_random_under_sampler_float.json', self.X, self.y)
+
+        model = SMOTE(sampling_strategy=0.5, random_state=48961)
+        self.check_fitresample_model(model, 'ous_smote_float.json', self.X, self.y)
+
+    def test_sampling_strategy_dict(self):
+        model = RandomUnderSampler(sampling_strategy={0: 50, 1: 200}, random_state=8468546)
+        self.check_fitresample_model(model, 'ous_random_under_sampler_dict.json', self.X, self.y)
+
+        model = RandomOverSampler(sampling_strategy={0: 300, 1: 900}, random_state=48961)
+        self.check_fitresample_model(model, 'ous_random_over_sampler_dict.json', self.X, self.y)
+
+        model = SMOTE(sampling_strategy={0: 300}, random_state=48961)
+        self.check_fitresample_model(model, 'ous_smote_dict.json', self.X, self.y)
+
+    def test_near_miss_versions(self):
+        for version, kwargs in [(1, {}), (2, {}), (3, {'n_neighbors_ver3': 2})]:
+            model = NearMiss(version=version, **kwargs)
+            self.check_fitresample_model(model, 'ous_near_miss_version.json', self.openml_X, self.openml_y)
+
+    def test_borderline_smote_kind(self):
+        for kind in ['borderline-1', 'borderline-2']:
+            model = BorderlineSMOTE(kind=kind, random_state=647189)
+            self.check_fitresample_model(model, 'ous_borderline_smote_kind.json', self.X, self.y)
+
+    def test_edited_nearest_neighbours_kind_sel(self):
+        for kind_sel in ['all', 'mode']:
+            model = EditedNearestNeighbours(kind_sel=kind_sel)
+            self.check_fitresample_model(model, 'ous_enn_kind_sel.json', self.openml_X, self.openml_y)
+
+    def test_smote_k_neighbors_as_estimator(self):
+        model = SMOTE(k_neighbors=NearestNeighbors(n_neighbors=6), random_state=48961)
+        self.check_fitresample_model(model, 'ous_smote_k_neighbors_estimator.json', self.X, self.y)
+
+    def test_instance_hardness_threshold_estimator(self):
+        model = InstanceHardnessThreshold(estimator=RandomForestClassifier(n_estimators=10, random_state=1234),
+                                          cv=3, random_state=1234)
+        self.check_fitresample_model(model, 'ous_iht_estimator.json', self.openml_X, self.openml_y)
+
+    def test_cluster_centroids_voting(self):
+        from sklearn.cluster import KMeans
+        for voting in ['hard', 'soft']:
+            model = ClusterCentroids(estimator=KMeans(random_state=1234), voting=voting, random_state=42)
+            self.check_fitresample_model(model, 'ous_cluster_centroids_voting.json', self.X, self.y)
+
+    def test_condensed_nearest_neighbour_n_seeds(self):
+        model = CondensedNearestNeighbour(n_seeds_S=3, random_state=495)
+        self.check_fitresample_model(model, 'ous_cnn_n_seeds.json', self.openml_X, self.openml_y)
+
+    def test_dtype_variants(self):
+        for dtype in [np.float32, np.int32]:
+            X = self.X.astype(dtype)
+            model = RandomOverSampler(random_state=48961)
+            self.check_fitresample_model(model, 'ous_dtype_variant.json', X, self.y)
+
+            model = SMOTE(random_state=48961)
+            self.check_fitresample_model(model, 'ous_dtype_variant_smote.json', X.astype(np.float64) if dtype == np.int32 else X, self.y)
+
+    def test_multiclass_targets(self):
+        X_multi, y_multi = make_classification(n_classes=3, n_informative=4, n_clusters_per_class=1,
+                                               weights=[0.6, 0.3, 0.1], n_samples=600, random_state=0)
+
+        model = RandomUnderSampler(random_state=8468546)
+        self.check_fitresample_model(model, 'ous_multiclass_rus.json', X_multi, y_multi)
+
+        model = SMOTE(random_state=48961)
+        self.check_fitresample_model(model, 'ous_multiclass_smote.json', X_multi, y_multi)
+
+    def test_smote_minimal_minority_class(self):
+        rng = np.random.default_rng(1234)
+        X_majority = rng.normal(size=(50, 5))
+        X_minority = rng.normal(loc=5, size=(6, 5))
+        X = np.vstack([X_majority, X_minority])
+        y = np.array([0] * 50 + [1] * 6)
+
+        model = SMOTE(k_neighbors=5, random_state=48961)
+        self.check_fitresample_model(model, 'ous_smote_minimal_minority.json', X, y)
